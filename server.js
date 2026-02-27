@@ -8,6 +8,17 @@ const io = new Server(server);
 
 app.use(express.json());
 app.use(express.static(__dirname + "/public"));
+app.get("/caja", (req, res) => {
+  res.sendFile(__dirname + "/public/caja.html");
+});
+
+app.get("/cocina", (req, res) => {
+  res.sendFile(__dirname + "/public/cocina.html");
+});
+
+app.get("/entrega", (req, res) => {
+  res.sendFile(__dirname + "/public/entrega.html");
+});
 let pedidos = [];
 let idCounter = 1;
 
