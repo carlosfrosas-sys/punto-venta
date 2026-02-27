@@ -8,6 +8,9 @@ const io = new Server(server);
 
 app.use(express.json());
 app.use(express.static(__dirname + "/public"));
+app.get("/", (req, res) => {
+  res.sendFile(__dirname + "/public/caja.html");
+});
 app.get("/caja", (req, res) => {
   res.sendFile(__dirname + "/public/caja.html");
 });
