@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Cocina</title>
+  <link rel="manifest" href="/manifest.json">
+</head>
+<body>
+
+  <h1>COCINA</h1>
+  <div id="pedidos"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const contenedor = document.getElementById("pedidos");
+
+    socket.on("nuevoPedido", (pedido) => {
+      mostrarPedido(pedido);
+    });
+
+    socket.on("pedidoEliminado", (id) => {
+      const pedidoDiv = document.getElementById("pedido-" + id);
+      if (pedidoDiv) {
+        pedidoDiv.remove();
+      }
+    });
+
+    function mostrarPedido(pedido) {
+      const div = document.createElement("div");
+      div.id = "pedido-" + pedido.id;
+
+      div.style.border = "3px solid yellow";
+      div.style.margin = "25px";
+      div.style.padding = "30px";
+
+      div.innerHTML = `
+        <h2 class="cliente">
+          ${pedido.cliente}
+        </h2>
+
+        <ul class="productos">
+  ${pedido.productos.map(p => 
+    `<li>
+      • ${p.nombre}
+      ${p.nota ? `<br><span class="nota">📝 ${p.nota}</span>` : ""}
+    </li>`
+  ).join("")}
+</ul>
+      `;
+
+      contenedor.appendChild(div);
+    }
+  </script>
+
+  <style>
+
+    .nota {
+  display: block;
+  font-size: 30px;
+  color: #ff4444;
+font-weight: bold;
+  margin-left: 20px;
+}
+  body {
+    background: black;
+    color: yellow;
+    font-family: Arial, sans-serif;
+    text-transform: uppercase;
+    margin: 0;
+    padding: 20px;
+  }
+
+  h1 {
+    font-size: 30px;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  #pedidos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+
+  #pedidos > div {
+    border: 3px solid yellow;
+    padding: 20px;
+    width: 400px; /* 👈 controla tamaño de cada pedido */
+  }
+
+  .cliente {
+    font-size: 30px;
+    margin-bottom: 10px;
+  }
+
+  .productos {
+    font-size: 60px;
+    line-height: 1.3;
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+  }
+</style>
+</body>
+</html>

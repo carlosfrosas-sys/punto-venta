@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Entrega</title>
+  <link rel="manifest" href="/manifest.json">
+</head>
+<body>
+
+  <h1>ENTREGA</h1>
+  <div id="pedidos"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const contenedor = document.getElementById("pedidos");
+
+    socket.on("nuevoPedido", (pedido) => {
+      mostrarPedido(pedido);
+    });
+
+    socket.on("pedidoEliminado", (id) => {
+      const pedidoDiv = document.getElementById("pedido-" + id);
+      if (pedidoDiv) {
+        pedidoDiv.remove();
+      }
+    });
+
+    function mostrarPedido(pedido) {
+      const div = document.createElement("div");
+      div.id = "pedido-" + pedido.id;
+      div.classList.add("pedido");
+
+      div.innerHTML = `
+        <div class="header">
+          <h2 class="cliente">${pedido.cliente}</h2>
+          <button onclick="entregar(${pedido.id})">
+            ENTREGADO
+          </button>
+        </div>
+
+       <ul class="productos">
+  ${pedido.productos.map(p => 
+    `<li>
+      ${p.nombre} - $${p.precio}
+      ${p.nota ? `<br><span class="nota">📝 ${p.nota}</span>` : ""}
+    </li>`
+  ).join("")}
+</ul>
+
+        <strong class="total">Total: $${pedido.total}</strong>
+      `;
+
+contenedor.appendChild(div);    }
+
+    window.entregar = function(id) {
+      fetch("/pedido/entregado/" + id, { method: "POST" });
+    };
+  </script>
+
+  <style>
+
+    .nota {
+  display: block;
+  font-size: 22px;
+color: #ffae00;
+  margin-top: 5px;
+  margin-left: 10px;
+  font-weight: bold;
+}
+    body {
+      background: #111;
+      color: #27d561;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 50px;
+      margin-bottom: 30px;
+    }
+
+    #pedidos {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .pedido {
+      border: 2px solid #00ff88;
+      padding: 25px;
+      background: #1a1a1a;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .cliente {
+      font-size: 36px;
+      margin: 0;
+    }
+
+    .productos {
+      font-size: 40px;  /* 👈 más grande */
+      margin-top: 15px;
+      margin-bottom: 10px;
+      padding-left: 20px;
+    }
+
+    .total {
+      font-size: 15px;
+    }
+
+    button {
+      padding: 18px 30px;
+      font-size: 22px;
+      font-weight: bold;
+      background: #1fdf5f;
+      border: none;
+      cursor: pointer;
+      border-radius: 8px;
+    }
+
+    button:hover {
+      background: #a5a6a5;
+    }
+  </style>
+
+</body>
+</html>

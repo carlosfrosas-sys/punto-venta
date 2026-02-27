@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Caja</title>
+  <style>
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f4f6f9;
+    margin: 0;
+    padding: 25px;
+    color: #333;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 40px;
+    margin-bottom: 10px;
+    color: #1f2937;
+  }
+
+  h2 {
+    margin-top: 30px;
+    margin-bottom: 10px;
+    color: #374151;
+  }
+
+  h3 {
+    margin-top: 20px;
+    margin-bottom: 5px;
+    color: #4b5563;
+  }
+
+  /* 🔹 Contenedor categorías */
+  #categorias {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  /* 🔹 Contenedor opciones */
+  #proteinas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 25px;
+  }
+
+  /* 🔥 Botones generales */
+  button {
+    padding: 12px 18px;
+    font-size: 15px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    transition: 0.2s ease;
+    font-weight: 600;
+  }
+
+  /* Categorías */
+  #categorias button {
+    background: #2563eb;
+    color: white;
+  }
+
+  #categorias button:hover {
+    background: #1d4ed8;
+  }
+
+  /* Opciones de productos */
+  #proteinas button {
+    background: #e5e7eb;
+    color: #111827;
+  }
+
+  #proteinas button:hover {
+    background: #d1d5db;
+  }
+
+  /* Botón enviar */
+  button[onclick="enviarPedido()"] {
+    background: #16a34a;
+    color: white;
+    font-size: 18px;
+    padding: 14px 25px;
+    margin-top: 15px;
+  }
+
+  button[onclick="enviarPedido()"]:hover {
+    background: #15803d;
+  }
+
+  /* Lista pedido */
+  #lista {
+    list-style: none;
+    padding: 0;
+  }
+
+  #lista li {
+    background: white;
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+  }
+
+  #lista small {
+    color: #dc2626;
+    font-weight: bold;
+  }
+
+  /* Botón eliminar */
+  #lista button {
+    background: #ef4444;
+    color: white;
+    margin-left: 10px;
+    padding: 6px 10px;
+    font-size: 14px;
+  }
+
+  #lista button:hover {
+    background: #dc2626;
+  }
+
+  /* Input cliente */
+  input {
+    width: 100%;
+    max-width: 400px;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    margin-bottom: 15px;
+  }
+
+  input:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px rgba(37,99,235,0.2);
+  }
+
+  /* Total */
+  #total {
+    font-size: 24px;
+    font-weight: bold;
+    color: #111827;
+  }
+</style>
+</head>
+<body>
+
+<h1>Caja</h1>
+
+<h2>Platillos</h2>
+
+<div id="categorias"></div>
+<div id="proteinas"></div>
+
+<h3>Nombre del Cliente</h3>
+<input type="text" id="cliente" placeholder="Nombre del cliente" style="padding:8px; font-size:16px; margin-bottom:10px;">
+
+<h2>Pedido</h2>
+<ul id="lista"></ul>
+<h3>Total: $<span id="total">0</span></h3>
+
+<button onclick="enviarPedido()">Enviar Pedido</button>
+
+<script>
+let productos = [];
+let total = 0;
+
+const menu = {
+
+  // 🥣 PAQUETES
+  "Paquete 1": {
+    precio: 58,
+    proteinas: ["Jamón","Chorizo","Champiñones","Salchicha","Nopales","A la Mexicana"]
+  },
+
+  "Paquete 2": {
+    items: [
+      { nombre: "Chilaquiles con Huevo", precio: 58 }
+    ]
+  },
+
+  "Paquete 3": {
+    precio: 68,
+    proteinas: ["Bistec","Pollo","Pastor"]
+  },
+
+  "Paquete 4": {
+    items: [
+      { nombre: "Hot Cakes con Huevo", precio: 50 }
+    ]
+  },
+
+  "Paquete 5": {
+    items: [
+      { nombre: "Bisquet con Mermelada y Café con Leche", precio: 38 }
+    ]
+  },
+
+  // 🌮 CHILAQUILES
+ "Chilaquiles": {
+  sencillo: 38,
+  precio: 45,
+  proteinas: [
+    "Bistec",
+    "Pollo",
+    "Pastor",
+    "Chorizo",
+    { nombre: "Arrachera", precio: 48 },
+        { nombre: "Pechuga", precio: 48 }
+
+  ]
+},
+
+
+  // 🧀 MOLLETES
+"Molletes": {
+  sencillo: 32,
+  precio: 38,
+  proteinas: [
+    "Jamón",
+    "Chorizo",
+    "Combinados",
+    { nombre: "Pollo", precio: 42 },
+    { nombre: "Pastor", precio: 42 },
+    { nombre: "Bistec", precio: 42 },
+    { nombre: "Campechanos", precio: 42 }
+  ]
+},
+
+
+  // 🔥 MOLLEQUILES (el mero jefe)
+ "Mollequiles": {
+  sencillo: 37,
+  precio: 43,
+  proteinas: [
+    "Pollo",
+    "Bistec",
+    "Pastor",
+    "Chorizo",
+    "Huevo",
+    { nombre: "Mestizos", precio: 48 },
+    { nombre: "Pechuga", precio: 48 },
+    { nombre: "Campechanos", precio: 48 },
+    { nombre: "Arrachera", precio: 48 }
+  ]
+},
+
+
+  // 🌯 BURRITOS
+  "Burritos": {
+    precio: 52,
+    proteinas: ["Pollo","Bistec","Pastor","Chorizo","Arrachera","Campechanos"]
+  },
+
+  // 🌶 ENCHILADAS
+  "Enchiladas": {
+    precio: 60,
+    proteinas: ["Verdes","Mole","Enfrijoladas"]
+  },
+
+  // 🥪 TORTAS
+  "Tortas": {
+    proteinas: [
+      { nombre: "Jamón", precio: 48 },
+      { nombre: "Pierna", precio: 48 },
+      { nombre: "Salchicha", precio: 48 },
+      { nombre: "Chorizo", precio: 48 },
+      { nombre: "Chuleta", precio: 48 },
+      { nombre: "Huevo", precio: 48 },
+
+      { nombre: "Milanesa", precio: 50 },
+      { nombre: "Bistec", precio: 50 },
+      { nombre: "Alambre", precio: 50 },
+      { nombre: "Hawaiana", precio: 50 },
+      { nombre: "Enchiladas", precio: 50 },
+      { nombre: "Chilaquiles", precio: 50 },
+      { nombre: "Pechuga", precio: 50 },
+      { nombre: "Pollo", precio: 50 },
+      { nombre: "3 Quesos", precio: 50 },
+      { nombre: "Vegetariana", precio: 50 },
+      { nombre: "Pastor", precio: 50 },
+      { nombre: "Pollo con Mole", precio: 50 },
+
+      { nombre: "Arrachera", precio: 55 }
+    ]
+  },
+  // 🌮 ANTOJITOS
+"Antojitos": {
+  subcategorias: {
+
+    "Sopes": {
+  precio: 55,
+  proteinas: [
+    "Chorizo",
+    "Pollo",
+    "Pastor",
+    "Bistec",
+    { nombre: "Campechanos", precio: 60 },
+    { nombre: "Arrachera", precio: 60 }
+  ]
+},
+
+    "Quesadilla": {
+      precio: 28,
+      proteinas: [
+        "Tinga",
+        "Pollo",
+        "Chicharrón",
+        "Picadillo",
+        "Queso",
+        "Choriqueso",
+        "Champiñones con Queso"
+      ]
+    }
+
+  }
+},
+
+  // 🥪 SANDWICHES
+  "Sandwiches": {
+    proteinas: [
+      { nombre: "Jamón", precio: 37 },
+      { nombre: "Pierna", precio: 37 },
+      { nombre: "Salchicha", precio: 37 },
+      { nombre: "Huevo", precio: 37 },
+
+      { nombre: "Pollo", precio: 40 },
+      { nombre: "Atún", precio: 40 },
+      { nombre: "Pechuga", precio: 40 },
+
+      { nombre: "Club Sandwich", precio: 73 },
+      { nombre: "Hojaldra Jamón", precio: 37 },
+      { nombre: "Hojaldra Mole con Pollo", precio: 40 },
+      { nombre: "Hojaldra Atún", precio: 40 },
+    ]
+  },
+
+  // 🍔 HAMBURGUESAS
+  "Hamburguesas": {
+    items: [
+      { nombre: "Sencilla", precio: 55 },
+      { nombre: "Sencilla c/ Papas", precio: 73 },
+      { nombre: "Hawaiana", precio: 60 },
+      { nombre: "Hawaiana c/ Papas", precio: 78 }
+    ]
+  },
+  // 🥯 BAGELS
+"Bagels": {
+  proteinas: [
+    { nombre: "Jamón", precio: 45 },
+    { nombre: "Choriqueso", precio: 45 },
+    { nombre: "Salchicha", precio: 45 },
+    { nombre: "Alambre", precio: 50 },
+    { nombre: "Pollo", precio: 50 },
+    { nombre: "Hamburguesa", precio: 50 },
+    { nombre: "Pastor", precio: 50 },
+    { nombre: "Bistec", precio: 50 },
+    { nombre: "Arrachera", precio: 55 }
+  ]
+},
+
+  // 🌭 SNACKS
+  "Snacks": {
+    items: [
+      { nombre: "Hot Dog (1 pza)", precio: 17 },
+      { nombre: "Hot Dog con Papas (2 pzas)", precio: 52 },
+      { nombre: "Banderilla", precio: 27 },
+      { nombre: "Banderilla con Papas", precio: 45 },
+      { nombre: "Papas a la Francesa", precio: 40 },
+      { nombre: "Nachos Sencillos", precio: 37 },
+      { nombre: "Nachos con Chorizo o Pastor", precio: 42 }
+    ]
+  },
+
+  // 🥤 AGUAS
+  "Aguas": {
+    sabores: ["Horchata","Jamaica","Sandía","Melón","Papaya","Piña","Limón","Fresa","Guayaba","Avena"],
+    tamaños: {
+      "1/2 Litro": 20,
+      "1 Litro": 35
+    },
+    extra: 4
+  },
+
+  // 🥤 LICUADOS
+ "Licuados": {
+  precio: 32,
+  sabores: ["Fresa","Chocolate","Plátano","Guayaba","Mamey","Avena"]
+},
+
+
+  // ☕ CAFÉ
+  "Café": {
+    items: [
+      { nombre: "Café de Olla Chico", precio: 15 },
+      { nombre: "Café de Olla Grande", precio: 18 },
+      { nombre: "Café con Leche", precio: 20 },
+      { nombre: "Capuccino Instantáneo", precio: 28 },
+      { nombre: "Espumoso Chocolate", precio: 25 }
+    ]
+  }
+
+};
+function cargarCategorias() {
+  const cont = document.getElementById("categorias");
+
+  for (let categoria in menu) {
+    const btn = document.createElement("button");
+    btn.innerText = categoria;
+    btn.onclick = () => mostrarOpciones(categoria);
+    cont.appendChild(btn);
+  }
+}
+
+function mostrarOpciones(categoria) {
+
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "";
+
+  const datos = menu[categoria];
+
+  if (!datos) {
+    cont.innerHTML = "<p>No hay datos en esta categoría</p>";
+    return;
+  }
+
+  // 🥤 LICUADOS (manejo especial mejorado)
+if (categoria === "Licuados") {
+
+  cont.innerHTML = "<h3>Elige sabor:</h3>";
+
+  datos.sabores.forEach(sabor => {
+
+    const btn = document.createElement("button");
+    btn.innerText = sabor + " - $" + datos.precio;
+
+    btn.onclick = () => {
+
+      // Si el sabor ya es Avena, no preguntamos extra
+      if (sabor === "Avena") {
+        agregarProducto("Licuado de Avena", datos.precio);
+        return;
+      }
+
+      const conAvena = confirm("¿Agregar avena? +$4");
+
+      let precioFinal = datos.precio;
+      let nombreFinal = "Licuado de " + sabor;
+
+      if (conAvena) {
+        precioFinal += 4;
+        nombreFinal += " con avena";
+      }
+
+      agregarProducto(nombreFinal, precioFinal);
+    };
+
+    cont.appendChild(btn);
+  });
+
+  return;
+}
+
+  // 🌮 SUBCATEGORÍAS (Antojitos)
+  if (datos.subcategorias) {
+
+    for (let sub in datos.subcategorias) {
+
+      const btn = document.createElement("button");
+      btn.innerText = sub;
+      btn.onclick = () => mostrarSubcategoria(categoria, sub);
+      cont.appendChild(btn);
+    }
+
+    return;
+  }
+
+  // 🔥 SI TIENE OPCIÓN SENCILLO
+  if (datos.sencillo) {
+
+    const btnSencillo = document.createElement("button");
+    btnSencillo.innerText = "Sencillos - $" + datos.sencillo;
+    btnSencillo.onclick = () =>
+      agregarProducto(categoria + " Sencillos", datos.sencillo);
+
+    cont.appendChild(btnSencillo);
+  }
+
+  // 🔥 PROTEÍNAS
+  if (datos.proteinas) {
+
+    datos.proteinas.forEach(p => {
+
+      const btn = document.createElement("button");
+
+      if (typeof p === "object") {
+        btn.innerText = p.nombre + " - $" + p.precio;
+        btn.onclick = () =>
+          agregarProducto(categoria + " de " + p.nombre, p.precio);
+      } else {
+        btn.innerText = p + " - $" + datos.precio;
+        btn.onclick = () =>
+          agregarProducto(categoria + " de " + p, datos.precio);
+      }
+
+      cont.appendChild(btn);
+    });
+  }
+
+  // 📦 ITEMS
+  if (datos.items) {
+
+    datos.items.forEach(item => {
+
+      const btn = document.createElement("button");
+      btn.innerText = item.nombre + " - $" + item.precio;
+      btn.onclick = () => agregarProducto(item.nombre, item.precio);
+
+      cont.appendChild(btn);
+    });
+  }
+
+  // 🥤 AGUAS
+  if (datos.sabores && categoria !== "Licuados") {
+
+    datos.sabores.forEach(sabor => {
+
+      const btn = document.createElement("button");
+      btn.innerText = sabor;
+      btn.onclick = () => mostrarTamañosAgua(sabor);
+
+      cont.appendChild(btn);
+    });
+  }
+}
+function mostrarSubcategoria(categoria, sub) {
+
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>Elige proteína:</h3>";
+
+  const datos = menu[categoria].subcategorias[sub];
+
+  datos.proteinas.forEach(p => {
+
+    const btn = document.createElement("button");
+
+    if (typeof p === "object") {
+
+      btn.innerText = p.nombre + " - $" + p.precio;
+      btn.onclick = () => {
+        agregarProducto(sub + " de " + p.nombre, p.precio);
+      };
+
+    } else {
+
+      btn.innerText = p + " - $" + datos.precio;
+      btn.onclick = () => {
+        agregarProducto(sub + " de " + p, datos.precio);
+      };
+
+    }
+
+    cont.appendChild(btn);
+
+  });
+}
+function mostrarTamañosAgua(sabor) {
+const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>Elige tamaño:</h3>";
+
+  const tamaños = menu["Aguas"].tamaños;
+
+  for (let tamaño in tamaños) {
+    const precio = tamaños[tamaño];
+
+    const btn = document.createElement("button");
+    btn.innerText = tamaño + " - $" + precio;
+
+    btn.onclick = () => {
+      const extra = confirm("¿Agregar Chía o Avena +$4?");
+      let precioFinal = precio;
+      let nombreFinal = "Agua de " + sabor + " " + tamaño;
+
+      if (extra) {
+        precioFinal += menu["Aguas"].extra;
+        nombreFinal += " con Chía/Avena";
+      }
+
+      agregarProducto(nombreFinal, precioFinal);
+    };
+
+    cont.appendChild(btn);
+  }
+}
+function agregarProducto(nombre, precio) {
+
+  const nota = prompt("¿Alguna indicación especial?\n(Ej: sin cebolla)");
+
+  productos.push({ 
+    nombre, 
+    precio,
+    nota: nota ? nota : ""
+  });
+
+  total += precio;
+
+  renderizarLista();
+}
+function renderizarLista() {
+
+  const lista = document.getElementById("lista");
+  lista.innerHTML = "";
+
+  productos.forEach((prod, index) => {
+
+    const li = document.createElement("li");
+
+    li.innerHTML = `
+      <strong>${prod.nombre}</strong> - $${prod.precio}
+      ${prod.nota ? `<br><small>📝 ${prod.nota}</small>` : ""}
+      <button onclick="eliminarProducto(${index})">❌</button>
+    `;
+
+    lista.appendChild(li);
+  });
+
+  document.getElementById("total").innerText = total;
+}
+function eliminarProducto(index) {
+
+  total -= productos[index].precio;
+
+  productos.splice(index, 1);
+
+  renderizarLista();
+}
+
+function enviarPedido() {
+
+  if (productos.length === 0) return;
+
+  const nombreCliente = document.getElementById("cliente").value.trim();
+
+  if (!nombreCliente) {
+    alert("Escribe el nombre del cliente");
+    return;
+  }
+
+  fetch("/pedido", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      cliente: nombreCliente,
+      productos,
+      total
+    })
+  });
+
+  // Reset
+  productos = [];
+  total = 0;
+
+  document.getElementById("lista").innerHTML = "";
+  document.getElementById("total").innerText = "0";
+  document.getElementById("proteinas").innerHTML = "";
+  document.getElementById("cliente").value = "";
+
+  alert("Pedido enviado");
+}
+cargarCategorias();
+
+</script>
+</body>
+</html>
