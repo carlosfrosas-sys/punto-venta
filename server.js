@@ -75,6 +75,7 @@ app.post("/pedido/entregado/:id", (req, res) => {
 
   if (pedido) {
     pedido.estado = "Entregado";
+    pedido.horaEntrega = new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
     io.emit("pedidoEliminado", id);  // 👈 ESTA LÍNEA FALTABA
   }
 
