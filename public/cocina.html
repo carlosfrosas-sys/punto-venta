@@ -134,7 +134,7 @@
           ${pedido.productos.map(p =>
             `<li>
               <span class="punto">&#8226;</span> ${p.nombre}
-              ${p.nota ? `<span class="nota">${p.nota}</span>` : ""}
+              ${p.nota ? `<span class="nota">${p.nota.replace(/\s*\+\$\d+/g, "")}</span>` : ""}
             </li>`
           ).join("")}
         </ul>

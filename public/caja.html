@@ -565,16 +565,14 @@ const menu = {
 
   // 🫓 GRINGA
   "Gringa": {
-    items: [
-      { nombre: "Gringa", precio: 35 }
-    ]
+    directo: true,
+    precio: 35
   },
 
   // 🫓 NORTEÑA
   "Norteña": {
-    items: [
-      { nombre: "Norteña", precio: 35 }
-    ]
+    directo: true,
+    precio: 35
   },
 
   // 🧀 SINCRONIZADAS
@@ -677,6 +675,12 @@ function mostrarOpciones(categoria) {
 
   if (!datos) {
     cont.innerHTML = "<p>No hay datos en esta categoría</p>";
+    return;
+  }
+
+  // 🫓 DIRECTO (Gringa, Norteña)
+  if (datos.directo && !datos.subcategorias) {
+    agregarProductoSinNota(categoria, datos.precio);
     return;
   }
 
