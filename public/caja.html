@@ -726,6 +726,8 @@ if (categoria === "Licuados") {
     btnSencillo.onclick = () => {
       if (categoria === "Chilaquiles") {
         mostrarNotas(categoria + " Sencillos", datos.sencillo, notasChilaquiles);
+      } else if (categoria === "Molletes") {
+        mostrarPicoDegallo(categoria + " Sencillos", datos.sencillo);
       } else {
         agregarProducto(categoria + " Sencillos", datos.sencillo);
       }
