@@ -1,12 +1,175 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Entrega</title>
   <link rel="manifest" href="/manifest.json">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #111;
+      color: #f5f5f5;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 24px;
+      font-weight: 300;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      color: #888;
+      margin-bottom: 25px;
+      border-bottom: 1px solid #333;
+      padding-bottom: 15px;
+    }
+
+    #pedidos {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .pedido {
+      background: #1a1a1a;
+      border-left: 4px solid #60a5fa;
+      border-radius: 8px;
+      padding: 20px;
+      width: 500px;
+    }
+
+    .pedido-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #333;
+    }
+
+    .cliente {
+      font-size: 22px;
+      font-weight: 700;
+      color: #60a5fa;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .btn-entregado {
+      background: #22c55e;
+      color: #fff;
+      border: none;
+      padding: 14px 28px;
+      font-size: 16px;
+      font-weight: 700;
+      border-radius: 8px;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-entregado:hover {
+      background: #16a34a;
+    }
+
+    .btn-entregado:active {
+      transform: scale(0.97);
+    }
+
+    .productos {
+      list-style: none;
+    }
+
+    .productos li {
+      font-size: 24px;
+      font-weight: 600;
+      padding: 8px 0;
+      border-bottom: 1px solid #222;
+      text-transform: uppercase;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .productos li:last-child {
+      border-bottom: none;
+    }
+
+    .precio {
+      font-size: 16px;
+      color: #888;
+      font-weight: 400;
+    }
+
+    .nota {
+      display: block;
+      font-size: 17px;
+      color: #fbbf24;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 15px;
+      padding-top: 12px;
+      border-top: 1px solid #333;
+    }
+
+    .total-label {
+      font-size: 14px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .total-amount {
+      font-size: 24px;
+      font-weight: 700;
+      color: #60a5fa;
+    }
+
+    @media (max-width: 768px) {
+      .pedido {
+        width: 100%;
+      }
+
+      .pedido-header {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+      }
+
+      .btn-entregado {
+        width: 100%;
+        padding: 16px;
+        font-size: 18px;
+        text-align: center;
+      }
+
+      .productos li {
+        font-size: 20px;
+        flex-direction: column;
+      }
+
+      .nota {
+        font-size: 15px;
+      }
+    }
+  </style>
 </head>
 <body>
 
-  <h1>ENTREGA</h1>
+  <h1>Entrega</h1>
   <div id="pedidos"></div>
 
   <script src="/socket.io/socket.io.js"></script>
@@ -28,107 +191,39 @@
     function mostrarPedido(pedido) {
       const div = document.createElement("div");
       div.id = "pedido-" + pedido.id;
-      div.classList.add("pedido");
+      div.className = "pedido";
 
       div.innerHTML = `
-        <div class="header">
-          <h2 class="cliente">${pedido.cliente}</h2>
-          <button onclick="entregar(${pedido.id})">
-            ENTREGADO
-          </button>
+        <div class="pedido-header">
+          <div class="cliente">${pedido.cliente}</div>
+          <button class="btn-entregado" onclick="entregar(${pedido.id})">Entregado</button>
         </div>
 
-       <ul class="productos">
-  ${pedido.productos.map(p => 
-    `<li>
-      ${p.nombre} - $${p.precio}
-      ${p.nota ? `<br><span class="nota">📝 ${p.nota}</span>` : ""}
-    </li>`
-  ).join("")}
-</ul>
+        <ul class="productos">
+          ${pedido.productos.map(p =>
+            `<li>
+              <div>
+                ${p.nombre}
+                ${p.nota ? `<span class="nota">${p.nota}</span>` : ""}
+              </div>
+              <span class="precio">$${p.precio}</span>
+            </li>`
+          ).join("")}
+        </ul>
 
-        <strong class="total">Total: $${pedido.total}</strong>
+        <div class="total-row">
+          <span class="total-label">Total</span>
+          <span class="total-amount">$${pedido.total}</span>
+        </div>
       `;
 
-contenedor.appendChild(div);    }
+      contenedor.appendChild(div);
+    }
 
     window.entregar = function(id) {
       fetch("/pedido/entregado/" + id, { method: "POST" });
     };
   </script>
-
-  <style>
-
-    .nota {
-  display: block;
-  font-size: 22px;
-color: #ffae00;
-  margin-top: 5px;
-  margin-left: 10px;
-  font-weight: bold;
-}
-    body {
-      background: #111;
-      color: #27d561;
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
-    }
-
-    h1 {
-      text-align: center;
-      font-size: 50px;
-      margin-bottom: 30px;
-    }
-
-    #pedidos {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    .pedido {
-      border: 2px solid #00ff88;
-      padding: 25px;
-      background: #1a1a1a;
-    }
-
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .cliente {
-      font-size: 36px;
-      margin: 0;
-    }
-
-    .productos {
-      font-size: 40px;  /* 👈 más grande */
-      margin-top: 15px;
-      margin-bottom: 10px;
-      padding-left: 20px;
-    }
-
-    .total {
-      font-size: 15px;
-    }
-
-    button {
-      padding: 18px 30px;
-      font-size: 22px;
-      font-weight: bold;
-      background: #1fdf5f;
-      border: none;
-      cursor: pointer;
-      border-radius: 8px;
-    }
-
-    button:hover {
-      background: #a5a6a5;
-    }
-  </style>
 
 </body>
 </html>

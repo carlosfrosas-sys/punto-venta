@@ -4,245 +4,319 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Caja</title>
   <style>
-  body {
-    font-family: 'Segoe UI', Arial, sans-serif;
-    background: #f4f6f9;
-    margin: 0;
-    padding: 25px;
-    color: #333;
-  }
-
-  h1 {
-    text-align: center;
-    font-size: 40px;
-    margin-bottom: 10px;
-    color: #1f2937;
-  }
-
-  h2 {
-    margin-top: 30px;
-    margin-bottom: 10px;
-    color: #374151;
-  }
-
-  h3 {
-    margin-top: 20px;
-    margin-bottom: 5px;
-    color: #4b5563;
-  }
-
-  /* 🔹 Contenedor categorías */
-  #categorias {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 20px;
-  }
-
-  /* 🔹 Contenedor opciones */
-  #proteinas {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 25px;
-  }
-
-  /* 🔥 Botones generales */
-  button {
-    padding: 12px 18px;
-    font-size: 15px;
-    border-radius: 10px;
-    border: none;
-    cursor: pointer;
-    transition: 0.2s ease;
-    font-weight: 600;
-  }
-
-  /* Categorías */
-  #categorias button {
-    background: #2563eb;
-    color: white;
-  }
-
-  #categorias button:hover {
-    background: #1d4ed8;
-  }
-
-  /* Opciones de productos */
-  #proteinas button {
-    background: #e5e7eb;
-    color: #111827;
-  }
-
-  #proteinas button:hover {
-    background: #d1d5db;
-  }
-
-  /* Botón enviar */
-  button[onclick="enviarPedido()"] {
-    background: #16a34a;
-    color: white;
-    font-size: 18px;
-    padding: 14px 25px;
-    margin-top: 15px;
-  }
-
-  button[onclick="enviarPedido()"]:hover {
-    background: #15803d;
-  }
-
-  /* Lista pedido */
-  #lista {
-    list-style: none;
-    padding: 0;
-  }
-
-  #lista li {
-    background: white;
-    padding: 12px;
-    border-radius: 10px;
-    margin-bottom: 10px;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.05);
-  }
-
-  #lista small {
-    color: #dc2626;
-    font-weight: bold;
-  }
-
-  /* Botón eliminar */
-  #lista button {
-    background: #ef4444;
-    color: white;
-    margin-left: 10px;
-    padding: 6px 10px;
-    font-size: 14px;
-  }
-
-  #lista button:hover {
-    background: #dc2626;
-  }
-
-  /* Input cliente */
-  input {
-    width: 100%;
-    max-width: 400px;
-    padding: 10px;
-    font-size: 16px;
-    border-radius: 8px;
-    border: 1px solid #d1d5db;
-    margin-bottom: 15px;
-  }
-
-  input:focus {
-    outline: none;
-    border-color: #2563eb;
-    box-shadow: 0 0 0 2px rgba(37,99,235,0.2);
-  }
-
-  /* Total */
-  #total {
-    font-size: 24px;
-    font-weight: bold;
-    color: #111827;
-  }
-
-  /* 📱 RESPONSIVE */
-  @media (max-width: 768px) {
-    body {
-      padding: 10px;
-    }
-
-    h1 {
-      font-size: 28px;
-    }
-
-    h2 {
-      font-size: 20px;
-      margin-top: 20px;
-    }
-
-    h3 {
-      font-size: 16px;
-    }
-
-    #categorias {
-      gap: 6px;
-    }
-
-    #categorias button {
-      padding: 10px 12px;
-      font-size: 13px;
-      flex: 1 1 calc(33% - 6px);
-      min-width: 0;
-      text-align: center;
-    }
-
-    #proteinas {
-      gap: 6px;
-    }
-
-    #proteinas button {
-      padding: 10px 12px;
-      font-size: 13px;
-      flex: 1 1 calc(50% - 6px);
-      min-width: 0;
-      text-align: center;
-    }
-
-    input {
-      max-width: 100%;
-      font-size: 16px;
+    * {
+      margin: 0;
+      padding: 0;
       box-sizing: border-box;
     }
 
-    button[onclick="enviarPedido()"] {
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #faf8f5;
+      color: #3d3d3d;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px 25px;
+    }
+
+    .header {
+      text-align: center;
+      padding: 20px 0 15px;
+      border-bottom: 2px solid #e8e4df;
+      margin-bottom: 25px;
+    }
+
+    .header h1 {
+      font-size: 26px;
+      font-weight: 300;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: #6b5b4f;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #a09080;
+      margin-bottom: 12px;
+      margin-top: 25px;
+    }
+
+    /* Contenedor categorías */
+    #categorias {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 15px;
+    }
+
+    /* Contenedor opciones */
+    #proteinas {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 20px;
+      min-height: 20px;
+    }
+
+    #proteinas h3 {
       width: 100%;
-      font-size: 16px;
-      padding: 14px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #6b5b4f;
+      margin-bottom: 5px;
+    }
+
+    #proteinas p {
+      width: 100%;
+      font-size: 13px;
+      color: #a09080;
+      margin-bottom: 5px;
+    }
+
+    /* Botones generales */
+    button {
+      padding: 10px 16px;
+      font-size: 14px;
+      border-radius: 20px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 500;
+    }
+
+    /* Categorías */
+    #categorias button {
+      background: #fff;
+      color: #6b5b4f;
+      border: 1.5px solid #d9d0c7;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    #categorias button:hover {
+      background: #6b5b4f;
+      color: #fff;
+      border-color: #6b5b4f;
+    }
+
+    /* Opciones de productos */
+    #proteinas button {
+      background: #fff;
+      color: #3d3d3d;
+      border: 1.5px solid #e0dbd5;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    #proteinas button:hover {
+      background: #f0ece7;
+      border-color: #c4bab0;
+    }
+
+    /* Input cliente */
+    .input-group {
+      margin-bottom: 20px;
+    }
+
+    input {
+      width: 100%;
+      max-width: 400px;
+      padding: 12px 16px;
+      font-size: 15px;
+      border-radius: 12px;
+      border: 1.5px solid #d9d0c7;
+      background: #fff;
+      color: #3d3d3d;
+      transition: all 0.2s ease;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #a09080;
+      box-shadow: 0 0 0 3px rgba(160,144,128,0.15);
+    }
+
+    input::placeholder {
+      color: #c4bab0;
+    }
+
+    /* Lista pedido */
+    .pedido-section {
+      background: #fff;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      border: 1px solid #e8e4df;
+    }
+
+    #lista {
+      list-style: none;
     }
 
     #lista li {
-      padding: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0ece7;
+      font-size: 15px;
+    }
+
+    #lista li:last-child {
+      border-bottom: none;
+    }
+
+    #lista small {
+      color: #c0785a;
+      font-weight: 600;
+      font-size: 12px;
+    }
+
+    /* Botón eliminar */
+    #lista button {
+      background: none;
+      color: #c4bab0;
+      padding: 4px 8px;
+      font-size: 16px;
+      border-radius: 8px;
+    }
+
+    #lista button:hover {
+      color: #e05252;
+      background: #fef2f2;
+    }
+
+    /* Total */
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 2px solid #e8e4df;
+    }
+
+    .total-label {
       font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #a09080;
     }
 
     #total {
-      font-size: 20px;
-    }
-  }
-
-  @media (max-width: 480px) {
-    #categorias button {
-      flex: 1 1 calc(50% - 6px);
-      font-size: 12px;
-      padding: 8px 6px;
+      font-size: 28px;
+      font-weight: 700;
+      color: #6b5b4f;
     }
 
-    #proteinas button {
-      flex: 1 1 100%;
-      font-size: 14px;
+    /* Botón enviar */
+    .btn-enviar {
+      width: 100%;
+      background: #6b5b4f;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      padding: 14px;
+      border-radius: 12px;
+      margin-top: 20px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
     }
-  }
-</style>
+
+    .btn-enviar:hover {
+      background: #5a4a3f;
+    }
+
+    /* 📱 RESPONSIVE */
+    @media (max-width: 768px) {
+      .container {
+        padding: 15px;
+      }
+
+      .header h1 {
+        font-size: 22px;
+      }
+
+      #categorias {
+        gap: 6px;
+      }
+
+      #categorias button {
+        padding: 8px 12px;
+        font-size: 12px;
+        flex: 1 1 calc(33% - 6px);
+        min-width: 0;
+        text-align: center;
+      }
+
+      #proteinas {
+        gap: 6px;
+      }
+
+      #proteinas button {
+        padding: 8px 12px;
+        font-size: 12px;
+        flex: 1 1 calc(50% - 6px);
+        min-width: 0;
+        text-align: center;
+      }
+
+      input {
+        max-width: 100%;
+      }
+
+      #lista li {
+        font-size: 14px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      #categorias button {
+        flex: 1 1 calc(50% - 6px);
+        font-size: 11px;
+        padding: 8px 6px;
+      }
+
+      #proteinas button {
+        flex: 1 1 100%;
+        font-size: 13px;
+      }
+    }
+  </style>
 </head>
 <body>
 
-<h1>Caja</h1>
+<div class="container">
+  <div class="header">
+    <h1>Caja</h1>
+  </div>
 
-<h2>Platillos</h2>
+  <div class="section-title">Platillos</div>
+  <div id="categorias"></div>
+  <div id="proteinas"></div>
 
-<div id="categorias"></div>
-<div id="proteinas"></div>
+  <div class="input-group">
+    <div class="section-title">Cliente</div>
+    <input type="text" id="cliente" placeholder="Nombre del cliente">
+  </div>
 
-<h3>Nombre del Cliente</h3>
-<input type="text" id="cliente" placeholder="Nombre del cliente" style="padding:8px; font-size:16px; margin-bottom:10px;">
+  <div class="pedido-section">
+    <div class="section-title" style="margin-top:0;">Pedido</div>
+    <ul id="lista"></ul>
+    <div class="total-row">
+      <span class="total-label">Total</span>
+      <span>$<span id="total">0</span></span>
+    </div>
+  </div>
 
-<h2>Pedido</h2>
-<ul id="lista"></ul>
-<h3>Total: $<span id="total">0</span></h3>
-
-<button onclick="enviarPedido()">Enviar Pedido</button>
+  <button class="btn-enviar" onclick="enviarPedido()">Enviar Pedido</button>
+</div>
 
 <script>
 let productos = [];
@@ -726,6 +800,8 @@ if (categoria === "Licuados") {
           mostrarNotas("Taco de Arrachera", item.precio, notasTacosArrachera);
         } else if (categoria === "Tacos" && tacosSinNota.includes(item.nombre)) {
           agregarProductoSinNota("Taco de " + item.nombre, item.precio);
+        } else if (categoria === "Bebidas" || categoria === "Café") {
+          agregarProductoSinNota(item.nombre, item.precio);
         } else {
           agregarProducto(item.nombre, item.precio);
         }
