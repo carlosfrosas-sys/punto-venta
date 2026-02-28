@@ -324,8 +324,10 @@ let total = 0;
 
 const notasTortas = ["Sin Mayonesa", "Sin Queso", "Sin Frijoles", "Sin Jitomate", "Sin Aguacate"];
 const notasHamburguesas = ["Sin Mayonesa", "Sin Catsup", "Sin Mostaza", "Sin Lechuga", "Sin Jitomate", "Sin Queso"];
-const notasSnacks = ["Sin Mayonesa", "Sin Catsup", "Sin Mostaza"];
-const snacksConNotas = ["Hot Dog (1 pza)", "Hot Dog con Papas (2 pzas)", "Banderilla", "Banderilla con Papas"];
+const notasHotDog = ["Sin Mayonesa", "Sin Catsup", "Sin Mostaza", "Sin Jitomate"];
+const notasBanderilla = ["Sin Mayonesa", "Sin Catsup", "Sin Mostaza"];
+const hotDogs = ["Hot Dog (1 pza)", "Hot Dog con Papas (2 pzas)"];
+const banderillas = ["Banderilla", "Banderilla con Papas"];
 const notasChilaquiles = ["Sin Crema", "Sin Queso"];
 const notasEnchiladas = ["Sin Lechuga", "Sin Queso", "Sin Crema"];
 const notasSandwiches = ["Sin Mayonesa", "Sin Queso", "Sin Aguacate", "Sin Jitomate", "Sin Lechuga"];
@@ -612,8 +614,7 @@ const menu = {
       { nombre: "Banderilla", precio: 27 },
       { nombre: "Banderilla con Papas", precio: 45 },
       { nombre: "Papas a la Francesa", precio: 40 },
-      { nombre: "Nachos Sencillos", precio: 37 },
-      { nombre: "Nachos con Chorizo o Pastor", precio: 42 }
+      { nombre: "Nachos", precio: 42, nachos: true }
     ]
   },
 
@@ -791,8 +792,14 @@ if (categoria === "Licuados") {
       btn.onclick = () => {
         if (categoria === "Hamburguesas") {
           mostrarNotas(item.nombre, item.precio, notasHamburguesas);
-        } else if (categoria === "Snacks" && snacksConNotas.includes(item.nombre)) {
-          mostrarNotas(item.nombre, item.precio, notasSnacks);
+        } else if (categoria === "Snacks" && hotDogs.includes(item.nombre)) {
+          mostrarNotas(item.nombre, item.precio, notasHotDog);
+        } else if (categoria === "Snacks" && banderillas.includes(item.nombre)) {
+          mostrarNotas(item.nombre, item.precio, notasBanderilla);
+        } else if (categoria === "Snacks" && item.nachos) {
+          mostrarProteinasNachos(item.precio);
+        } else if (categoria === "Snacks") {
+          agregarProductoSinNota(item.nombre, item.precio);
         } else if (categoria === "Sincronizadas") {
           agregarProductoSinNota("Sincronizada de " + item.nombre, item.precio);
         } else if (categoria === "Tacos" && item.nombre === "Tacos Dorados") {
@@ -1051,6 +1058,23 @@ function mostrarBebidaPaquete(nombre, precio, notaPrev) {
       productos.push({ nombre, precio, nota });
       total += precio;
       renderizarLista();
+      cont.innerHTML = "";
+    };
+    cont.appendChild(btn);
+  });
+}
+
+function mostrarProteinasNachos(precio) {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>Elige proteína:</h3>";
+
+  const proteinas = ["Chorizo", "Pastor", "Arrachera"];
+
+  proteinas.forEach(p => {
+    const btn = document.createElement("button");
+    btn.innerText = p + " - $" + precio;
+    btn.onclick = () => {
+      agregarProductoSinNota("Nachos de " + p, precio);
       cont.innerHTML = "";
     };
     cont.appendChild(btn);
