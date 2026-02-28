@@ -336,6 +336,7 @@ const notasTacosDorados = ["Sin Crema", "Sin Queso", "Sin Lechuga"];
 const notasTacos = ["Sin Papa", "Sin Nopales"];
 const notasTacosArrachera = ["Sin Aguacate"];
 const notasBagels = ["Sin Mayonesa", "Sin Queso"];
+const notasBurritos = ["Sin Arroz", "Sin Frijoles", "Sin Queso"];
 const tacosSinNota = ["Pastor"];
 const tacosConNotas = ["Bistec", "Pechuga", "Chuleta", "Campechanos"];
 
@@ -772,6 +773,8 @@ if (categoria === "Licuados") {
             mostrarNotas(categoria + " de " + p, datos.precio, notasChilaquiles);
           } else if (categoria === "Enchiladas") {
             mostrarNotas(categoria + " " + p, datos.precio, notasEnchiladas);
+          } else if (categoria === "Burritos") {
+            mostrarNotas("Burrito de " + p, datos.precio, notasBurritos);
           } else {
             agregarProducto(categoria + " de " + p, datos.precio);
           }
