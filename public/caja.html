@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Caja</title>
   <style>
   body {
@@ -144,6 +145,84 @@
     font-size: 24px;
     font-weight: bold;
     color: #111827;
+  }
+
+  /* 📱 RESPONSIVE */
+  @media (max-width: 768px) {
+    body {
+      padding: 10px;
+    }
+
+    h1 {
+      font-size: 28px;
+    }
+
+    h2 {
+      font-size: 20px;
+      margin-top: 20px;
+    }
+
+    h3 {
+      font-size: 16px;
+    }
+
+    #categorias {
+      gap: 6px;
+    }
+
+    #categorias button {
+      padding: 10px 12px;
+      font-size: 13px;
+      flex: 1 1 calc(33% - 6px);
+      min-width: 0;
+      text-align: center;
+    }
+
+    #proteinas {
+      gap: 6px;
+    }
+
+    #proteinas button {
+      padding: 10px 12px;
+      font-size: 13px;
+      flex: 1 1 calc(50% - 6px);
+      min-width: 0;
+      text-align: center;
+    }
+
+    input {
+      max-width: 100%;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+
+    button[onclick="enviarPedido()"] {
+      width: 100%;
+      font-size: 16px;
+      padding: 14px;
+    }
+
+    #lista li {
+      padding: 10px;
+      font-size: 14px;
+    }
+
+    #total {
+      font-size: 20px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    #categorias button {
+      flex: 1 1 calc(50% - 6px);
+      font-size: 12px;
+      padding: 8px 6px;
+    }
+
+    #proteinas button {
+      flex: 1 1 100%;
+      font-size: 14px;
+    }
   }
 </style>
 </head>
@@ -315,6 +394,15 @@ const menu = {
         "Choriqueso",
         "Champiñones con Queso"
       ]
+    },
+
+    "Tostadas": {
+      precio: 28,
+      proteinas: [
+        "Tinga de Pollo",
+        "Picadillo",
+        "Pollo"
+      ]
     }
 
   }
@@ -363,6 +451,62 @@ const menu = {
   ]
 },
 
+  // 🌮 TACOS
+  "Tacos": {
+    items: [
+      { nombre: "Pastor", precio: 50 },
+      { nombre: "Bistec", precio: 50 },
+      { nombre: "Arrachera", precio: 60 },
+      { nombre: "Campechanos", precio: 55 },
+      { nombre: "Pechuga", precio: 55 },
+      { nombre: "Chuleta", precio: 50 }
+    ]
+  },
+
+  // 🫓 GRINGA
+  "Gringa": {
+    items: [
+      { nombre: "Gringa", precio: 35 }
+    ]
+  },
+
+  // 🫓 NORTEÑA
+  "Norteña": {
+    items: [
+      { nombre: "Norteña", precio: 35 }
+    ]
+  },
+
+  // 🧀 SINCRONIZADAS
+  "Sincronizadas": {
+    items: [
+      { nombre: "Jamón", precio: 50 },
+      { nombre: "Chorizo", precio: 50 },
+      { nombre: "Champiñones", precio: 50 },
+      { nombre: "Pastor", precio: 50 },
+      { nombre: "Bistec", precio: 50 },
+      { nombre: "Pollo", precio: 50 },
+      { nombre: "Hawaianas", precio: 50 },
+      { nombre: "Campechanas", precio: 55 },
+      { nombre: "Mestizas", precio: 55 },
+      { nombre: "Alambre", precio: 55 },
+      { nombre: "Arrachera", precio: 60 }
+    ]
+  },
+
+  // 🥗 ENSALADAS
+  "Ensaladas": {
+    items: [
+      { nombre: "Pechuga Asada", precio: 58 },
+      { nombre: "Pollo", precio: 58 },
+      { nombre: "Pechuga", precio: 58 },
+      { nombre: "Atún", precio: 58 },
+      { nombre: "Jamón con Queso", precio: 50 },
+      { nombre: "Codito", precio: 35 },
+      { nombre: "Verduras", precio: 35 }
+    ]
+  },
+
   // 🌭 SNACKS
   "Snacks": {
     items: [
@@ -401,6 +545,15 @@ const menu = {
       { nombre: "Café con Leche", precio: 20 },
       { nombre: "Capuccino Instantáneo", precio: 28 },
       { nombre: "Espumoso Chocolate", precio: 25 }
+    ]
+  },
+
+  // 🥤 BEBIDAS
+  "Bebidas": {
+    items: [
+      { nombre: "Coca Cola", precio: 25 },
+      { nombre: "Sabor", precio: 22 },
+      { nombre: "Boing", precio: 20 }
     ]
   }
 
@@ -499,12 +652,22 @@ if (categoria === "Licuados") {
 
       if (typeof p === "object") {
         btn.innerText = p.nombre + " - $" + p.precio;
-        btn.onclick = () =>
-          agregarProducto(categoria + " de " + p.nombre, p.precio);
+        btn.onclick = () => {
+          if (categoria === "Tortas") {
+            mostrarNotasTorta(categoria + " de " + p.nombre, p.precio);
+          } else {
+            agregarProducto(categoria + " de " + p.nombre, p.precio);
+          }
+        };
       } else {
         btn.innerText = p + " - $" + datos.precio;
-        btn.onclick = () =>
-          agregarProducto(categoria + " de " + p, datos.precio);
+        btn.onclick = () => {
+          if (categoria === "Tortas") {
+            mostrarNotasTorta(categoria + " de " + p, datos.precio);
+          } else {
+            agregarProducto(categoria + " de " + p, datos.precio);
+          }
+        };
       }
 
       cont.appendChild(btn);
@@ -596,12 +759,55 @@ const cont = document.getElementById("proteinas");
     cont.appendChild(btn);
   }
 }
+function mostrarNotasTorta(nombre, precio) {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>" + nombre + " - $" + precio + "</h3><p>Selecciona las opciones:</p>";
+
+  const opciones = ["Sin Mayonesa", "Sin Queso", "Sin Frijoles", "Sin Jitomate", "Sin Aguacate"];
+  const seleccionadas = new Set();
+
+  opciones.forEach(opcion => {
+    const btn = document.createElement("button");
+    btn.innerText = opcion;
+    btn.style.background = "#e5e7eb";
+    btn.style.color = "#111827";
+    btn.onclick = () => {
+      if (seleccionadas.has(opcion)) {
+        seleccionadas.delete(opcion);
+        btn.style.background = "#e5e7eb";
+        btn.style.color = "#111827";
+      } else {
+        seleccionadas.add(opcion);
+        btn.style.background = "#ef4444";
+        btn.style.color = "white";
+      }
+    };
+    cont.appendChild(btn);
+  });
+
+  const btnAgregar = document.createElement("button");
+  btnAgregar.innerText = "Agregar al pedido";
+  btnAgregar.style.background = "#16a34a";
+  btnAgregar.style.color = "white";
+  btnAgregar.style.fontSize = "16px";
+  btnAgregar.style.marginTop = "10px";
+  btnAgregar.style.width = "100%";
+  btnAgregar.onclick = () => {
+    const nota = Array.from(seleccionadas).join(", ");
+    productos.push({ nombre, precio, nota });
+    total += precio;
+    renderizarLista();
+    cont.innerHTML = "";
+  };
+  cont.appendChild(btnAgregar);
+}
+
 function agregarProducto(nombre, precio) {
 
   const nota = prompt("¿Alguna indicación especial?\n(Ej: sin cebolla)");
 
-  productos.push({ 
-    nombre, 
+  productos.push({
+    nombre,
     precio,
     nota: nota ? nota : ""
   });
