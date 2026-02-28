@@ -256,6 +256,11 @@ const notasChilaquiles = ["Sin Crema", "Sin Queso"];
 const notasEnchiladas = ["Sin Lechuga", "Sin Queso", "Sin Crema"];
 const notasSandwiches = ["Sin Mayonesa", "Sin Queso", "Sin Aguacate", "Sin Jitomate", "Sin Lechuga"];
 const notasAntojitos = ["Sin Lechuga", "Sin Queso", { nombre: "Con Queso", precio: 5 }];
+const notasTacosDorados = ["Sin Crema", "Sin Queso", "Sin Lechuga"];
+const notasTacos = ["Sin Papa", "Sin Nopales"];
+const notasTacosArrachera = ["Sin Aguacate"];
+const tacosSinNota = ["Pastor"];
+const tacosConNotas = ["Bistec", "Pechuga", "Chuleta", "Campechanos"];
 
 const menu = {
 
@@ -475,7 +480,8 @@ const menu = {
       { nombre: "Arrachera", precio: 60 },
       { nombre: "Campechanos", precio: 55 },
       { nombre: "Pechuga", precio: 55 },
-      { nombre: "Chuleta", precio: 50 }
+      { nombre: "Chuleta", precio: 50 },
+      { nombre: "Tacos Dorados", precio: 55 }
     ]
   },
 
@@ -608,24 +614,11 @@ if (categoria === "Licuados") {
     btn.innerText = sabor + " - $" + datos.precio;
 
     btn.onclick = () => {
-
-      // Si el sabor ya es Avena, no preguntamos extra
       if (sabor === "Avena") {
-        agregarProducto("Licuado de Avena", datos.precio);
+        agregarProductoSinNota("Licuado de Avena", datos.precio);
         return;
       }
-
-      const conAvena = confirm("¿Agregar avena? +$4");
-
-      let precioFinal = datos.precio;
-      let nombreFinal = "Licuado de " + sabor;
-
-      if (conAvena) {
-        precioFinal += 4;
-        nombreFinal += " con avena";
-      }
-
-      agregarProducto(nombreFinal, precioFinal);
+      mostrarNotas("Licuado de " + sabor, datos.precio, [{ nombre: "Con Avena", precio: 4 }]);
     };
 
     cont.appendChild(btn);
@@ -723,6 +716,16 @@ if (categoria === "Licuados") {
           mostrarNotas(item.nombre, item.precio, notasHamburguesas);
         } else if (categoria === "Snacks" && snacksConNotas.includes(item.nombre)) {
           mostrarNotas(item.nombre, item.precio, notasSnacks);
+        } else if (categoria === "Sincronizadas") {
+          agregarProductoSinNota("Sincronizada de " + item.nombre, item.precio);
+        } else if (categoria === "Tacos" && item.nombre === "Tacos Dorados") {
+          mostrarNotas("Tacos Dorados", item.precio, notasTacosDorados);
+        } else if (categoria === "Tacos" && tacosConNotas.includes(item.nombre)) {
+          mostrarNotas("Taco de " + item.nombre, item.precio, notasTacos);
+        } else if (categoria === "Tacos" && item.nombre === "Arrachera") {
+          mostrarNotas("Taco de Arrachera", item.precio, notasTacosArrachera);
+        } else if (categoria === "Tacos" && tacosSinNota.includes(item.nombre)) {
+          agregarProductoSinNota("Taco de " + item.nombre, item.precio);
         } else {
           agregarProducto(item.nombre, item.precio);
         }
@@ -805,7 +808,7 @@ function mostrarSubcategoria(categoria, sub) {
   });
 }
 function mostrarTamañosAgua(sabor) {
-const cont = document.getElementById("proteinas");
+  const cont = document.getElementById("proteinas");
   cont.innerHTML = "<h3>Elige tamaño:</h3>";
 
   const tamaños = menu["Aguas"].tamaños;
@@ -817,16 +820,12 @@ const cont = document.getElementById("proteinas");
     btn.innerText = tamaño + " - $" + precio;
 
     btn.onclick = () => {
-      const extra = confirm("¿Agregar Chía o Avena +$4?");
-      let precioFinal = precio;
-      let nombreFinal = "Agua de " + sabor + " " + tamaño;
-
-      if (extra) {
-        precioFinal += menu["Aguas"].extra;
-        nombreFinal += " con Chía/Avena";
+      const nombreFinal = "Agua de " + sabor + " " + tamaño;
+      if (sabor === "Limón") {
+        mostrarNotas(nombreFinal, precio, ["Sin Azúcar", "Poca Azúcar", { nombre: "Con Chía", precio: 4 }]);
+      } else {
+        mostrarNotas(nombreFinal, precio, ["Sin Azúcar", "Poca Azúcar"]);
       }
-
-      agregarProducto(nombreFinal, precioFinal);
     };
 
     cont.appendChild(btn);
@@ -975,6 +974,12 @@ function mostrarBebidaPaquete(nombre, precio, notaPrev) {
     };
     cont.appendChild(btn);
   });
+}
+
+function agregarProductoSinNota(nombre, precio) {
+  productos.push({ nombre, precio, nota: "" });
+  total += precio;
+  renderizarLista();
 }
 
 function agregarProducto(nombre, precio) {
