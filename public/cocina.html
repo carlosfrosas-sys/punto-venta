@@ -41,7 +41,8 @@
       border-left: 4px solid #4ade80;
       border-radius: 8px;
       padding: 20px;
-      width: 500px;
+      width: 100%;
+      max-width: 700px;
     }
 
     .cliente {
@@ -62,13 +63,18 @@
     .productos li {
       font-size: 28px;
       font-weight: 600;
-      padding: 8px 0;
-      border-bottom: 1px solid #222;
+      padding: 10px 0;
+      border-bottom: 1px solid #2a2a2a;
       text-transform: uppercase;
     }
 
     .productos li:last-child {
       border-bottom: none;
+    }
+
+    .punto {
+      color: #4ade80;
+      margin-right: 8px;
     }
 
     .nota {
@@ -126,7 +132,7 @@
         <ul class="productos">
           ${pedido.productos.map(p =>
             `<li>
-              ${p.nombre}
+              <span class="punto">&#8226;</span> ${p.nombre}
               ${p.nota ? `<span class="nota">${p.nota}</span>` : ""}
             </li>`
           ).join("")}

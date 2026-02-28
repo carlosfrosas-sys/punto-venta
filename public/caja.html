@@ -802,6 +802,8 @@ if (categoria === "Licuados") {
           agregarProductoSinNota("Taco de " + item.nombre, item.precio);
         } else if (categoria === "Bebidas" || categoria === "Café") {
           agregarProductoSinNota(item.nombre, item.precio);
+        } else if (categoria === "Ensaladas") {
+          agregarProductoSinNota("Ensalada de " + item.nombre, item.precio);
         } else {
           agregarProducto(item.nombre, item.precio);
         }
