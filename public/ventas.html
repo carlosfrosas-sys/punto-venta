@@ -2,8 +2,7 @@
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Entrega</title>
-  <link rel="manifest" href="/manifest.json">
+  <title>Ventas</title>
   <style>
     * {
       margin: 0;
@@ -30,6 +29,38 @@
       padding-bottom: 15px;
     }
 
+    .total-dia {
+      background: #1a1a1a;
+      border-radius: 8px;
+      padding: 20px 25px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+      border-left: 4px solid #fbbf24;
+    }
+
+    .total-dia .label {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: #888;
+    }
+
+    .total-dia .cantidad {
+      font-size: 32px;
+      font-weight: 700;
+      color: #fbbf24;
+    }
+
+    .contador {
+      text-align: center;
+      color: #555;
+      font-size: 13px;
+      letter-spacing: 1px;
+      margin-bottom: 20px;
+    }
+
     #pedidos {
       display: flex;
       flex-wrap: wrap;
@@ -38,49 +69,34 @@
 
     .pedido {
       background: #1a1a1a;
-      border-left: 4px solid #60a5fa;
+      border-left: 4px solid #22c55e;
       border-radius: 8px;
       padding: 20px;
-      width: 500px;
+      width: 100%;
+      max-width: 700px;
     }
 
     .pedido-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 15px;
-      padding-bottom: 12px;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
       border-bottom: 1px solid #333;
     }
 
     .cliente {
-      font-size: 22px;
+      font-size: 20px;
       font-weight: 700;
-      color: #60a5fa;
+      color: #22c55e;
       text-transform: uppercase;
       letter-spacing: 2px;
     }
 
-    .btn-entregado {
-      background: #22c55e;
-      color: #fff;
-      border: none;
-      padding: 14px 28px;
-      font-size: 16px;
+    .pedido-total {
+      font-size: 18px;
       font-weight: 700;
-      border-radius: 8px;
-      cursor: pointer;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      transition: all 0.2s ease;
-    }
-
-    .btn-entregado:hover {
-      background: #16a34a;
-    }
-
-    .btn-entregado:active {
-      transform: scale(0.97);
+      color: #fbbf24;
     }
 
     .productos {
@@ -88,9 +104,9 @@
     }
 
     .productos li {
-      font-size: 24px;
-      font-weight: 600;
-      padding: 8px 0;
+      font-size: 18px;
+      font-weight: 500;
+      padding: 6px 0;
       border-bottom: 1px solid #222;
       text-transform: uppercase;
       display: flex;
@@ -103,39 +119,17 @@
     }
 
     .precio {
-      font-size: 16px;
+      font-size: 14px;
       color: #888;
       font-weight: 400;
     }
 
     .nota {
       display: block;
-      font-size: 17px;
-      color: #fbbf24;
-      font-weight: 700;
-      margin-top: 4px;
-    }
-
-    .total-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 15px;
-      padding-top: 12px;
-      border-top: 1px solid #333;
-    }
-
-    .total-label {
       font-size: 14px;
-      color: #888;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-    }
-
-    .total-amount {
-      font-size: 24px;
-      font-weight: 700;
-      color: #60a5fa;
+      color: #f87171;
+      font-weight: 600;
+      margin-top: 2px;
     }
 
     @media (max-width: 768px) {
@@ -143,69 +137,51 @@
         width: 100%;
       }
 
-      .pedido-header {
-        flex-direction: column;
-        gap: 12px;
-        align-items: flex-start;
-      }
-
-      .btn-entregado {
-        width: 100%;
-        padding: 16px;
-        font-size: 18px;
-        text-align: center;
+      .total-dia .cantidad {
+        font-size: 26px;
       }
 
       .productos li {
-        font-size: 20px;
+        font-size: 16px;
         flex-direction: column;
-      }
-
-      .nota {
-        font-size: 15px;
       }
     }
   </style>
 </head>
 <body>
 
-  <h1>Entrega</h1>
+  <h1>Ventas del Día</h1>
+
+  <div class="total-dia">
+    <span class="label">Total del día</span>
+    <span class="cantidad">$<span id="totalDia">0</span></span>
+  </div>
+
+  <div class="contador" id="contador">0 pedidos entregados</div>
+
   <div id="pedidos"></div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
     const contenedor = document.getElementById("pedidos");
+    let totalDia = 0;
+    let cantidadPedidos = 0;
 
-    // Cargar pedidos existentes al abrir la página
-    fetch("/pedidos")
-      .then(res => res.json())
-      .then(pedidos => {
-        pedidos.filter(p => p.estado === "pendiente").forEach(mostrarPedido);
-      });
-
-    socket.on("nuevoPedido", (pedido) => {
-      mostrarPedido(pedido);
-    });
-
-    socket.on("pedidoEliminado", (id) => {
-      const pedidoDiv = document.getElementById("pedido-" + id);
-      if (pedidoDiv) {
-        pedidoDiv.remove();
-      }
-    });
+    function actualizarTotal() {
+      document.getElementById("totalDia").innerText = totalDia;
+      document.getElementById("contador").innerText = cantidadPedidos + " pedido" + (cantidadPedidos !== 1 ? "s" : "") + " entregado" + (cantidadPedidos !== 1 ? "s" : "");
+    }
 
     function mostrarPedido(pedido) {
       const div = document.createElement("div");
-      div.id = "pedido-" + pedido.id;
       div.className = "pedido";
 
       div.innerHTML = `
         <div class="pedido-header">
           <div class="cliente">${pedido.cliente}</div>
-          <button class="btn-entregado" onclick="entregar(${pedido.id})">Entregado</button>
+          <div class="pedido-total">$${pedido.total}</div>
         </div>
-
         <ul class="productos">
           ${pedido.productos.map(p =>
             `<li>
@@ -217,19 +193,32 @@
             </li>`
           ).join("")}
         </ul>
-
-        <div class="total-row">
-          <span class="total-label">Total</span>
-          <span class="total-amount">$${pedido.total}</span>
-        </div>
       `;
 
-      contenedor.appendChild(div);
+      contenedor.prepend(div);
+      totalDia += pedido.total;
+      cantidadPedidos++;
+      actualizarTotal();
     }
 
-    window.entregar = function(id) {
-      fetch("/pedido/entregado/" + id, { method: "POST" });
-    };
+    // Cargar pedidos entregados al abrir la página
+    fetch("/pedidos")
+      .then(res => res.json())
+      .then(pedidos => {
+        pedidos.filter(p => p.estado === "Entregado").forEach(mostrarPedido);
+      });
+
+    // Actualizar en tiempo real cuando se entrega un pedido
+    socket.on("pedidoEliminado", (id) => {
+      fetch("/pedidos")
+        .then(res => res.json())
+        .then(pedidos => {
+          const pedido = pedidos.find(p => p.id === id && p.estado === "Entregado");
+          if (pedido) {
+            mostrarPedido(pedido);
+          }
+        });
+    });
   </script>
 
 </body>

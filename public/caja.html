@@ -333,6 +333,7 @@ const notasAntojitos = ["Sin Lechuga", "Sin Queso", { nombre: "Con Queso", preci
 const notasTacosDorados = ["Sin Crema", "Sin Queso", "Sin Lechuga"];
 const notasTacos = ["Sin Papa", "Sin Nopales"];
 const notasTacosArrachera = ["Sin Aguacate"];
+const notasBagels = ["Sin Mayonesa", "Sin Queso"];
 const tacosSinNota = ["Pastor"];
 const tacosConNotas = ["Bistec", "Pechuga", "Chuleta", "Campechanos"];
 
@@ -751,6 +752,8 @@ if (categoria === "Licuados") {
             mostrarNotas(categoria + " de " + p.nombre, p.precio, notasChilaquiles);
           } else if (categoria === "Sandwiches") {
             mostrarNotas(categoria + " de " + p.nombre, p.precio, notasSandwiches);
+          } else if (categoria === "Bagels") {
+            mostrarNotas("Bagel de " + p.nombre, p.precio, notasBagels);
           } else {
             agregarProducto(categoria + " de " + p.nombre, p.precio);
           }

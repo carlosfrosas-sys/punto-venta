@@ -22,6 +22,11 @@ app.get("/cocina", (req, res) => {
 app.get("/entrega", (req, res) => {
   res.sendFile(__dirname + "/public/entrega.html");
 });
+
+app.get("/ventas", (req, res) => {
+  res.sendFile(__dirname + "/public/ventas.html");
+});
+
 let pedidos = [];
 let idCounter = 1;
 

@@ -111,6 +111,13 @@
     const socket = io();
     const contenedor = document.getElementById("pedidos");
 
+    // Cargar pedidos existentes al abrir la página
+    fetch("/pedidos")
+      .then(res => res.json())
+      .then(pedidos => {
+        pedidos.filter(p => p.estado === "pendiente").forEach(mostrarPedido);
+      });
+
     socket.on("nuevoPedido", (pedido) => {
       mostrarPedido(pedido);
     });
