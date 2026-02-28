@@ -248,35 +248,51 @@
 let productos = [];
 let total = 0;
 
+const notasTortas = ["Sin Mayonesa", "Sin Queso", "Sin Frijoles", "Sin Jitomate", "Sin Aguacate"];
+const notasHamburguesas = ["Sin Mayonesa", "Sin Catsup", "Sin Mostaza", "Sin Lechuga", "Sin Jitomate", "Sin Queso"];
+const notasSnacks = ["Sin Mayonesa", "Sin Catsup", "Sin Mostaza"];
+const snacksConNotas = ["Hot Dog (1 pza)", "Hot Dog con Papas (2 pzas)", "Banderilla", "Banderilla con Papas"];
+const notasChilaquiles = ["Sin Crema", "Sin Queso"];
+const notasEnchiladas = ["Sin Lechuga", "Sin Queso", "Sin Crema"];
+const notasSandwiches = ["Sin Mayonesa", "Sin Queso", "Sin Aguacate", "Sin Jitomate", "Sin Lechuga"];
+const notasAntojitos = ["Sin Lechuga", "Sin Queso", { nombre: "Con Queso", precio: 5 }];
+
 const menu = {
 
   // 🥣 PAQUETES
-  "Paquete 1": {
-    precio: 58,
-    proteinas: ["Jamón","Chorizo","Champiñones","Salchicha","Nopales","A la Mexicana"]
-  },
-
-  "Paquete 2": {
-    items: [
-      { nombre: "Chilaquiles con Huevo", precio: 58 }
-    ]
-  },
-
-  "Paquete 3": {
-    precio: 68,
-    proteinas: ["Bistec","Pollo","Pastor"]
-  },
-
-  "Paquete 4": {
-    items: [
-      { nombre: "Hot Cakes con Huevo", precio: 50 }
-    ]
-  },
-
-  "Paquete 5": {
-    items: [
-      { nombre: "Bisquet con Mermelada y Café con Leche", precio: 38 }
-    ]
+  "Paquetes": {
+    subcategorias: {
+      "Paquete 1 - $58": {
+        precio: 58,
+        proteinas: ["Jamón","Chorizo","Champiñones","Salchicha","Nopales","A la Mexicana"],
+        bebida: true
+      },
+      "Paquete 2 - Chilaquiles con Huevo - $58": {
+        directo: true,
+        nombre: "Paquete 2 - Chilaquiles con Huevo",
+        precio: 58,
+        notas: ["Sin Queso", "Sin Crema"],
+        bebida: true
+      },
+      "Paquete 3 - $68": {
+        precio: 68,
+        proteinas: ["Bistec","Pollo","Pastor"],
+        notas: ["Sin Queso", "Sin Crema"],
+        bebida: true
+      },
+      "Paquete 4 - Hot Cakes con Huevo - $50": {
+        directo: true,
+        nombre: "Paquete 4 - Hot Cakes con Huevo",
+        precio: 50,
+        bebida: true
+      },
+      "Paquete 5 - Bisquet con Mermelada y Café - $38": {
+        directo: true,
+        nombre: "Paquete 5 - Bisquet con Mermelada y Café con Leche",
+        precio: 38,
+        bebida: true
+      }
+    }
   },
 
   // 🌮 CHILAQUILES
@@ -637,8 +653,13 @@ if (categoria === "Licuados") {
 
     const btnSencillo = document.createElement("button");
     btnSencillo.innerText = "Sencillos - $" + datos.sencillo;
-    btnSencillo.onclick = () =>
-      agregarProducto(categoria + " Sencillos", datos.sencillo);
+    btnSencillo.onclick = () => {
+      if (categoria === "Chilaquiles") {
+        mostrarNotas(categoria + " Sencillos", datos.sencillo, notasChilaquiles);
+      } else {
+        agregarProducto(categoria + " Sencillos", datos.sencillo);
+      }
+    };
 
     cont.appendChild(btnSencillo);
   }
@@ -654,7 +675,15 @@ if (categoria === "Licuados") {
         btn.innerText = p.nombre + " - $" + p.precio;
         btn.onclick = () => {
           if (categoria === "Tortas") {
-            mostrarNotasTorta(categoria + " de " + p.nombre, p.precio);
+            mostrarNotas(categoria + " de " + p.nombre, p.precio, notasTortas);
+          } else if (categoria === "Molletes") {
+            mostrarPicoDegallo(categoria + " de " + p.nombre, p.precio);
+          } else if (categoria === "Mollequiles") {
+            mostrarPregunta(categoria + " de " + p.nombre, p.precio, "¿Con crema?", "Con crema", "Sin crema");
+          } else if (categoria === "Chilaquiles") {
+            mostrarNotas(categoria + " de " + p.nombre, p.precio, notasChilaquiles);
+          } else if (categoria === "Sandwiches") {
+            mostrarNotas(categoria + " de " + p.nombre, p.precio, notasSandwiches);
           } else {
             agregarProducto(categoria + " de " + p.nombre, p.precio);
           }
@@ -663,7 +692,15 @@ if (categoria === "Licuados") {
         btn.innerText = p + " - $" + datos.precio;
         btn.onclick = () => {
           if (categoria === "Tortas") {
-            mostrarNotasTorta(categoria + " de " + p, datos.precio);
+            mostrarNotas(categoria + " de " + p, datos.precio, notasTortas);
+          } else if (categoria === "Molletes") {
+            mostrarPicoDegallo(categoria + " de " + p, datos.precio);
+          } else if (categoria === "Mollequiles") {
+            mostrarPregunta(categoria + " de " + p, datos.precio, "¿Con crema?", "Con crema", "Sin crema");
+          } else if (categoria === "Chilaquiles") {
+            mostrarNotas(categoria + " de " + p, datos.precio, notasChilaquiles);
+          } else if (categoria === "Enchiladas") {
+            mostrarNotas(categoria + " " + p, datos.precio, notasEnchiladas);
           } else {
             agregarProducto(categoria + " de " + p, datos.precio);
           }
@@ -681,7 +718,15 @@ if (categoria === "Licuados") {
 
       const btn = document.createElement("button");
       btn.innerText = item.nombre + " - $" + item.precio;
-      btn.onclick = () => agregarProducto(item.nombre, item.precio);
+      btn.onclick = () => {
+        if (categoria === "Hamburguesas") {
+          mostrarNotas(item.nombre, item.precio, notasHamburguesas);
+        } else if (categoria === "Snacks" && snacksConNotas.includes(item.nombre)) {
+          mostrarNotas(item.nombre, item.precio, notasSnacks);
+        } else {
+          agregarProducto(item.nombre, item.precio);
+        }
+      };
 
       cont.appendChild(btn);
     });
@@ -703,9 +748,23 @@ if (categoria === "Licuados") {
 function mostrarSubcategoria(categoria, sub) {
 
   const cont = document.getElementById("proteinas");
-  cont.innerHTML = "<h3>Elige proteína:</h3>";
-
   const datos = menu[categoria].subcategorias[sub];
+
+  // Si es un paquete directo (sin proteínas)
+  if (datos.directo) {
+    if (datos.notas && datos.bebida) {
+      mostrarNotas(datos.nombre, datos.precio, datos.notas, mostrarBebidaPaquete);
+    } else if (datos.notas) {
+      mostrarNotas(datos.nombre, datos.precio, datos.notas);
+    } else if (datos.bebida) {
+      mostrarBebidaPaquete(datos.nombre, datos.precio, "");
+    } else {
+      agregarProducto(datos.nombre, datos.precio);
+    }
+    return;
+  }
+
+  cont.innerHTML = "<h3>Elige proteína:</h3>";
 
   datos.proteinas.forEach(p => {
 
@@ -715,14 +774,28 @@ function mostrarSubcategoria(categoria, sub) {
 
       btn.innerText = p.nombre + " - $" + p.precio;
       btn.onclick = () => {
-        agregarProducto(sub + " de " + p.nombre, p.precio);
+        if (categoria === "Antojitos") {
+          mostrarNotas(sub + " de " + p.nombre, p.precio, notasAntojitos);
+        } else {
+          agregarProducto(sub + " de " + p.nombre, p.precio);
+        }
       };
 
     } else {
 
       btn.innerText = p + " - $" + datos.precio;
       btn.onclick = () => {
-        agregarProducto(sub + " de " + p, datos.precio);
+        if (categoria === "Antojitos") {
+          mostrarNotas(sub + " de " + p, datos.precio, notasAntojitos);
+        } else if (datos.notas && datos.bebida) {
+          mostrarNotas(sub + " de " + p, datos.precio, datos.notas, mostrarBebidaPaquete);
+        } else if (datos.notas) {
+          mostrarNotas(sub + " de " + p, datos.precio, datos.notas);
+        } else if (datos.bebida) {
+          mostrarBebidaPaquete(sub + " de " + p, datos.precio, "");
+        } else {
+          agregarProducto(sub + " de " + p, datos.precio);
+        }
       };
 
     }
@@ -759,26 +832,99 @@ const cont = document.getElementById("proteinas");
     cont.appendChild(btn);
   }
 }
-function mostrarNotasTorta(nombre, precio) {
+function mostrarPregunta(nombre, precio, pregunta, textoSi, textoNo) {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>" + nombre + " - $" + precio + "</h3><p>" + pregunta + "</p>";
+
+  const btnSi = document.createElement("button");
+  btnSi.innerText = textoSi;
+  btnSi.style.background = "#16a34a";
+  btnSi.style.color = "white";
+  btnSi.style.fontSize = "16px";
+  btnSi.style.minWidth = "100px";
+  btnSi.onclick = () => {
+    productos.push({ nombre, precio, nota: textoSi });
+    total += precio;
+    renderizarLista();
+    cont.innerHTML = "";
+  };
+
+  const btnNo = document.createElement("button");
+  btnNo.innerText = textoNo;
+  btnNo.style.background = "#ef4444";
+  btnNo.style.color = "white";
+  btnNo.style.fontSize = "16px";
+  btnNo.style.minWidth = "100px";
+  btnNo.onclick = () => {
+    productos.push({ nombre, precio, nota: textoNo });
+    total += precio;
+    renderizarLista();
+    cont.innerHTML = "";
+  };
+
+  cont.appendChild(btnSi);
+  cont.appendChild(btnNo);
+}
+
+function mostrarPicoDegallo(nombre, precio) {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>" + nombre + " - $" + precio + "</h3><p>¿Con pico de gallo?</p>";
+
+  const btnSi = document.createElement("button");
+  btnSi.innerText = "Sí";
+  btnSi.style.background = "#16a34a";
+  btnSi.style.color = "white";
+  btnSi.style.fontSize = "16px";
+  btnSi.style.minWidth = "100px";
+  btnSi.onclick = () => {
+    productos.push({ nombre, precio, nota: "Con pico de gallo" });
+    total += precio;
+    renderizarLista();
+    cont.innerHTML = "";
+  };
+
+  const btnNo = document.createElement("button");
+  btnNo.innerText = "No";
+  btnNo.style.background = "#ef4444";
+  btnNo.style.color = "white";
+  btnNo.style.fontSize = "16px";
+  btnNo.style.minWidth = "100px";
+  btnNo.onclick = () => {
+    productos.push({ nombre, precio, nota: "Sin pico de gallo" });
+    total += precio;
+    renderizarLista();
+    cont.innerHTML = "";
+  };
+
+  cont.appendChild(btnSi);
+  cont.appendChild(btnNo);
+}
+
+function mostrarNotas(nombre, precio, opciones, siguiente) {
   const cont = document.getElementById("proteinas");
   cont.innerHTML = "<h3>" + nombre + " - $" + precio + "</h3><p>Selecciona las opciones:</p>";
 
-  const opciones = ["Sin Mayonesa", "Sin Queso", "Sin Frijoles", "Sin Jitomate", "Sin Aguacate"];
   const seleccionadas = new Set();
 
+  let precioExtra = 0;
+
   opciones.forEach(opcion => {
+    const esObjeto = typeof opcion === "object";
+    const texto = esObjeto ? opcion.nombre + " +$" + opcion.precio : opcion;
     const btn = document.createElement("button");
-    btn.innerText = opcion;
+    btn.innerText = texto;
     btn.style.background = "#e5e7eb";
     btn.style.color = "#111827";
     btn.onclick = () => {
-      if (seleccionadas.has(opcion)) {
-        seleccionadas.delete(opcion);
+      if (seleccionadas.has(texto)) {
+        seleccionadas.delete(texto);
+        if (esObjeto) precioExtra -= opcion.precio;
         btn.style.background = "#e5e7eb";
         btn.style.color = "#111827";
       } else {
-        seleccionadas.add(opcion);
-        btn.style.background = "#ef4444";
+        seleccionadas.add(texto);
+        if (esObjeto) precioExtra += opcion.precio;
+        btn.style.background = esObjeto ? "#16a34a" : "#ef4444";
         btn.style.color = "white";
       }
     };
@@ -794,12 +940,41 @@ function mostrarNotasTorta(nombre, precio) {
   btnAgregar.style.width = "100%";
   btnAgregar.onclick = () => {
     const nota = Array.from(seleccionadas).join(", ");
-    productos.push({ nombre, precio, nota });
-    total += precio;
-    renderizarLista();
-    cont.innerHTML = "";
+    const precioFinal = precio + precioExtra;
+    if (siguiente) {
+      siguiente(nombre, precioFinal, nota);
+    } else {
+      productos.push({ nombre, precio: precioFinal, nota });
+      total += precioFinal;
+      renderizarLista();
+      cont.innerHTML = "";
+    }
   };
   cont.appendChild(btnAgregar);
+}
+
+function mostrarBebidaPaquete(nombre, precio, notaPrev) {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>" + nombre + " - $" + precio + "</h3><p>Elige tu bebida:</p>";
+
+  const bebidas = ["Té", "Café", "Jugo"];
+
+  bebidas.forEach(bebida => {
+    const btn = document.createElement("button");
+    btn.innerText = bebida;
+    btn.style.background = "#2563eb";
+    btn.style.color = "white";
+    btn.style.fontSize = "16px";
+    btn.style.minWidth = "100px";
+    btn.onclick = () => {
+      const nota = notaPrev ? notaPrev + ", " + bebida : bebida;
+      productos.push({ nombre, precio, nota });
+      total += precio;
+      renderizarLista();
+      cont.innerHTML = "";
+    };
+    cont.appendChild(btn);
+  });
 }
 
 function agregarProducto(nombre, precio) {
