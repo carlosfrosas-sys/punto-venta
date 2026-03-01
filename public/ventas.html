@@ -29,6 +29,38 @@
       padding-bottom: 15px;
     }
 
+    .fechas {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 20px;
+      justify-content: center;
+    }
+
+    .fechas button {
+      padding: 8px 16px;
+      font-size: 14px;
+      border-radius: 20px;
+      border: 1.5px solid #333;
+      background: #1a1a1a;
+      color: #888;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 500;
+    }
+
+    .fechas button:hover {
+      border-color: #fbbf24;
+      color: #fbbf24;
+    }
+
+    .fechas button.activo {
+      background: #fbbf24;
+      color: #111;
+      border-color: #fbbf24;
+      font-weight: 700;
+    }
+
     .total-dia {
       background: #1a1a1a;
       border-radius: 8px;
@@ -138,6 +170,13 @@
       margin-top: 2px;
     }
 
+    .sin-datos {
+      text-align: center;
+      color: #555;
+      font-size: 16px;
+      margin-top: 40px;
+    }
+
     @media (max-width: 768px) {
       .pedido {
         width: 100%;
@@ -156,7 +195,9 @@
 </head>
 <body>
 
-  <h1>Ventas del Día</h1>
+  <h1>Ventas</h1>
+
+  <div class="fechas" id="fechas"></div>
 
   <div class="total-dia">
     <span class="label">Total del día</span>
@@ -171,12 +212,12 @@
   <script>
     const socket = io();
     const contenedor = document.getElementById("pedidos");
-    let totalDia = 0;
-    let cantidadPedidos = 0;
+    const contFechas = document.getElementById("fechas");
+    let fechaActual = "";
 
-    function actualizarTotal() {
-      document.getElementById("totalDia").innerText = totalDia;
-      document.getElementById("contador").innerText = cantidadPedidos + " pedido" + (cantidadPedidos !== 1 ? "s" : "") + " entregado" + (cantidadPedidos !== 1 ? "s" : "");
+    function actualizarTotal(total, cantidad) {
+      document.getElementById("totalDia").innerText = total;
+      document.getElementById("contador").innerText = cantidad + " pedido" + (cantidad !== 1 ? "s" : "") + " entregado" + (cantidad !== 1 ? "s" : "");
     }
 
     function mostrarPedido(pedido) {
@@ -205,28 +246,66 @@
       `;
 
       contenedor.prepend(div);
-      totalDia += pedido.total;
-      cantidadPedidos++;
-      actualizarTotal();
     }
 
-    // Cargar pedidos entregados al abrir la página
-    fetch("/pedidos")
-      .then(res => res.json())
-      .then(pedidos => {
-        pedidos.filter(p => p.estado === "Entregado").forEach(mostrarPedido);
+    function cargarFecha(fecha) {
+      fechaActual = fecha;
+      contenedor.innerHTML = "";
+
+      // Marcar botón activo
+      document.querySelectorAll(".fechas button").forEach(btn => {
+        btn.classList.toggle("activo", btn.dataset.fecha === fecha);
       });
 
-    // Actualizar en tiempo real cuando se entrega un pedido
-    socket.on("pedidoEliminado", (id) => {
-      fetch("/pedidos")
+      fetch("/ventas/fecha/" + encodeURIComponent(fecha))
         .then(res => res.json())
-        .then(pedidos => {
-          const pedido = pedidos.find(p => p.id === id && p.estado === "Entregado");
-          if (pedido) {
-            mostrarPedido(pedido);
+        .then(data => {
+          if (data.pedidos.length === 0) {
+            contenedor.innerHTML = '<div class="sin-datos">No hay ventas en esta fecha</div>';
+          } else {
+            data.pedidos.forEach(mostrarPedido);
           }
+          actualizarTotal(data.total, data.pedidos.length);
         });
+    }
+
+    function cargarFechas() {
+      fetch("/ventas/fechas")
+        .then(res => res.json())
+        .then(fechas => {
+          contFechas.innerHTML = "";
+
+          if (fechas.length === 0) {
+            // Si no hay fechas con fecha guardada, cargar todos los entregados
+            fetch("/pedidos")
+              .then(res => res.json())
+              .then(pedidos => {
+                const entregados = pedidos.filter(p => p.estado === "Entregado");
+                entregados.forEach(mostrarPedido);
+                const total = entregados.reduce((acc, p) => acc + p.total, 0);
+                actualizarTotal(total, entregados.length);
+              });
+            return;
+          }
+
+          fechas.forEach(fecha => {
+            const btn = document.createElement("button");
+            btn.innerText = fecha;
+            btn.dataset.fecha = fecha;
+            btn.onclick = () => cargarFecha(fecha);
+            contFechas.appendChild(btn);
+          });
+
+          // Cargar la fecha más reciente por defecto
+          cargarFecha(fechas[fechas.length - 1]);
+        });
+    }
+
+    cargarFechas();
+
+    // Actualizar en tiempo real cuando se entrega un pedido
+    socket.on("pedidoEliminado", () => {
+      cargarFechas();
     });
   </script>
 

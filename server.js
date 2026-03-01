@@ -1,6 +1,8 @@
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
+const fs = require("fs");
+const path = require("path");
 
 const app = express();
 const server = http.createServer(app);
@@ -8,6 +10,23 @@ const io = new Server(server);
 
 app.use(express.json());
 app.use(express.static(__dirname + "/public"));
+
+// Persistencia en archivo JSON
+const dataFile = path.join(__dirname, "pedidos.json");
+
+function cargarPedidos() {
+  try {
+    if (fs.existsSync(dataFile)) {
+      const data = fs.readFileSync(dataFile, "utf8");
+      return JSON.parse(data);
+    }
+  } catch (e) {}
+  return [];
+}
+
+function guardarPedidos() {
+  fs.writeFileSync(dataFile, JSON.stringify(pedidos, null, 2));
+}
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/public/caja.html");
 });
@@ -27,8 +46,12 @@ app.get("/ventas", (req, res) => {
   res.sendFile(__dirname + "/public/ventas.html");
 });
 
-let pedidos = [];
-let idCounter = 1;
+let pedidos = cargarPedidos();
+let idCounter = pedidos.length > 0 ? Math.max(...pedidos.map(p => p.id)) + 1 : 1;
+
+function fechaHoy() {
+  return new Date().toLocaleDateString("es-MX", { timeZone: "America/Mexico_City", year: "numeric", month: "2-digit", day: "2-digit" });
+}
 
 app.post("/pedido", (req, res) => {
   const pedido = {
@@ -36,12 +59,14 @@ app.post("/pedido", (req, res) => {
     cliente: req.body.cliente,
     productos: req.body.productos,
     total: req.body.total,
-    estado: "pendiente"
+    estado: "pendiente",
+    fecha: fechaHoy()
   };
 
   pedidos.push(pedido);
+  guardarPedidos();
 
-  io.emit("nuevoPedido", pedido);   // 👈 ESTA LÍNEA ES CLAVE
+  io.emit("nuevoPedido", pedido);
 
   res.json(pedido);
 });
@@ -61,6 +86,17 @@ app.put("/pedido/:id", (req, res) => {
   }
 });
 
+app.get("/ventas/fechas", (req, res) => {
+  const fechas = [...new Set(pedidos.filter(p => p.estado === "Entregado" && p.fecha).map(p => p.fecha))];
+  res.json(fechas);
+});
+
+app.get("/ventas/fecha/:fecha", (req, res) => {
+  const entregados = pedidos.filter(p => p.estado === "Entregado" && p.fecha === req.params.fecha);
+  const total = entregados.reduce((acc, p) => acc + p.total, 0);
+  res.json({ pedidos: entregados, total });
+});
+
 app.get("/total", (req, res) => {
   const total = pedidos
     .filter(p => p.estado === "Entregado")
@@ -76,7 +112,8 @@ app.post("/pedido/entregado/:id", (req, res) => {
   if (pedido) {
     pedido.estado = "Entregado";
     pedido.horaEntrega = new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" });
-    io.emit("pedidoEliminado", id);  // 👈 ESTA LÍNEA FALTABA
+    guardarPedidos();
+    io.emit("pedidoEliminado", id);
   }
 
   res.sendStatus(200);
