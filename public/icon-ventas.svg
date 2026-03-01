@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="32" fill="#1a1a1a"/>
+  <!-- Ejes de gráfica -->
+  <line x1="45" y1="40" x2="45" y2="145" stroke="#555" stroke-width="3" stroke-linecap="round"/>
+  <line x1="45" y1="145" x2="155" y2="145" stroke="#555" stroke-width="3" stroke-linecap="round"/>
+  <!-- Barras -->
+  <rect x="55" y="110" width="18" height="35" rx="3" fill="#fbbf24" opacity="0.6"/>
+  <rect x="80" y="85" width="18" height="60" rx="3" fill="#fbbf24" opacity="0.75"/>
+  <rect x="105" y="65" width="18" height="80" rx="3" fill="#fbbf24" opacity="0.9"/>
+  <rect x="130" y="50" width="18" height="95" rx="3" fill="#fbbf24"/>
+  <!-- Signo $ -->
+  <text x="96" y="175" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="600" fill="#fff" opacity="0.5">VENTAS</text>
+</svg>

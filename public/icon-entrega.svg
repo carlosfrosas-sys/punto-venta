@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="32" fill="#1a1a1a"/>
+  <!-- Bolsa de entrega -->
+  <rect x="56" y="65" width="80" height="80" rx="6" fill="#3b82f6" opacity="0.85"/>
+  <!-- Asas de la bolsa -->
+  <path d="M76 65 Q76 45 96 45 Q116 45 116 65" stroke="#fff" stroke-width="4" fill="none" opacity="0.7" stroke-linecap="round"/>
+  <!-- Check de entregado -->
+  <path d="M76 105 L90 119 L118 88" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Etiqueta -->
+  <text x="96" y="172" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="600" fill="#fff" opacity="0.5">ENTREGA</text>
+</svg>
