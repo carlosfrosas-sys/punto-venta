@@ -810,11 +810,7 @@ if (categoria === "Licuados") {
     btn.innerText = sabor + " - $" + datos.precio;
 
     btn.onclick = () => {
-      if (sabor === "Avena") {
-        agregarProductoSinNota("Licuado de Avena", datos.precio);
-        return;
-      }
-      mostrarNotas("Licuado de " + sabor, datos.precio, [{ nombre: "Con Avena", precio: 4 }]);
+      mostrarExtrasLicuado(sabor, datos.precio);
     };
 
     cont.appendChild(btn);
@@ -1040,17 +1036,157 @@ function mostrarTamañosAgua(sabor) {
     btn.innerText = tamaño + " - $" + precio;
 
     btn.onclick = () => {
-      const nombreFinal = "Agua de " + sabor + " " + tamaño;
-      if (sabor === "Limón") {
-        mostrarNotas(nombreFinal, precio, ["Sin Azúcar", "Poca Azúcar", { nombre: "Con Chía", precio: 4 }]);
-      } else {
-        mostrarNotas(nombreFinal, precio, ["Sin Azúcar", "Poca Azúcar"]);
-      }
+      mostrarExtrasAgua(sabor, tamaño, precio);
     };
 
     cont.appendChild(btn);
   }
 }
+
+function mostrarExtrasAgua(sabor, tamaño, precioBase) {
+  const cont = document.getElementById("proteinas");
+  const extras = [];
+  const extraPrecio = 5;
+  let precioTotal = precioBase;
+
+  cont.innerHTML = `<h3>Agua de ${sabor} ${tamaño} - $${precioBase}</h3><p>Sabor extra (+$${extraPrecio} c/u):</p>`;
+
+  const infoP = document.createElement("p");
+  infoP.style.fontWeight = "700";
+  infoP.style.color = "#6b5b4f";
+  infoP.style.fontSize = "16px";
+  infoP.innerText = "Total: $" + precioTotal;
+  cont.appendChild(infoP);
+
+  menu["Aguas"].sabores.forEach(s => {
+    if (s === sabor) return;
+    const btn = document.createElement("button");
+    btn.innerText = s + " +$" + extraPrecio;
+    btn.style.background = "#e5e7eb";
+    btn.style.color = "#111827";
+    btn.onclick = () => {
+      const idx = extras.indexOf(s);
+      if (idx >= 0) {
+        extras.splice(idx, 1);
+        precioTotal -= extraPrecio;
+        btn.style.background = "#e5e7eb";
+        btn.style.color = "#111827";
+      } else {
+        extras.push(s);
+        precioTotal += extraPrecio;
+        btn.style.background = "#16a34a";
+        btn.style.color = "white";
+      }
+      infoP.innerText = "Total: $" + precioTotal;
+    };
+    cont.appendChild(btn);
+  });
+
+  const btnSig = document.createElement("button");
+  btnSig.innerText = "Siguiente";
+  btnSig.style.background = "#2563eb";
+  btnSig.style.color = "white";
+  btnSig.style.fontSize = "16px";
+  btnSig.style.marginTop = "10px";
+  btnSig.style.width = "100%";
+  btnSig.onclick = () => {
+    let nombre = "Agua de " + sabor;
+    if (extras.length > 0) nombre += " con " + extras.join(", ");
+    nombre += " " + tamaño;
+    const notas = ["Sin Azúcar", "Poca Azúcar"];
+    if (sabor === "Limón" || extras.includes("Limón")) notas.push({ nombre: "Con Chía", precio: 4 });
+    mostrarNotas(nombre, precioTotal, notas);
+  };
+  cont.appendChild(btnSig);
+
+  // Botón saltar si no quiere extras
+  const btnSaltar = document.createElement("button");
+  btnSaltar.innerText = "Sin extra";
+  btnSaltar.style.background = "transparent";
+  btnSaltar.style.color = "#a09080";
+  btnSaltar.style.fontSize = "14px";
+  btnSaltar.style.marginTop = "5px";
+  btnSaltar.style.width = "100%";
+  btnSaltar.style.border = "1.5px solid #d9d0c7";
+  btnSaltar.onclick = () => {
+    const nombre = "Agua de " + sabor + " " + tamaño;
+    const notas = ["Sin Azúcar", "Poca Azúcar"];
+    if (sabor === "Limón") notas.push({ nombre: "Con Chía", precio: 4 });
+    mostrarNotas(nombre, precioBase, notas);
+  };
+  cont.appendChild(btnSaltar);
+}
+
+function mostrarExtrasLicuado(sabor, precioBase) {
+  const cont = document.getElementById("proteinas");
+  const extras = [];
+  const extraPrecio = 5;
+  let precioTotal = precioBase;
+
+  cont.innerHTML = `<h3>Licuado de ${sabor} - $${precioBase}</h3><p>Sabor extra (+$${extraPrecio} c/u):</p>`;
+
+  const infoP = document.createElement("p");
+  infoP.style.fontWeight = "700";
+  infoP.style.color = "#6b5b4f";
+  infoP.style.fontSize = "16px";
+  infoP.innerText = "Total: $" + precioTotal;
+  cont.appendChild(infoP);
+
+  menu["Licuados"].sabores.forEach(s => {
+    if (s === sabor) return;
+    const btn = document.createElement("button");
+    btn.innerText = s + " +$" + extraPrecio;
+    btn.style.background = "#e5e7eb";
+    btn.style.color = "#111827";
+    btn.onclick = () => {
+      const idx = extras.indexOf(s);
+      if (idx >= 0) {
+        extras.splice(idx, 1);
+        precioTotal -= extraPrecio;
+        btn.style.background = "#e5e7eb";
+        btn.style.color = "#111827";
+      } else {
+        extras.push(s);
+        precioTotal += extraPrecio;
+        btn.style.background = "#16a34a";
+        btn.style.color = "white";
+      }
+      infoP.innerText = "Total: $" + precioTotal;
+    };
+    cont.appendChild(btn);
+  });
+
+  const btnSig = document.createElement("button");
+  btnSig.innerText = "Siguiente";
+  btnSig.style.background = "#2563eb";
+  btnSig.style.color = "white";
+  btnSig.style.fontSize = "16px";
+  btnSig.style.marginTop = "10px";
+  btnSig.style.width = "100%";
+  btnSig.onclick = () => {
+    let nombre = "Licuado de " + sabor;
+    if (extras.length > 0) nombre += " con " + extras.join(", ");
+    const notas = [{ nombre: "Con Avena", precio: 4 }];
+    mostrarNotas(nombre, precioTotal, notas);
+  };
+  cont.appendChild(btnSig);
+
+  const btnSaltar = document.createElement("button");
+  btnSaltar.innerText = "Sin extra";
+  btnSaltar.style.background = "transparent";
+  btnSaltar.style.color = "#a09080";
+  btnSaltar.style.fontSize = "14px";
+  btnSaltar.style.marginTop = "5px";
+  btnSaltar.style.width = "100%";
+  btnSaltar.style.border = "1.5px solid #d9d0c7";
+  btnSaltar.onclick = () => {
+    const nombre = "Licuado de " + sabor;
+    const notas = [{ nombre: "Con Avena", precio: 4 }];
+    mostrarNotas(nombre, precioBase, notas);
+  };
+  cont.appendChild(btnSaltar);
+}
+
 function mostrarPregunta(nombre, precio, pregunta, textoSi, textoNo) {
   const cont = document.getElementById("proteinas");
   cont.innerHTML = "<h3>" + nombre + " - $" + precio + "</h3><p>" + pregunta + "</p>";
