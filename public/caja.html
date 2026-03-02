@@ -836,7 +836,7 @@ const menu = {
       { nombre: "Café de Olla Chico", precio: 15 },
       { nombre: "Café de Olla Grande", precio: 18 },
       { nombre: "Café con Leche", precio: 20 },
-      { nombre: "Capuccino Instantáneo", precio: 28 },
+      { nombre: "Capuccino Instantáneo", precio: 28, capuccino: true },
       { nombre: "Espumoso Chocolate", precio: 25 }
     ]
   },
@@ -1048,6 +1048,8 @@ if (categoria === "Licuados") {
           agregarProductoSinNota("Tacos de " + item.nombre, item.precio);
         } else if (categoria === "Bebidas" && item.agua) {
           mostrarTamañosAguaNatural();
+        } else if (categoria === "Café" && item.capuccino) {
+          mostrarPregunta("Capuccino Instantáneo", item.precio, "¿Qué sabor?", "Moka", "Vainilla");
         } else if (categoria === "Bebidas" || categoria === "Café") {
           agregarProductoSinNota(item.nombre, item.precio);
         } else if (categoria === "Ensaladas" && item.nombre === "Codito") {
