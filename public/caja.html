@@ -846,10 +846,10 @@ const menu = {
     items: [
       { nombre: "Coca Cola", precio: 25 },
       { nombre: "Coca Lata", precio: 25 },
-      { nombre: "Sabor", precio: 22 },
-      { nombre: "Fuze Tea", precio: 22 },
+      { nombre: "Refresco de Sabor", precio: 22 },
+      { nombre: "Fuze Tea", precio: 22, sabores: ["Té Negro", "Té Verde", "Durazno"] },
       { nombre: "Jumex", precio: 23 },
-      { nombre: "Boing", precio: 20 },
+      { nombre: "Boing", precio: 20, sabores: ["Mango", "Guayaba", "Manzana", "Fresa", "Uva", "Naranja"] },
       { nombre: "Panzoncita", precio: 18 },
       { nombre: "Peñafielita", precio: 18 },
       { nombre: "Lechita", precio: 22 },
@@ -1048,6 +1048,8 @@ if (categoria === "Licuados") {
           agregarProductoSinNota("Tacos de " + item.nombre, item.precio);
         } else if (categoria === "Bebidas" && item.agua) {
           mostrarTamañosAguaNatural();
+        } else if (categoria === "Bebidas" && item.sabores) {
+          mostrarSaboresBebida(item.nombre, item.precio, item.sabores);
         } else if (categoria === "Café" && item.capuccino) {
           mostrarPregunta("Capuccino Instantáneo", item.precio, "¿Qué sabor?", "Moka", "Vainilla");
         } else if (categoria === "Bebidas" || categoria === "Café") {
@@ -1742,6 +1744,21 @@ function mostrarOpcionesCodito(precio) {
     btn.onclick = () => {
       const nombre = opcion === "Solo" ? "Ensalada de Codito" : "Ensalada de Codito con " + opcion;
       agregarProductoSinNota(nombre, precio);
+      cont.innerHTML = "";
+    };
+    cont.appendChild(btn);
+  });
+}
+
+function mostrarSaboresBebida(nombre, precio, sabores) {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>" + nombre + " - $" + precio + "</h3><p>Elige sabor:</p>";
+
+  sabores.forEach(sabor => {
+    const btn = document.createElement("button");
+    btn.innerText = sabor;
+    btn.onclick = () => {
+      agregarProductoSinNota(nombre + " " + sabor, precio);
       cont.innerHTML = "";
     };
     cont.appendChild(btn);
