@@ -22,16 +22,57 @@
       padding: 20px;
     }
 
+    .header-entrega {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      margin-bottom: 25px;
+      border-bottom: 1px solid #333;
+      padding-bottom: 15px;
+    }
+
     h1 {
-      text-align: center;
       font-size: 24px;
       font-weight: 300;
       letter-spacing: 6px;
       text-transform: uppercase;
       color: #888;
-      margin-bottom: 25px;
-      border-bottom: 1px solid #333;
-      padding-bottom: 15px;
+    }
+
+    .btn-entregados {
+      position: absolute;
+      right: 0;
+      background: #1a1a1a;
+      color: #888;
+      border: 1.5px solid #333;
+      padding: 8px 14px;
+      font-size: 13px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .btn-entregados:hover {
+      border-color: #22c55e;
+      color: #22c55e;
+    }
+
+    .btn-entregados.activo {
+      background: #22c55e;
+      color: #111;
+      border-color: #22c55e;
+      font-weight: 700;
+    }
+
+    .pedido-entregado {
+      opacity: 0.6;
+      border-left-color: #22c55e !important;
+    }
+
+    .pedido-entregado .cliente {
+      color: #22c55e;
     }
 
     #pedidos {
@@ -171,7 +212,11 @@
 </head>
 <body>
 
-  <h1>Entrega</h1>
+  <div class="header-entrega">
+    <h1>Entrega</h1>
+    <button class="btn-entregados" onclick="toggleEntregados()">Entregados</button>
+  </div>
+  <div id="entregados-lista" style="display:none;"></div>
   <div id="pedidos"></div>
 
   <script src="/socket.io/socket.io.js"></script>
@@ -226,6 +271,59 @@
     window.entregar = function(id) {
       fetch("/pedido/entregado/" + id, { method: "POST" });
     };
+
+    let mostrandoEntregados = false;
+
+    function toggleEntregados() {
+      const lista = document.getElementById("entregados-lista");
+      const btn = document.querySelector(".btn-entregados");
+      mostrandoEntregados = !mostrandoEntregados;
+
+      if (mostrandoEntregados) {
+        btn.classList.add("activo");
+        lista.style.display = "flex";
+        lista.style.flexDirection = "column";
+        lista.style.gap = "10px";
+        lista.style.marginBottom = "20px";
+        lista.innerHTML = "";
+
+        fetch("/pedidos")
+          .then(res => res.json())
+          .then(pedidos => {
+            const entregados = pedidos.filter(p => p.estado === "Entregado");
+            if (entregados.length === 0) {
+              lista.innerHTML = '<div style="text-align:center;color:#555;font-size:14px;">No hay pedidos entregados</div>';
+              return;
+            }
+            entregados.reverse().forEach(p => {
+              const div = document.createElement("div");
+              div.className = "pedido pedido-entregado";
+              div.innerHTML = `
+                <div class="pedido-contenido">
+                  <div class="pedido-top">
+                    <span class="cliente">${p.cliente}</span>
+                    <span class="total-amount">$${p.total}</span>
+                  </div>
+                  ${p.nota ? `<div class="nota-general">${p.nota}</div>` : ""}
+                  <ul class="productos">
+                    ${p.productos.map(pr =>
+                      `<li>
+                        ${pr.cantidad && pr.cantidad > 1 ? `<span class="qty">${pr.cantidad}</span> ` : ""}${pr.nombre}<span class="precio">$${pr.precio}</span>${pr.nota ? `<span class="nota">${pr.nota}</span>` : ""}
+                      </li>`
+                    ).join("")}
+                  </ul>
+                  ${p.horaEntrega ? `<div style="color:#555;font-size:12px;margin-top:6px;">Entregado: ${p.horaEntrega}</div>` : ""}
+                </div>
+              `;
+              lista.appendChild(div);
+            });
+          });
+      } else {
+        btn.classList.remove("activo");
+        lista.style.display = "none";
+        lista.innerHTML = "";
+      }
+    }
   </script>
 
   <script>
