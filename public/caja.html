@@ -793,7 +793,7 @@ const menu = {
     items: [
       { nombre: "Pechuga Asada", precio: 58 },
       { nombre: "Pollo", precio: 58 },
-      { nombre: "Pechuga", precio: 58 },
+      { nombre: "Pechuga Empanizada", precio: 58 },
       { nombre: "Atún", precio: 58 },
       { nombre: "Jamón con Queso", precio: 50 },
       { nombre: "Codito", precio: 35 },
@@ -1053,7 +1053,7 @@ if (categoria === "Licuados") {
         } else if (categoria === "Bebidas" || categoria === "Café") {
           agregarProductoSinNota(item.nombre, item.precio);
         } else if (categoria === "Ensaladas" && item.nombre === "Codito") {
-          mostrarPregunta("Ensalada de Codito", item.precio, "¿Con qué proteína?", "Pechuga", "Milanesa");
+          mostrarOpcionesCodito(item.precio);
         } else if (categoria === "Ensaladas") {
           agregarProductoSinNota("Ensalada de " + item.nombre, item.precio);
         } else {
@@ -1727,6 +1727,22 @@ function mostrarBebidaPaquete(nombre, precio, notaPrev) {
       renderizarLista();
       cont.innerHTML = "";
       scrollACategorias();
+    };
+    cont.appendChild(btn);
+  });
+}
+
+function mostrarOpcionesCodito(precio) {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>Ensalada de Codito - $" + precio + "</h3><p>¿Con proteína?</p>";
+
+  ["Pechuga", "Milanesa", "Solo"].forEach(opcion => {
+    const btn = document.createElement("button");
+    btn.innerText = opcion;
+    btn.onclick = () => {
+      const nombre = opcion === "Solo" ? "Ensalada de Codito" : "Ensalada de Codito con " + opcion;
+      agregarProductoSinNota(nombre, precio);
+      cont.innerHTML = "";
     };
     cont.appendChild(btn);
   });
