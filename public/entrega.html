@@ -359,7 +359,12 @@
             const ayer = fechaAyerMX();
             todosEntregados = pedidos.filter(p =>
               p.estado === "Entregado" && (p.fecha === hoy || p.fecha === ayer)
-            ).reverse();
+            ).sort((a, b) => {
+              if (a.fecha !== b.fecha) return a.fecha === hoy ? -1 : 1;
+              const ha = a.horaEntrega || "00:00";
+              const hb = b.horaEntrega || "00:00";
+              return hb.localeCompare(ha);
+            });
             filtroHoraActual = "todos";
             renderEntregados();
           });
