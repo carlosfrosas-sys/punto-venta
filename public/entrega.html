@@ -66,13 +66,51 @@
       font-weight: 700;
     }
 
+    .filtros-hora {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+      margin-bottom: 15px;
+    }
+
+    .filtros-hora button {
+      padding: 6px 12px;
+      font-size: 12px;
+      border-radius: 16px;
+      border: 1.5px solid #333;
+      background: #1a1a1a;
+      color: #888;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .filtros-hora button:hover {
+      border-color: #22c55e;
+      color: #22c55e;
+    }
+
+    .filtros-hora button.activo {
+      background: #22c55e;
+      color: #111;
+      border-color: #22c55e;
+      font-weight: 700;
+    }
+
     .pedido-entregado {
-      opacity: 0.6;
+      opacity: 0.7;
       border-left-color: #22c55e !important;
     }
 
     .pedido-entregado .cliente {
       color: #22c55e;
+    }
+
+    .entrega-info {
+      color: #555;
+      font-size: 12px;
+      margin-top: 6px;
     }
 
     #pedidos {
@@ -273,6 +311,36 @@
     };
 
     let mostrandoEntregados = false;
+    let todosEntregados = [];
+    let filtroHoraActual = "todos";
+
+    const lapsos = [
+      { label: "Todos", key: "todos" },
+      { label: "7-9am", desde: 7, hasta: 9 },
+      { label: "9-11am", desde: 9, hasta: 11 },
+      { label: "11-1pm", desde: 11, hasta: 13 },
+      { label: "1-3pm", desde: 13, hasta: 15 },
+      { label: "3-5pm", desde: 15, hasta: 17 },
+      { label: "5-7pm", desde: 17, hasta: 19 },
+      { label: "7-9pm", desde: 19, hasta: 21 }
+    ];
+
+    function fechaHoyMX() {
+      return new Date().toLocaleDateString("es-MX", { timeZone: "America/Mexico_City", year: "numeric", month: "2-digit", day: "2-digit" });
+    }
+
+    function fechaAyerMX() {
+      const d = new Date();
+      d.setDate(d.getDate() - 1);
+      return d.toLocaleDateString("es-MX", { timeZone: "America/Mexico_City", year: "numeric", month: "2-digit", day: "2-digit" });
+    }
+
+    function parsearHora(horaStr) {
+      if (!horaStr) return -1;
+      const partes = horaStr.match(/(\d+):(\d+)/);
+      if (!partes) return -1;
+      return parseInt(partes[1]);
+    }
 
     function toggleEntregados() {
       const lista = document.getElementById("entregados-lista");
@@ -281,48 +349,94 @@
 
       if (mostrandoEntregados) {
         btn.classList.add("activo");
-        lista.style.display = "flex";
-        lista.style.flexDirection = "column";
-        lista.style.gap = "10px";
+        lista.style.display = "block";
         lista.style.marginBottom = "20px";
-        lista.innerHTML = "";
 
         fetch("/pedidos")
           .then(res => res.json())
           .then(pedidos => {
-            const entregados = pedidos.filter(p => p.estado === "Entregado");
-            if (entregados.length === 0) {
-              lista.innerHTML = '<div style="text-align:center;color:#555;font-size:14px;">No hay pedidos entregados</div>';
-              return;
-            }
-            entregados.reverse().forEach(p => {
-              const div = document.createElement("div");
-              div.className = "pedido pedido-entregado";
-              div.innerHTML = `
-                <div class="pedido-contenido">
-                  <div class="pedido-top">
-                    <span class="cliente">${p.cliente}</span>
-                    <span class="total-amount">$${p.total}</span>
-                  </div>
-                  ${p.nota ? `<div class="nota-general">${p.nota}</div>` : ""}
-                  <ul class="productos">
-                    ${p.productos.map(pr =>
-                      `<li>
-                        ${pr.cantidad && pr.cantidad > 1 ? `<span class="qty">${pr.cantidad}</span> ` : ""}${pr.nombre}<span class="precio">$${pr.precio}</span>${pr.nota ? `<span class="nota">${pr.nota}</span>` : ""}
-                      </li>`
-                    ).join("")}
-                  </ul>
-                  ${p.horaEntrega ? `<div style="color:#555;font-size:12px;margin-top:6px;">Entregado: ${p.horaEntrega}</div>` : ""}
-                </div>
-              `;
-              lista.appendChild(div);
-            });
+            const hoy = fechaHoyMX();
+            const ayer = fechaAyerMX();
+            todosEntregados = pedidos.filter(p =>
+              p.estado === "Entregado" && (p.fecha === hoy || p.fecha === ayer)
+            ).reverse();
+            filtroHoraActual = "todos";
+            renderEntregados();
           });
       } else {
         btn.classList.remove("activo");
         lista.style.display = "none";
         lista.innerHTML = "";
       }
+    }
+
+    function renderEntregados() {
+      const lista = document.getElementById("entregados-lista");
+      lista.innerHTML = "";
+
+      // Filtros de hora
+      const filtrosDiv = document.createElement("div");
+      filtrosDiv.className = "filtros-hora";
+      lapsos.forEach(l => {
+        const btn = document.createElement("button");
+        btn.innerText = l.label;
+        const key = l.key || l.label;
+        if (key === filtroHoraActual) btn.classList.add("activo");
+        btn.onclick = () => {
+          filtroHoraActual = key;
+          renderEntregados();
+        };
+        filtrosDiv.appendChild(btn);
+      });
+      lista.appendChild(filtrosDiv);
+
+      // Filtrar
+      let filtrados = todosEntregados;
+      if (filtroHoraActual !== "todos") {
+        const lapso = lapsos.find(l => l.label === filtroHoraActual);
+        if (lapso) {
+          filtrados = todosEntregados.filter(p => {
+            const h = parsearHora(p.horaEntrega);
+            return h >= lapso.desde && h < lapso.hasta;
+          });
+        }
+      }
+
+      if (filtrados.length === 0) {
+        const msg = document.createElement("div");
+        msg.style.cssText = "text-align:center;color:#555;font-size:14px;margin-top:10px;";
+        msg.innerText = "No hay pedidos en este horario";
+        lista.appendChild(msg);
+        return;
+      }
+
+      const contPedidos = document.createElement("div");
+      contPedidos.style.cssText = "display:flex;flex-direction:column;gap:10px;";
+
+      filtrados.forEach(p => {
+        const div = document.createElement("div");
+        div.className = "pedido pedido-entregado";
+        div.innerHTML = `
+          <div class="pedido-contenido">
+            <div class="pedido-top">
+              <span class="cliente">${p.cliente}</span>
+              <span class="total-amount">$${p.total}</span>
+            </div>
+            ${p.nota ? `<div class="nota-general">${p.nota}</div>` : ""}
+            <ul class="productos">
+              ${p.productos.map(pr =>
+                `<li>
+                  ${pr.cantidad && pr.cantidad > 1 ? `<span class="qty">${pr.cantidad}</span> ` : ""}${pr.nombre}<span class="precio">$${pr.precio}</span>${pr.nota ? `<span class="nota">${pr.nota}</span>` : ""}
+                </li>`
+              ).join("")}
+            </ul>
+            <div class="entrega-info">${p.fecha || ""} ${p.horaEntrega || ""}</div>
+          </div>
+        `;
+        contPedidos.appendChild(div);
+      });
+
+      lista.appendChild(contPedidos);
     }
   </script>
 
