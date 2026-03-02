@@ -195,7 +195,7 @@
           <ul class="productos">
             ${pedido.productos.map(p =>
               `<li>
-                ${p.nombre}<span class="precio">$${p.precio}</span>${p.nota ? `<span class="nota">${p.nota}</span>` : ""}
+                ${p.cantidad && p.cantidad > 1 ? p.cantidad + " " : ""}${p.nombre}<span class="precio">$${p.precio}</span>${p.nota ? `<span class="nota">${p.nota}</span>` : ""}
               </li>`
             ).join("")}
           </ul>
