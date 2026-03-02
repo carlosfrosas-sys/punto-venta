@@ -1158,6 +1158,28 @@ function mostrarIngredientesTorta(primerIngrediente, precioBase) {
     cont.appendChild(btn);
   });
 
+  // Piña como extra
+  const btnPina = document.createElement("button");
+  btnPina.innerText = "Piña +$" + extraPrecio;
+  btnPina.style.background = "#e5e7eb";
+  btnPina.style.color = "#111827";
+  btnPina.onclick = () => {
+    const idx = extras.indexOf("Piña");
+    if (idx >= 0) {
+      extras.splice(idx, 1);
+      precioTotal -= extraPrecio;
+      btnPina.style.background = "#e5e7eb";
+      btnPina.style.color = "#111827";
+    } else {
+      extras.push("Piña");
+      precioTotal += extraPrecio;
+      btnPina.style.background = "#16a34a";
+      btnPina.style.color = "white";
+    }
+    infoP.innerText = "Total: $" + precioTotal;
+  };
+  cont.appendChild(btnPina);
+
   const btnSig = document.createElement("button");
   btnSig.innerText = "Siguiente";
   btnSig.style.background = "#2563eb";
