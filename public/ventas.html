@@ -34,6 +34,38 @@
       padding-bottom: 15px;
     }
 
+    /* Tabs de periodo */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .tabs button {
+      padding: 10px 24px;
+      font-size: 15px;
+      border-radius: 20px;
+      border: 1.5px solid #333;
+      background: #1a1a1a;
+      color: #888;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 500;
+    }
+
+    .tabs button:hover {
+      border-color: #fbbf24;
+      color: #fbbf24;
+    }
+
+    .tabs button.activo {
+      background: #fbbf24;
+      color: #111;
+      border-color: #fbbf24;
+      font-weight: 700;
+    }
+
     .fechas {
       display: flex;
       flex-wrap: wrap;
@@ -73,7 +105,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 25px;
+      margin-bottom: 15px;
       border-left: 4px solid #fbbf24;
     }
 
@@ -90,12 +122,71 @@
       color: #fbbf24;
     }
 
+    /* Botones exportar */
+    .acciones {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .acciones button {
+      padding: 10px 20px;
+      font-size: 14px;
+      border-radius: 10px;
+      border: 1.5px solid #333;
+      background: #1a1a1a;
+      color: #888;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 500;
+    }
+
+    .acciones button:hover {
+      border-color: #22c55e;
+      color: #22c55e;
+    }
+
     .contador {
       text-align: center;
       color: #555;
       font-size: 13px;
       letter-spacing: 1px;
       margin-bottom: 20px;
+    }
+
+    /* Desglose por día */
+    .desglose {
+      margin-bottom: 20px;
+    }
+
+    .desglose-dia {
+      background: #1a1a1a;
+      border-radius: 8px;
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      border-left: 3px solid #555;
+    }
+
+    .desglose-dia .dia-fecha {
+      font-size: 14px;
+      color: #aaa;
+      font-weight: 500;
+    }
+
+    .desglose-dia .dia-total {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fbbf24;
+    }
+
+    .desglose-dia .dia-count {
+      font-size: 12px;
+      color: #666;
+      margin-left: 10px;
     }
 
     #pedidos {
@@ -140,6 +231,17 @@
       font-size: 13px;
       color: #666;
       margin-top: 2px;
+    }
+
+    .nota-general {
+      font-size: 14px;
+      color: #fbbf24;
+      font-weight: 600;
+      margin-bottom: 10px;
+      padding: 6px 10px;
+      background: #2a2200;
+      border-radius: 6px;
+      border-left: 3px solid #fbbf24;
     }
 
     .productos {
@@ -195,6 +297,11 @@
         font-size: 16px;
         flex-direction: column;
       }
+
+      .acciones {
+        flex-direction: column;
+        align-items: stretch;
+      }
     }
   </style>
 </head>
@@ -202,14 +309,29 @@
 
   <h1>Ventas</h1>
 
+  <!-- Tabs periodo -->
+  <div class="tabs" id="tabs">
+    <button class="activo" onclick="cambiarTab('dia')">Dia</button>
+    <button onclick="cambiarTab('semana')">Semana</button>
+    <button onclick="cambiarTab('mes')">Mes</button>
+  </div>
+
+  <!-- Fechas (solo visible en tab dia) -->
   <div class="fechas" id="fechas"></div>
 
   <div class="total-dia">
-    <span class="label">Total del día</span>
+    <span class="label" id="totalLabel">Total del dia</span>
     <span class="cantidad">$<span id="totalDia">0</span></span>
   </div>
 
+  <div class="acciones">
+    <button onclick="exportarExcel()">Exportar Excel</button>
+    <button onclick="enviarCorreo()">Enviar por correo</button>
+  </div>
+
   <div class="contador" id="contador">0 pedidos entregados</div>
+
+  <div id="desglose" class="desglose"></div>
 
   <div id="pedidos"></div>
 
@@ -218,7 +340,34 @@
     const socket = io();
     const contenedor = document.getElementById("pedidos");
     const contFechas = document.getElementById("fechas");
+    const contDesglose = document.getElementById("desglose");
     let fechaActual = "";
+    let tabActual = "dia";
+
+    function cambiarTab(tab) {
+      tabActual = tab;
+
+      // Marcar tab activo
+      document.querySelectorAll(".tabs button").forEach((btn, i) => {
+        const tabs = ["dia", "semana", "mes"];
+        btn.classList.toggle("activo", tabs[i] === tab);
+      });
+
+      if (tab === "dia") {
+        document.getElementById("totalLabel").innerText = "Total del dia";
+        contFechas.style.display = "flex";
+        contDesglose.innerHTML = "";
+        cargarFechas();
+      } else if (tab === "semana") {
+        document.getElementById("totalLabel").innerText = "Total semanal";
+        contFechas.style.display = "none";
+        cargarSemanal();
+      } else if (tab === "mes") {
+        document.getElementById("totalLabel").innerText = "Total mensual";
+        contFechas.style.display = "none";
+        cargarMensual();
+      }
+    }
 
     function actualizarTotal(total, cantidad) {
       document.getElementById("totalDia").innerText = total;
@@ -231,7 +380,10 @@
 
       div.innerHTML = `
         <div class="pedido-header">
-          <div class="cliente">${pedido.cliente}</div>
+          <div>
+            <div class="cliente">${pedido.cliente}</div>
+            ${pedido.nota ? `<div class="nota-general">${pedido.nota}</div>` : ""}
+          </div>
           <div style="text-align:right;">
             <div class="pedido-total">$${pedido.total}</div>
             ${pedido.horaEntrega ? `<div class="hora">${pedido.horaEntrega}</div>` : ""}
@@ -253,11 +405,35 @@
       contenedor.prepend(div);
     }
 
+    function mostrarDesglose(porDia) {
+      contDesglose.innerHTML = "";
+      const fechas = Object.keys(porDia).sort((a, b) => {
+        const [da, ma, ya] = a.split("/");
+        const [db, mb, yb] = b.split("/");
+        return new Date(yb, mb-1, db) - new Date(ya, ma-1, da);
+      });
+
+      fechas.forEach(fecha => {
+        const info = porDia[fecha];
+        const div = document.createElement("div");
+        div.className = "desglose-dia";
+        div.innerHTML = `
+          <span class="dia-fecha">${fecha}</span>
+          <span>
+            <span class="dia-total">$${info.total}</span>
+            <span class="dia-count">${info.pedidos.length} pedido${info.pedidos.length !== 1 ? "s" : ""}</span>
+          </span>
+        `;
+        contDesglose.appendChild(div);
+      });
+    }
+
     function cargarFecha(fecha) {
       fechaActual = fecha;
       contenedor.innerHTML = "";
+      contDesglose.innerHTML = "";
 
-      // Marcar botón activo
+      // Marcar boton activo
       document.querySelectorAll(".fechas button").forEach(btn => {
         btn.classList.toggle("activo", btn.dataset.fecha === fecha);
       });
@@ -281,7 +457,6 @@
           contFechas.innerHTML = "";
 
           if (fechas.length === 0) {
-            // Si no hay fechas con fecha guardada, cargar todos los entregados
             fetch("/pedidos")
               .then(res => res.json())
               .then(pedidos => {
@@ -301,16 +476,81 @@
             contFechas.appendChild(btn);
           });
 
-          // Cargar la fecha más reciente por defecto
+          // Cargar la fecha mas reciente por defecto
           cargarFecha(fechas[fechas.length - 1]);
         });
     }
 
+    function cargarSemanal() {
+      contenedor.innerHTML = "";
+      contDesglose.innerHTML = "";
+
+      fetch("/ventas/semanal")
+        .then(res => res.json())
+        .then(data => {
+          actualizarTotal(data.total, data.pedidos.length);
+          if (data.porDia) mostrarDesglose(data.porDia);
+          if (data.pedidos.length === 0) {
+            contenedor.innerHTML = '<div class="sin-datos">No hay ventas esta semana</div>';
+          } else {
+            data.pedidos.forEach(mostrarPedido);
+          }
+        });
+    }
+
+    function cargarMensual() {
+      contenedor.innerHTML = "";
+      contDesglose.innerHTML = "";
+
+      fetch("/ventas/mensual")
+        .then(res => res.json())
+        .then(data => {
+          actualizarTotal(data.total, data.pedidos.length);
+          if (data.porDia) mostrarDesglose(data.porDia);
+          if (data.pedidos.length === 0) {
+            contenedor.innerHTML = '<div class="sin-datos">No hay ventas este mes</div>';
+          } else {
+            data.pedidos.forEach(mostrarPedido);
+          }
+        });
+    }
+
+    function exportarExcel() {
+      let url;
+      if (tabActual === "dia") {
+        if (!fechaActual) return;
+        url = "/ventas/exportar/dia?fecha=" + encodeURIComponent(fechaActual);
+      } else if (tabActual === "semana") {
+        url = "/ventas/exportar/semana";
+      } else {
+        url = "/ventas/exportar/mes";
+      }
+      window.open(url, "_blank");
+    }
+
+    function enviarCorreo() {
+      let url;
+      if (tabActual === "dia") {
+        if (!fechaActual) return;
+        url = window.location.origin + "/ventas/exportar/dia?fecha=" + encodeURIComponent(fechaActual);
+      } else if (tabActual === "semana") {
+        url = window.location.origin + "/ventas/exportar/semana";
+      } else {
+        url = window.location.origin + "/ventas/exportar/mes";
+      }
+
+      const totalTxt = document.getElementById("totalDia").innerText;
+      const asunto = encodeURIComponent("Ventas - " + tabActual + " - $" + totalTxt);
+      const cuerpo = encodeURIComponent("Descarga el reporte de ventas aqui:\n" + url);
+      window.open("mailto:?subject=" + asunto + "&body=" + cuerpo);
+    }
+
+    // Iniciar con tab dia
     cargarFechas();
 
-    // Actualizar en tiempo real cuando se entrega un pedido
+    // Actualizar en tiempo real
     socket.on("pedidoEliminado", () => {
-      cargarFechas();
+      cambiarTab(tabActual);
     });
   </script>
 

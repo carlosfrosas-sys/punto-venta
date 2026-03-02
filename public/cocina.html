@@ -89,6 +89,17 @@
       padding-left: 22px;
     }
 
+    .nota-general {
+      font-size: 16px;
+      color: #fbbf24;
+      font-weight: 600;
+      margin-bottom: 12px;
+      padding: 6px 10px;
+      background: #2a2200;
+      border-radius: 6px;
+      border-left: 3px solid #fbbf24;
+    }
+
     @media (max-width: 768px) {
       .pedido {
         width: 100%;
@@ -139,6 +150,7 @@
 
       div.innerHTML = `
         <div class="cliente">${pedido.cliente}</div>
+        ${pedido.nota ? `<div class="nota-general">${pedido.nota}</div>` : ""}
         <ul class="productos">
           ${pedido.productos.map(p =>
             `<li>

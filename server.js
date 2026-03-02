@@ -91,6 +91,7 @@ app.post("/pedido", async (req, res) => {
     cliente: req.body.cliente,
     productos: req.body.productos,
     total: req.body.total,
+    nota: req.body.nota || "",
     estado: "pendiente",
     fecha: fechaHoy()
   };
@@ -150,6 +151,122 @@ app.post("/pedido/entregado/:id", async (req, res) => {
   }
 
   res.sendStatus(200);
+});
+
+// Helpers de fechas para filtros
+function parseFechaMX(fechaStr) {
+  // Formato dd/mm/yyyy
+  const [d, m, y] = fechaStr.split("/");
+  return new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+}
+
+function fechaMXAhora() {
+  return new Date(new Date().toLocaleString("en-US", { timeZone: "America/Mexico_City" }));
+}
+
+app.get("/ventas/semanal", (req, res) => {
+  const ahora = fechaMXAhora();
+  const hace7dias = new Date(ahora);
+  hace7dias.setDate(hace7dias.getDate() - 6);
+  hace7dias.setHours(0, 0, 0, 0);
+
+  const entregados = pedidos.filter(p => {
+    if (p.estado !== "Entregado" || !p.fecha) return false;
+    const fechaPedido = parseFechaMX(p.fecha);
+    return fechaPedido >= hace7dias;
+  });
+
+  const total = entregados.reduce((acc, p) => acc + p.total, 0);
+
+  // Agrupar por fecha
+  const porDia = {};
+  entregados.forEach(p => {
+    if (!porDia[p.fecha]) porDia[p.fecha] = { pedidos: [], total: 0 };
+    porDia[p.fecha].pedidos.push(p);
+    porDia[p.fecha].total += p.total;
+  });
+
+  res.json({ pedidos: entregados, total, porDia });
+});
+
+app.get("/ventas/mensual", (req, res) => {
+  const ahora = fechaMXAhora();
+  const mesActual = (ahora.getMonth() + 1).toString().padStart(2, "0");
+  const anioActual = ahora.getFullYear().toString();
+
+  const entregados = pedidos.filter(p => {
+    if (p.estado !== "Entregado" || !p.fecha) return false;
+    // fecha formato dd/mm/yyyy
+    const partes = p.fecha.split("/");
+    return partes[1] === mesActual && partes[2] === anioActual;
+  });
+
+  const total = entregados.reduce((acc, p) => acc + p.total, 0);
+
+  // Agrupar por fecha
+  const porDia = {};
+  entregados.forEach(p => {
+    if (!porDia[p.fecha]) porDia[p.fecha] = { pedidos: [], total: 0 };
+    porDia[p.fecha].pedidos.push(p);
+    porDia[p.fecha].total += p.total;
+  });
+
+  res.json({ pedidos: entregados, total, porDia });
+});
+
+app.get("/ventas/exportar/:tipo", (req, res) => {
+  const tipo = req.params.tipo;
+  let entregados = [];
+
+  if (tipo === "dia") {
+    const fecha = req.query.fecha;
+    if (!fecha) return res.status(400).send("Falta parámetro fecha");
+    entregados = pedidos.filter(p => p.estado === "Entregado" && p.fecha === fecha);
+  } else if (tipo === "semana") {
+    const ahora = fechaMXAhora();
+    const hace7dias = new Date(ahora);
+    hace7dias.setDate(hace7dias.getDate() - 6);
+    hace7dias.setHours(0, 0, 0, 0);
+    entregados = pedidos.filter(p => {
+      if (p.estado !== "Entregado" || !p.fecha) return false;
+      return parseFechaMX(p.fecha) >= hace7dias;
+    });
+  } else if (tipo === "mes") {
+    const ahora = fechaMXAhora();
+    const mesActual = (ahora.getMonth() + 1).toString().padStart(2, "0");
+    const anioActual = ahora.getFullYear().toString();
+    entregados = pedidos.filter(p => {
+      if (p.estado !== "Entregado" || !p.fecha) return false;
+      const partes = p.fecha.split("/");
+      return partes[1] === mesActual && partes[2] === anioActual;
+    });
+  } else {
+    return res.status(400).send("Tipo inválido");
+  }
+
+  // Generar CSV
+  const lineas = ["Fecha,Hora,Cliente,Productos,Nota,Total"];
+  entregados.forEach(p => {
+    const prods = p.productos.map(pr => {
+      let txt = pr.nombre;
+      if (pr.cantidad > 1) txt = pr.cantidad + "x " + txt;
+      if (pr.nota) txt += " (" + pr.nota + ")";
+      return txt;
+    }).join(" | ");
+    const nota = (p.nota || "").replace(/"/g, '""');
+    const cliente = (p.cliente || "").replace(/"/g, '""');
+    const prodsEsc = prods.replace(/"/g, '""');
+    lineas.push(`"${p.fecha}","${p.horaEntrega || ""}","${cliente}","${prodsEsc}","${nota}","$${p.total}"`);
+  });
+
+  const totalGeneral = entregados.reduce((acc, p) => acc + p.total, 0);
+  lineas.push(`"","","","","TOTAL","$${totalGeneral}"`);
+
+  const csv = "\uFEFF" + lineas.join("\n");
+
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="ventas-${tipo}.csv"`);
+  res.send(csv);
 });
 
 const PORT = process.env.PORT || 3000;

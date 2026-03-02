@@ -109,6 +109,17 @@
       margin-left: 4px;
     }
 
+    .nota-general {
+      font-size: 14px;
+      color: #fbbf24;
+      font-weight: 600;
+      margin-top: 4px;
+      padding: 4px 8px;
+      background: #2a2200;
+      border-radius: 4px;
+      border-left: 3px solid #fbbf24;
+    }
+
     .btn-entregado {
       background: #22c55e;
       color: #fff;
@@ -197,6 +208,7 @@
             <span class="cliente">${pedido.cliente}</span>
             <span class="total-amount">$${pedido.total}</span>
           </div>
+          ${pedido.nota ? `<div class="nota-general">${pedido.nota}</div>` : ""}
           <ul class="productos">
             ${pedido.productos.map(p =>
               `<li>

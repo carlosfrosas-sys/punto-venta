@@ -258,6 +258,44 @@
       color: #6b5b4f;
     }
 
+    /* Nota general */
+    .nota-group {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .nota-group input,
+    .nota-group textarea {
+      flex: 1;
+    }
+
+    textarea {
+      width: 100%;
+      max-width: 400px;
+      padding: 12px 16px;
+      font-size: 15px;
+      border-radius: 12px;
+      border: 1.5px solid #d9d0c7;
+      background: #fff;
+      color: #3d3d3d;
+      transition: all 0.2s ease;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 44px;
+      max-height: 100px;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: #a09080;
+      box-shadow: 0 0 0 3px rgba(160,144,128,0.15);
+    }
+
+    textarea::placeholder {
+      color: #c4bab0;
+    }
+
     /* Botón enviar */
     .btn-enviar {
       width: 100%;
@@ -274,6 +312,26 @@
 
     .btn-enviar:hover {
       background: #5a4a3f;
+    }
+
+    /* Botón cancelar */
+    .btn-cancelar {
+      width: 100%;
+      background: transparent;
+      color: #e05252;
+      font-size: 16px;
+      font-weight: 600;
+      padding: 14px;
+      border-radius: 12px;
+      margin-top: 10px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      border: 2px solid #e05252;
+    }
+
+    .btn-cancelar:hover {
+      background: #e05252;
+      color: #fff;
     }
 
     /* 📱 RESPONSIVE */
@@ -310,8 +368,12 @@
         text-align: center;
       }
 
-      input {
+      input, textarea {
         max-width: 100%;
+      }
+
+      .nota-group {
+        flex-direction: column;
       }
 
       #lista li {
@@ -346,7 +408,10 @@
 
   <div class="input-group">
     <div class="section-title">Cliente</div>
-    <input type="text" id="cliente" placeholder="Nombre del cliente" onkeydown="if(event.key==='Enter')enviarPedido()">
+    <div class="nota-group">
+      <input type="text" id="cliente" placeholder="Nombre del cliente" onkeydown="if(event.key==='Enter')enviarPedido()">
+      <textarea id="notaPedido" placeholder="Nota del pedido (opcional)" rows="1"></textarea>
+    </div>
   </div>
 
   <div class="pedido-section">
@@ -359,6 +424,7 @@
   </div>
 
   <button class="btn-enviar" onclick="enviarPedido()">Enviar Pedido</button>
+  <button class="btn-cancelar" onclick="cancelarPedido()">Cancelar Pedido</button>
 </div>
 
 <script>
@@ -1227,13 +1293,16 @@ function enviarPedido() {
     return;
   }
 
+  const nota = document.getElementById("notaPedido").value.trim();
+
   fetch("/pedido", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       cliente: nombreCliente,
       productos,
-      total
+      total,
+      nota
     })
   });
 
@@ -1245,7 +1314,19 @@ function enviarPedido() {
   document.getElementById("total").innerText = "0";
   document.getElementById("proteinas").innerHTML = "";
   document.getElementById("cliente").value = "";
+  document.getElementById("notaPedido").value = "";
 
+}
+
+function cancelarPedido() {
+  productos = [];
+  total = 0;
+
+  document.getElementById("lista").innerHTML = "";
+  document.getElementById("total").innerText = "0";
+  document.getElementById("proteinas").innerHTML = "";
+  document.getElementById("cliente").value = "";
+  document.getElementById("notaPedido").value = "";
 }
 cargarCategorias();
 
