@@ -908,6 +908,12 @@ if (categoria === "Licuados") {
     });
   }
 
+  // 🧀 SINCRONIZADAS - multi-selección max 3
+  if (categoria === "Sincronizadas" && datos.items) {
+    mostrarMultiItems("Sincronizada de ", datos.items, 3);
+    return;
+  }
+
   // 📦 ITEMS
   if (datos.items) {
 
@@ -1297,6 +1303,52 @@ function mostrarPicoDegallo(nombre, precio) {
 
   cont.appendChild(btnSi);
   cont.appendChild(btnNo);
+}
+
+function mostrarMultiItems(prefijo, items, max) {
+  const cont = document.getElementById("proteinas");
+  const seleccionados = [];
+
+  cont.innerHTML = "<h3>Elige hasta " + max + " (son " + max + " piezas):</h3>";
+
+  items.forEach(item => {
+    const btn = document.createElement("button");
+    btn.innerText = item.nombre + " - $" + item.precio;
+    btn.style.background = "#e5e7eb";
+    btn.style.color = "#111827";
+    btn.onclick = () => {
+      const idx = seleccionados.findIndex(s => s.nombre === item.nombre);
+      if (idx >= 0) {
+        seleccionados.splice(idx, 1);
+        btn.style.background = "#e5e7eb";
+        btn.style.color = "#111827";
+      } else {
+        if (seleccionados.length >= max) return;
+        seleccionados.push({ nombre: item.nombre, precio: item.precio });
+        btn.style.background = "#16a34a";
+        btn.style.color = "white";
+      }
+    };
+    cont.appendChild(btn);
+  });
+
+  const btnAgregar = document.createElement("button");
+  btnAgregar.innerText = "Agregar al pedido";
+  btnAgregar.style.background = "#16a34a";
+  btnAgregar.style.color = "white";
+  btnAgregar.style.fontSize = "16px";
+  btnAgregar.style.marginTop = "10px";
+  btnAgregar.style.width = "100%";
+  btnAgregar.onclick = () => {
+    if (seleccionados.length === 0) { alert("Elige al menos uno"); return; }
+    const precioFinal = Math.max(...seleccionados.map(s => s.precio));
+    const nombreFinal = prefijo + seleccionados.map(s => s.nombre).join(" y ");
+    productos.push({ nombre: nombreFinal, precio: precioFinal, precioBase: precioFinal, cantidad: 1, nota: "" });
+    total += precioFinal;
+    renderizarLista();
+    cont.innerHTML = "";
+  };
+  cont.appendChild(btnAgregar);
 }
 
 function mostrarMultiProteina(categoria, datos, max, notas) {
