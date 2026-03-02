@@ -1011,6 +1011,8 @@ if (categoria === "Licuados") {
           agregarProductoSinNota("Tacos de " + item.nombre, item.precio);
         } else if (categoria === "Bebidas" || categoria === "Café") {
           agregarProductoSinNota(item.nombre, item.precio);
+        } else if (categoria === "Ensaladas" && item.nombre === "Codito") {
+          mostrarPregunta("Ensalada de Codito", item.precio, "¿Con qué proteína?", "Pechuga", "Milanesa");
         } else if (categoria === "Ensaladas") {
           agregarProductoSinNota("Ensalada de " + item.nombre, item.precio);
         } else {
