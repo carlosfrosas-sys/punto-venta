@@ -844,24 +844,24 @@ const menu = {
   // 🥤 BEBIDAS
   "Bebidas": {
     items: [
-      { nombre: "Coca Cola", precio: 25 },
-      { nombre: "Coca Lata", precio: 25 },
-      { nombre: "Refresco de Sabor", precio: 22 },
-      { nombre: "Fuze Tea", precio: 22, sabores: ["Té Negro", "Té Verde", "Durazno"] },
-      { nombre: "Jumex", precio: 23 },
-      { nombre: "Boing", precio: 20, sabores: ["Mango", "Guayaba", "Manzana", "Fresa", "Uva", "Naranja"] },
+      { nombre: "Agua", precio: 0, agua: true },
+      { nombre: "Yakult", precio: 10 },
       { nombre: "Panzoncita", precio: 18 },
       { nombre: "Peñafielita", precio: 18 },
+      { nombre: "Boing", precio: 20, sabores: ["Mango", "Guayaba", "Manzana", "Fresa", "Uva", "Naranja"] },
+      { nombre: "Del Valle", precio: 20 },
+      { nombre: "Refresco de Sabor", precio: 22 },
+      { nombre: "Fuze Tea", precio: 22, sabores: ["Té Negro", "Té Verde", "Durazno"] },
       { nombre: "Lechita", precio: 22 },
-      { nombre: "Yakult", precio: 10 },
+      { nombre: "Jumex", precio: 23 },
+      { nombre: "Coca Cola", precio: 25 },
+      { nombre: "Coca Lata", precio: 25 },
+      { nombre: "Volt", precio: 30 },
       { nombre: "Electrolit", precio: 35 },
       { nombre: "Gatorade", precio: 35 },
-      { nombre: "Volt", precio: 30 },
       { nombre: "Monster", precio: 40 },
       { nombre: "Redbull", precio: 47 },
-      { nombre: "Coca 3L", precio: 60 },
-      { nombre: "Del Valle", precio: 20 },
-      { nombre: "Agua", precio: 0, agua: true }
+      { nombre: "Coca 3L", precio: 60 }
     ]
   }
 
@@ -1024,7 +1024,7 @@ if (categoria === "Licuados") {
     datos.items.forEach(item => {
 
       const btn = document.createElement("button");
-      btn.innerText = item.nombre + " - $" + item.precio;
+      btn.innerText = item.precio > 0 ? item.nombre + " - $" + item.precio : item.nombre;
       btn.onclick = () => {
         if (categoria === "Hamburguesas") {
           mostrarNotas(item.nombre, item.precio, notasHamburguesas);
