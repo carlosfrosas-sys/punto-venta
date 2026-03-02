@@ -277,6 +277,25 @@
       margin-top: 2px;
     }
 
+    .btn-eliminar {
+      background: transparent;
+      border: 1.5px solid #555;
+      color: #555;
+      padding: 6px 14px;
+      font-size: 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-eliminar:hover {
+      border-color: #ef4444;
+      color: #ef4444;
+    }
+
     .sin-datos {
       text-align: center;
       color: #555;
@@ -387,6 +406,7 @@
           <div style="text-align:right;">
             <div class="pedido-total">$${pedido.total}</div>
             ${pedido.horaEntrega ? `<div class="hora">${pedido.horaEntrega}</div>` : ""}
+            <button class="btn-eliminar" onclick="eliminarPedido(${pedido.id})">Eliminar</button>
           </div>
         </div>
         <ul class="productos">
@@ -403,6 +423,24 @@
       `;
 
       contenedor.prepend(div);
+    }
+
+    function eliminarPedido(id) {
+      const pass = prompt("Ingresa la contraseña para eliminar:");
+      if (!pass) return;
+
+      fetch("/pedido/" + id, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: pass })
+      })
+        .then(res => {
+          if (res.ok) {
+            cambiarTab(tabActual);
+          } else {
+            alert("Contraseña incorrecta");
+          }
+        });
     }
 
     function mostrarDesglose(porDia) {

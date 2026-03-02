@@ -120,6 +120,28 @@ app.put("/pedido/:id", async (req, res) => {
   }
 });
 
+const PASS_ELIMINAR = process.env.PASS_ELIMINAR || "1234";
+
+app.delete("/pedido/:id", async (req, res) => {
+  if (req.body.password !== PASS_ELIMINAR) {
+    return res.status(401).json({ error: "Contraseña incorrecta" });
+  }
+  const id = parseInt(req.params.id);
+  const idx = pedidos.findIndex(p => p.id === id);
+  if (idx === -1) return res.status(404).send("No encontrado");
+
+  pedidos.splice(idx, 1);
+  if (db) {
+    try {
+      await db.collection("pedidos").deleteOne({ id });
+    } catch (e) {
+      console.error("Error eliminando pedido:", e.message);
+    }
+  }
+  io.emit("pedidoEliminado", id);
+  res.json({ ok: true });
+});
+
 app.get("/ventas/fechas", (req, res) => {
   const fechas = [...new Set(pedidos.filter(p => p.estado === "Entregado" && p.fecha).map(p => p.fecha))];
   res.json(fechas);
