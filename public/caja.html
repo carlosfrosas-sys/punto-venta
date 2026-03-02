@@ -334,8 +334,31 @@
       color: #fff;
     }
 
-    /* 📱 RESPONSIVE */
-    @media (max-width: 768px) {
+    /* 📱 RESPONSIVE - Tablet 8.7" horizontal (~800px) */
+    @media (max-width: 900px) {
+      #categorias button {
+        padding: 10px 14px;
+        font-size: 14px;
+        flex: 1 1 calc(25% - 10px);
+        min-width: 0;
+        text-align: center;
+      }
+
+      #proteinas button {
+        padding: 10px 14px;
+        font-size: 14px;
+        flex: 1 1 calc(33% - 10px);
+        min-width: 0;
+        text-align: center;
+      }
+
+      input, textarea {
+        max-width: 100%;
+      }
+    }
+
+    /* 📱 Tablet vertical / móvil grande */
+    @media (max-width: 600px) {
       .container {
         padding: 15px;
       }
@@ -350,10 +373,8 @@
 
       #categorias button {
         padding: 8px 12px;
-        font-size: 12px;
+        font-size: 13px;
         flex: 1 1 calc(33% - 6px);
-        min-width: 0;
-        text-align: center;
       }
 
       #proteinas {
@@ -362,14 +383,8 @@
 
       #proteinas button {
         padding: 8px 12px;
-        font-size: 12px;
+        font-size: 13px;
         flex: 1 1 calc(50% - 6px);
-        min-width: 0;
-        text-align: center;
-      }
-
-      input, textarea {
-        max-width: 100%;
       }
 
       .nota-group {
@@ -381,16 +396,16 @@
       }
     }
 
-    @media (max-width: 480px) {
+    @media (max-width: 400px) {
       #categorias button {
         flex: 1 1 calc(50% - 6px);
-        font-size: 11px;
+        font-size: 12px;
         padding: 8px 6px;
       }
 
       #proteinas button {
         flex: 1 1 calc(50% - 6px);
-        font-size: 13px;
+        font-size: 12px;
       }
     }
   </style>
