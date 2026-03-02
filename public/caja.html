@@ -1280,10 +1280,6 @@ function mostrarPregunta(nombre, precio, pregunta, textoSi, textoNo) {
 
   const btnSi = document.createElement("button");
   btnSi.innerText = textoSi;
-  btnSi.style.background = "#16a34a";
-  btnSi.style.color = "white";
-  btnSi.style.fontSize = "16px";
-  btnSi.style.minWidth = "100px";
   btnSi.onclick = () => {
     productos.push({ nombre, precio, precioBase: precio, cantidad: 1, nota: textoSi });
     total += precio;
@@ -1294,10 +1290,6 @@ function mostrarPregunta(nombre, precio, pregunta, textoSi, textoNo) {
 
   const btnNo = document.createElement("button");
   btnNo.innerText = textoNo;
-  btnNo.style.background = "#ef4444";
-  btnNo.style.color = "white";
-  btnNo.style.fontSize = "16px";
-  btnNo.style.minWidth = "100px";
   btnNo.onclick = () => {
     productos.push({ nombre, precio, precioBase: precio, cantidad: 1, nota: textoNo });
     total += precio;
