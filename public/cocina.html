@@ -149,7 +149,6 @@
       div.className = "pedido";
 
       div.innerHTML = `
-        <div class="cliente">${pedido.cliente}</div>
         ${pedido.nota ? `<div class="nota-general">${pedido.nota}</div>` : ""}
         <ul class="productos">
           ${pedido.productos.map(p =>
