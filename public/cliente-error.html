@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#009ee3">
+  <title>Error en el Pago</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f7fb;
+      color: #3d3d3d;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 40px 30px;
+      max-width: 420px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+    .icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+      color: #e05252;
+    }
+    h1 {
+      font-size: 24px;
+      color: #e05252;
+      margin-bottom: 12px;
+    }
+    p {
+      font-size: 16px;
+      color: #666;
+      margin-bottom: 30px;
+      line-height: 1.5;
+    }
+    a {
+      display: inline-block;
+      background: #009ee3;
+      color: #fff;
+      text-decoration: none;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    a:hover {
+      background: #007bb5;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">&#x2717;</div>
+    <h1>No se pudo procesar tu pago</h1>
+    <p>Hubo un problema con el pago. Por favor intenta de nuevo.</p>
+    <a href="/cliente">Intentar de nuevo</a>
+  </div>
+</body>
+</html>

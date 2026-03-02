@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="32" fill="#009ee3"/>
+  <!-- Celular -->
+  <rect x="60" y="35" width="72" height="122" rx="10" fill="#fff" opacity="0.9"/>
+  <rect x="68" y="50" width="56" height="80" rx="4" fill="#d0e8f2"/>
+  <!-- Lineas de menu -->
+  <rect x="76" y="60" width="40" height="6" rx="3" fill="#009ee3" opacity="0.5"/>
+  <rect x="76" y="74" width="32" height="6" rx="3" fill="#009ee3" opacity="0.4"/>
+  <rect x="76" y="88" width="36" height="6" rx="3" fill="#009ee3" opacity="0.3"/>
+  <!-- Boton pagar -->
+  <rect x="74" y="106" width="44" height="14" rx="7" fill="#009ee3"/>
+  <text x="96" y="116" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" font-weight="bold" fill="#fff">PAGAR</text>
+  <!-- Circulo home -->
+  <circle cx="96" cy="147" r="6" fill="none" stroke="#009ee3" stroke-width="1.5" opacity="0.5"/>
+  <!-- Etiqueta -->
+  <text x="96" y="176" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="600" fill="#fff" opacity="0.7">PEDIR</text>
+</svg>

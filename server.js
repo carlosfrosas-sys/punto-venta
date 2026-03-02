@@ -2,6 +2,7 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const { MongoClient } = require("mongodb");
+const { MercadoPagoConfig, Preference, Payment } = require("mercadopago");
 
 const app = express();
 const server = http.createServer(app);
@@ -10,10 +11,17 @@ const io = new Server(server);
 app.use(express.json());
 app.use(express.static(__dirname + "/public"));
 
+// Mercado Pago
+const mpClient = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN || "" });
+const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
+
 // MongoDB
 let db;
 let pedidos = [];
 let idCounter = 1;
+
+// Pedidos pendientes (en memoria + MongoDB)
+const pedidosPendientes = new Map();
 
 async function conectarDB() {
   const uri = process.env.MONGODB_URI;
@@ -61,6 +69,50 @@ async function guardarPedido(pedido) {
   }
 }
 
+async function guardarPedidoPendiente(ref, datos) {
+  pedidosPendientes.set(ref, datos);
+  if (db) {
+    try {
+      await db.collection("pedidos_pendientes").updateOne(
+        { ref },
+        { $set: { ref, ...datos } },
+        { upsert: true }
+      );
+    } catch (e) {
+      console.error("Error guardando pedido pendiente:", e.message);
+    }
+  }
+}
+
+async function obtenerPedidoPendiente(ref) {
+  let datos = pedidosPendientes.get(ref);
+  if (!datos && db) {
+    try {
+      const doc = await db.collection("pedidos_pendientes").findOne({ ref });
+      if (doc) {
+        delete doc._id;
+        delete doc.ref;
+        datos = doc;
+        pedidosPendientes.set(ref, datos);
+      }
+    } catch (e) {
+      console.error("Error obteniendo pedido pendiente:", e.message);
+    }
+  }
+  return datos;
+}
+
+async function eliminarPedidoPendiente(ref) {
+  pedidosPendientes.delete(ref);
+  if (db) {
+    try {
+      await db.collection("pedidos_pendientes").deleteOne({ ref });
+    } catch (e) {
+      console.error("Error eliminando pedido pendiente:", e.message);
+    }
+  }
+}
+
 // Rutas de páginas
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/public/caja.html");
@@ -79,6 +131,114 @@ app.get("/entrega", (req, res) => {
 
 app.get("/ventas", (req, res) => {
   res.sendFile(__dirname + "/public/ventas.html");
+});
+
+app.get("/cliente", (req, res) => {
+  res.sendFile(__dirname + "/public/cliente.html");
+});
+
+// Mercado Pago: crear preferencia de pago
+app.post("/crear-preferencia", async (req, res) => {
+  const { cliente, telefono, productos: prods, total: monto, nota } = req.body;
+
+  if (!cliente || !telefono || !prods || prods.length === 0 || !monto) {
+    return res.status(400).json({ error: "Datos incompletos" });
+  }
+
+  if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {
+    return res.status(500).json({ error: "Mercado Pago no configurado" });
+  }
+
+  const ref = "pedido_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+
+  try {
+    const preference = new Preference(mpClient);
+    const result = await preference.create({
+      body: {
+        items: [{
+          title: "Pedido de " + cliente,
+          quantity: 1,
+          unit_price: monto,
+          currency_id: "MXN"
+        }],
+        external_reference: ref,
+        back_urls: {
+          success: BASE_URL + "/pago-exitoso",
+          failure: BASE_URL + "/pago-fallido",
+          pending: BASE_URL + "/pago-pendiente"
+        },
+        auto_return: "approved"
+      }
+    });
+
+    await guardarPedidoPendiente(ref, { cliente, telefono, productos: prods, total: monto, nota });
+
+    res.json({ init_point: result.init_point });
+  } catch (e) {
+    console.error("Error creando preferencia MP:", e.message);
+    res.status(500).json({ error: "Error al crear el pago" });
+  }
+});
+
+// Mercado Pago: pago exitoso
+app.get("/pago-exitoso", async (req, res) => {
+  const { external_reference, payment_id } = req.query;
+
+  if (!external_reference) {
+    return res.redirect("/cliente-error.html");
+  }
+
+  try {
+    // Verificar pago con API de MP
+    const payment = new Payment(mpClient);
+    const paymentData = await payment.get({ id: payment_id });
+
+    if (paymentData.status !== "approved") {
+      return res.redirect("/cliente-error.html");
+    }
+
+    const pendiente = await obtenerPedidoPendiente(external_reference);
+    if (!pendiente) {
+      return res.redirect("/cliente-error.html");
+    }
+
+    // Crear pedido real
+    const notaFinal = pendiente.nota
+      ? "[PAGO MP] " + pendiente.nota
+      : "[PAGO MP]";
+
+    const pedido = {
+      id: idCounter++,
+      cliente: pendiente.cliente + " (Tel: " + pendiente.telefono + ")",
+      productos: pendiente.productos,
+      total: pendiente.total,
+      nota: notaFinal,
+      origen: "cliente",
+      estado: "pendiente",
+      fecha: fechaHoy()
+    };
+
+    pedidos.push(pedido);
+    await guardarPedido(pedido);
+    io.emit("nuevoPedido", pedido);
+
+    await eliminarPedidoPendiente(external_reference);
+
+    res.redirect("/cliente-confirmado.html");
+  } catch (e) {
+    console.error("Error verificando pago:", e.message);
+    res.redirect("/cliente-error.html");
+  }
+});
+
+// Mercado Pago: pago fallido
+app.get("/pago-fallido", (req, res) => {
+  res.redirect("/cliente-error.html");
+});
+
+// Mercado Pago: pago pendiente
+app.get("/pago-pendiente", (req, res) => {
+  res.redirect("/cliente-error.html");
 });
 
 function fechaHoy() {
