@@ -806,7 +806,7 @@ if (categoria === "Licuados") {
           } else if (categoria === "Molletes") {
             mostrarPicoDegallo(categoria + " de " + p.nombre, p.precio);
           } else if (categoria === "Mollequiles") {
-            mostrarPregunta(categoria + " de " + p.nombre, p.precio, "¿Con crema?", "Con crema", "Sin crema");
+            mostrarNotas(categoria + " de " + p.nombre, p.precio, ["Sin Crema"]);
           } else if (categoria === "Chilaquiles") {
             mostrarNotas(categoria + " de " + p.nombre, p.precio, notasChilaquiles);
           } else if (categoria === "Sandwiches") {
@@ -825,7 +825,7 @@ if (categoria === "Licuados") {
           } else if (categoria === "Molletes") {
             mostrarPicoDegallo(categoria + " de " + p, datos.precio);
           } else if (categoria === "Mollequiles") {
-            mostrarPregunta(categoria + " de " + p, datos.precio, "¿Con crema?", "Con crema", "Sin crema");
+            mostrarNotas(categoria + " de " + p, datos.precio, ["Sin Crema"]);
           } else if (categoria === "Chilaquiles") {
             mostrarNotas(categoria + " de " + p, datos.precio, notasChilaquiles);
           } else if (categoria === "Enchiladas") {
