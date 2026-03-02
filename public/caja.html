@@ -839,6 +839,12 @@ if (categoria === "Licuados") {
     cont.appendChild(btnSencillo);
   }
 
+  // 🥪 TORTAS - multi-selección de ingredientes
+  if (categoria === "Tortas" && datos.proteinas) {
+    mostrarIngredientesTortaMulti();
+    return;
+  }
+
   // 🔥 PROTEÍNAS
   if (datos.proteinas) {
 
@@ -849,10 +855,7 @@ if (categoria === "Licuados") {
       if (typeof p === "object") {
         btn.innerText = p.nombre + " - $" + p.precio;
         btn.onclick = () => {
-          if (categoria === "Tortas") {
-            mostrarNotasTorta(p.nombre, p.precio);
-            return;
-          } else if (categoria === "Molletes") {
+          if (categoria === "Molletes") {
             mostrarPicoDegallo(categoria + " de " + p.nombre, p.precio);
           } else if (categoria === "Mollequiles") {
             mostrarNotas(categoria + " de " + p.nombre, p.precio, ["Sin Crema"]);
@@ -873,10 +876,7 @@ if (categoria === "Licuados") {
       } else {
         btn.innerText = p + " - $" + datos.precio;
         btn.onclick = () => {
-          if (categoria === "Tortas") {
-            mostrarNotasTorta(p, datos.precio);
-            return;
-          } else if (categoria === "Molletes") {
+          if (categoria === "Molletes") {
             mostrarPicoDegallo(categoria + " de " + p, datos.precio);
           } else if (categoria === "Mollequiles") {
             mostrarNotas(categoria + " de " + p, datos.precio, ["Sin Crema"]);
@@ -1049,9 +1049,10 @@ function mostrarTamañosAgua(sabores) {
   const cont = document.getElementById("proteinas");
   const extraPrecio = 5;
   const extrasCount = sabores.length > 1 ? sabores.length - 1 : 0;
-  const nombre = "Agua de " + sabores.join(", ");
+  const nombreBase = "Agua de " + sabores[0];
+  const conExtras = sabores.length > 1 ? " con " + sabores.slice(1).join(", ") : "";
 
-  cont.innerHTML = "<h3>" + nombre + "</h3><p>Elige tamaño:</p>";
+  cont.innerHTML = "<h3>" + nombreBase + conExtras + "</h3><p>Elige tamaño:</p>";
 
   const tamaños = menu["Aguas"].tamaños;
 
@@ -1062,13 +1063,65 @@ function mostrarTamañosAgua(sabores) {
     const btn = document.createElement("button");
     btn.innerText = tamaño + " - $" + precioTotal;
     btn.onclick = () => {
-      const nombreFinal = nombre + " " + tamaño;
-      const notas = ["Sin Azúcar", "Poca Azúcar"];
-      if (sabores.includes("Limón")) notas.push({ nombre: "Con Chía", precio: 4 });
-      mostrarNotas(nombreFinal, precioTotal, notas);
+      mostrarNotasAgua(sabores, tamaño, precioTotal);
     };
     cont.appendChild(btn);
   }
+}
+
+function mostrarNotasAgua(sabores, tamaño, precioTotal) {
+  const cont = document.getElementById("proteinas");
+  const nombreBase = "Agua de " + sabores[0];
+  const conExtras = sabores.length > 1 ? " con " + sabores.slice(1).join(", ") : "";
+  const nombreConTamaño = nombreBase + conExtras + " " + tamaño;
+
+  cont.innerHTML = "<h3>" + nombreConTamaño + " - $" + precioTotal + "</h3><p>Selecciona opciones:</p>";
+
+  const opciones = ["Sin Azúcar", "Poca Azúcar"];
+  if (sabores.includes("Limón")) opciones.push("Con Chía +$4");
+  const seleccionadas = new Set();
+  let precioChia = 0;
+
+  opciones.forEach(op => {
+    const esChia = op.startsWith("Con Chía");
+    const btn = document.createElement("button");
+    btn.innerText = op;
+    btn.style.background = "#e5e7eb";
+    btn.style.color = "#111827";
+    btn.onclick = () => {
+      if (seleccionadas.has(op)) {
+        seleccionadas.delete(op);
+        if (esChia) precioChia -= 4;
+        btn.style.background = "#e5e7eb";
+        btn.style.color = "#111827";
+      } else {
+        seleccionadas.add(op);
+        if (esChia) precioChia += 4;
+        btn.style.background = esChia ? "#16a34a" : "#ef4444";
+        btn.style.color = "white";
+      }
+    };
+    cont.appendChild(btn);
+  });
+
+  const btnAgregar = document.createElement("button");
+  btnAgregar.innerText = "Agregar al pedido";
+  btnAgregar.style.background = "#16a34a";
+  btnAgregar.style.color = "white";
+  btnAgregar.style.fontSize = "16px";
+  btnAgregar.style.marginTop = "10px";
+  btnAgregar.style.width = "100%";
+  btnAgregar.onclick = () => {
+    let nombreFinal = nombreConTamaño;
+    const notasTxt = Array.from(seleccionadas).map(s => s.replace(" +$4", "")).join(", ");
+    if (notasTxt) nombreFinal += " " + notasTxt;
+    const precioFinal = precioTotal + precioChia;
+    productos.push({ nombre: nombreFinal, precio: precioFinal, precioBase: precioFinal, cantidad: 1, nota: "" });
+    total += precioFinal;
+    renderizarLista();
+    cont.innerHTML = "";
+  };
+  cont.appendChild(btnAgregar);
 }
 
 function mostrarSaboresLicuado() {
@@ -1110,11 +1163,60 @@ function mostrarSaboresLicuado() {
     if (seleccionados.length === 0) { alert("Elige al menos un sabor"); return; }
     const extrasCount = seleccionados.length > 1 ? seleccionados.length - 1 : 0;
     const precioTotal = precioBase + (extrasCount * extraPrecio);
-    const nombre = "Licuado de " + seleccionados.join(", ");
-    const notas = [{ nombre: "Con Avena", precio: 4 }];
-    mostrarNotas(nombre, precioTotal, notas);
+    const nombreBase = "Licuado de " + seleccionados[0];
+    const conExtras = seleccionados.length > 1 ? " con " + seleccionados.slice(1).join(", ") : "";
+    mostrarNotasLicuado(nombreBase + conExtras, precioTotal);
   };
   cont.appendChild(btnSig);
+}
+
+function mostrarNotasLicuado(nombre, precioTotal) {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>" + nombre + " - $" + precioTotal + "</h3><p>Selecciona opciones:</p>";
+
+  const opciones = ["Con Avena +$4"];
+  const seleccionadas = new Set();
+  let precioExtra = 0;
+
+  opciones.forEach(op => {
+    const btn = document.createElement("button");
+    btn.innerText = op;
+    btn.style.background = "#e5e7eb";
+    btn.style.color = "#111827";
+    btn.onclick = () => {
+      if (seleccionadas.has(op)) {
+        seleccionadas.delete(op);
+        precioExtra -= 4;
+        btn.style.background = "#e5e7eb";
+        btn.style.color = "#111827";
+      } else {
+        seleccionadas.add(op);
+        precioExtra += 4;
+        btn.style.background = "#16a34a";
+        btn.style.color = "white";
+      }
+    };
+    cont.appendChild(btn);
+  });
+
+  const btnAgregar = document.createElement("button");
+  btnAgregar.innerText = "Agregar al pedido";
+  btnAgregar.style.background = "#16a34a";
+  btnAgregar.style.color = "white";
+  btnAgregar.style.fontSize = "16px";
+  btnAgregar.style.marginTop = "10px";
+  btnAgregar.style.width = "100%";
+  btnAgregar.onclick = () => {
+    let nombreFinal = nombre;
+    const notasTxt = Array.from(seleccionadas).map(s => s.replace(" +$4", "")).join(", ");
+    if (notasTxt) nombreFinal += " " + notasTxt;
+    const precioFinal = precioTotal + precioExtra;
+    productos.push({ nombre: nombreFinal, precio: precioFinal, precioBase: precioFinal, cantidad: 1, nota: "" });
+    total += precioFinal;
+    renderizarLista();
+    cont.innerHTML = "";
+  };
+  cont.appendChild(btnAgregar);
 }
 
 function mostrarPregunta(nombre, precio, pregunta, textoSi, textoNo) {
@@ -1185,112 +1287,55 @@ function mostrarPicoDegallo(nombre, precio) {
   cont.appendChild(btnNo);
 }
 
-function mostrarNotasTorta(primerIngrediente, precioBase) {
+function mostrarIngredientesTortaMulti() {
   const cont = document.getElementById("proteinas");
-  const extras = [];
+  const seleccionados = [];
   const extraPrecio = 10;
-  let precioTotal = precioBase;
-  const notasSeleccionadas = new Set();
-  let precioExtraNotas = 0;
 
-  cont.innerHTML = `<h3>Torta de ${primerIngrediente} - $${precioBase}</h3><p>Selecciona las opciones:</p>`;
+  cont.innerHTML = "<h3>Elige ingredientes:</h3><p>El primero es precio base, cada extra +$" + extraPrecio + "</p>";
 
-  // Botones de notas (Sin Mayonesa, etc.)
-  notasTortas.forEach(opcion => {
-    const esObjeto = typeof opcion === "object";
-    const texto = esObjeto ? opcion.nombre + " +$" + opcion.precio : opcion;
+  const todosIngredientes = menu["Tortas"].proteinas;
+  const ingredientesConPina = [...todosIngredientes, { nombre: "Piña", precio: 0 }];
+
+  ingredientesConPina.forEach(p => {
+    const nombre = p.nombre;
+    const precioBase = p.precio || 0;
     const btn = document.createElement("button");
-    btn.innerText = texto;
+    btn.innerText = nombre + (precioBase ? " - $" + precioBase : " +$" + extraPrecio);
     btn.style.background = "#e5e7eb";
     btn.style.color = "#111827";
     btn.onclick = () => {
-      if (notasSeleccionadas.has(texto)) {
-        notasSeleccionadas.delete(texto);
-        if (esObjeto) precioExtraNotas -= opcion.precio;
+      const idx = seleccionados.findIndex(s => s.nombre === nombre);
+      if (idx >= 0) {
+        seleccionados.splice(idx, 1);
         btn.style.background = "#e5e7eb";
         btn.style.color = "#111827";
       } else {
-        notasSeleccionadas.add(texto);
-        if (esObjeto) precioExtraNotas += opcion.precio;
-        btn.style.background = esObjeto ? "#16a34a" : "#ef4444";
+        seleccionados.push({ nombre, precioBase });
+        btn.style.background = "#16a34a";
         btn.style.color = "white";
       }
     };
     cont.appendChild(btn);
   });
 
-  // Botón "Ingrediente Extra"
-  const contExtras = document.createElement("div");
-  contExtras.style.display = "none";
-  contExtras.style.width = "100%";
-  contExtras.style.marginTop = "10px";
-
-  const btnExtra = document.createElement("button");
-  btnExtra.innerText = "Ingrediente Extra +$" + extraPrecio;
-  btnExtra.style.background = "#2563eb";
-  btnExtra.style.color = "white";
-  btnExtra.style.fontSize = "15px";
-  btnExtra.onclick = () => {
-    if (contExtras.style.display === "none") {
-      contExtras.style.display = "flex";
-      btnExtra.style.background = "#1d4ed8";
-    } else {
-      contExtras.style.display = "none";
-      btnExtra.style.background = "#2563eb";
-    }
+  const btnSig = document.createElement("button");
+  btnSig.innerText = "Siguiente";
+  btnSig.style.background = "#2563eb";
+  btnSig.style.color = "white";
+  btnSig.style.fontSize = "16px";
+  btnSig.style.marginTop = "10px";
+  btnSig.style.width = "100%";
+  btnSig.onclick = () => {
+    if (seleccionados.length === 0) { alert("Elige al menos un ingrediente"); return; }
+    const primero = seleccionados[0];
+    const extras = seleccionados.slice(1);
+    const precioTotal = primero.precioBase + (extras.length * extraPrecio);
+    let nombre = "Torta de " + primero.nombre;
+    if (extras.length > 0) nombre += " con " + extras.map(e => e.nombre).join(", ");
+    mostrarNotas(nombre, precioTotal, notasTortas);
   };
-  cont.appendChild(btnExtra);
-
-  // Contenedor de ingredientes extra
-  contExtras.style.flexWrap = "wrap";
-  contExtras.style.gap = "8px";
-
-  const todosIngredientes = menu["Tortas"].proteinas.map(p => p.nombre);
-  const extrasConPina = todosIngredientes.filter(i => i !== primerIngrediente).concat(["Piña"]);
-
-  extrasConPina.forEach(ing => {
-    const btn = document.createElement("button");
-    btn.innerText = ing + " +$" + extraPrecio;
-    btn.style.background = "#e5e7eb";
-    btn.style.color = "#111827";
-    btn.onclick = () => {
-      const idx = extras.indexOf(ing);
-      if (idx >= 0) {
-        extras.splice(idx, 1);
-        precioTotal -= extraPrecio;
-        btn.style.background = "#e5e7eb";
-        btn.style.color = "#111827";
-      } else {
-        extras.push(ing);
-        precioTotal += extraPrecio;
-        btn.style.background = "#16a34a";
-        btn.style.color = "white";
-      }
-    };
-    contExtras.appendChild(btn);
-  });
-
-  cont.appendChild(contExtras);
-
-  // Botón agregar
-  const btnAgregar = document.createElement("button");
-  btnAgregar.innerText = "Agregar al pedido";
-  btnAgregar.style.background = "#16a34a";
-  btnAgregar.style.color = "white";
-  btnAgregar.style.fontSize = "16px";
-  btnAgregar.style.marginTop = "10px";
-  btnAgregar.style.width = "100%";
-  btnAgregar.onclick = () => {
-    let nombre = "Torta de " + primerIngrediente;
-    if (extras.length > 0) nombre += " con " + extras.join(", ");
-    const nota = Array.from(notasSeleccionadas).join(", ");
-    const precioFinal = precioTotal + precioExtraNotas;
-    productos.push({ nombre, precio: precioFinal, precioBase: precioFinal, cantidad: 1, nota });
-    total += precioFinal;
-    renderizarLista();
-    cont.innerHTML = "";
-  };
-  cont.appendChild(btnAgregar);
+  cont.appendChild(btnSig);
 }
 
 function mostrarNotas(nombre, precio, opciones, siguiente) {
