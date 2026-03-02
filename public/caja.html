@@ -37,11 +37,33 @@
       margin-bottom: 20px;
     }
 
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      flex: 1;
+      justify-content: flex-end;
+    }
+
     .header h1 {
       font-size: 22px;
       font-weight: 300;
       letter-spacing: 4px;
       text-transform: uppercase;
+      color: #6b5b4f;
+      white-space: nowrap;
+    }
+
+    .header-total {
+      font-size: 18px;
+      font-weight: 700;
       color: #6b5b4f;
       white-space: nowrap;
     }
@@ -456,9 +478,14 @@
 
 <div class="container">
   <div class="header">
-    <input type="text" class="header-cliente" id="clienteHeader" placeholder="Cliente" onkeydown="if(event.key==='Enter')enviarPedido()">
+    <div class="header-left">
+      <input type="text" class="header-cliente" id="clienteHeader" placeholder="Cliente" onkeydown="if(event.key==='Enter')enviarPedido()">
+      <span class="header-total" id="headerTotal">$0</span>
+    </div>
     <h1>Caja</h1>
-    <button class="btn-enviar-header" onclick="enviarPedido()">Enviar</button>
+    <div class="header-right">
+      <button class="btn-enviar-header" onclick="enviarPedido()">Enviar</button>
+    </div>
   </div>
 
   <div class="section-title">Platillos</div>
@@ -1765,6 +1792,7 @@ function renderizarLista() {
   });
 
   document.getElementById("total").innerText = total;
+  document.getElementById("headerTotal").innerText = "$" + total;
 }
 
 function cambiarCantidad(index, delta) {
@@ -1834,6 +1862,7 @@ function enviarPedido() {
 
   document.getElementById("lista").innerHTML = "";
   document.getElementById("total").innerText = "0";
+  document.getElementById("headerTotal").innerText = "$0";
   document.getElementById("proteinas").innerHTML = "";
   document.getElementById("cliente").value = "";
   document.getElementById("clienteHeader").value = "";
@@ -1848,6 +1877,7 @@ function cancelarPedido() {
 
   document.getElementById("lista").innerHTML = "";
   document.getElementById("total").innerText = "0";
+  document.getElementById("headerTotal").innerText = "$0";
   document.getElementById("proteinas").innerHTML = "";
   document.getElementById("cliente").value = "";
   document.getElementById("clienteHeader").value = "";
