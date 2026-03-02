@@ -868,7 +868,8 @@ if (categoria === "Licuados") {
         btn.innerText = p.nombre + " - $" + p.precio;
         btn.onclick = () => {
           if (categoria === "Tortas") {
-            mostrarNotas(categoria + " de " + p.nombre, p.precio, notasTortas);
+            mostrarIngredientesTorta(p.nombre, p.precio);
+            return;
           } else if (categoria === "Molletes") {
             mostrarPicoDegallo(categoria + " de " + p.nombre, p.precio);
           } else if (categoria === "Mollequiles") {
@@ -887,7 +888,8 @@ if (categoria === "Licuados") {
         btn.innerText = p + " - $" + datos.precio;
         btn.onclick = () => {
           if (categoria === "Tortas") {
-            mostrarNotas(categoria + " de " + p, datos.precio, notasTortas);
+            mostrarIngredientesTorta(p, datos.precio);
+            return;
           } else if (categoria === "Molletes") {
             mostrarPicoDegallo(categoria + " de " + p, datos.precio);
           } else if (categoria === "Mollequiles") {
@@ -1111,6 +1113,64 @@ function mostrarPicoDegallo(nombre, precio) {
 
   cont.appendChild(btnSi);
   cont.appendChild(btnNo);
+}
+
+function mostrarIngredientesTorta(primerIngrediente, precioBase) {
+  const cont = document.getElementById("proteinas");
+  const extras = [];
+  const extraPrecio = 10;
+  let precioTotal = precioBase;
+
+  const todosIngredientes = menu["Tortas"].proteinas.map(p => p.nombre);
+
+  cont.innerHTML = `<h3>Torta de ${primerIngrediente} - $${precioBase}</h3><p>Agrega ingredientes extra (+$${extraPrecio} c/u):</p>`;
+
+  const infoP = document.createElement("p");
+  infoP.id = "torta-precio-info";
+  infoP.style.fontWeight = "700";
+  infoP.style.color = "#6b5b4f";
+  infoP.style.fontSize = "16px";
+  infoP.innerText = "Total: $" + precioTotal;
+  cont.appendChild(infoP);
+
+  todosIngredientes.forEach(ing => {
+    if (ing === primerIngrediente) return;
+
+    const btn = document.createElement("button");
+    btn.innerText = ing + " +$" + extraPrecio;
+    btn.style.background = "#e5e7eb";
+    btn.style.color = "#111827";
+    btn.onclick = () => {
+      const idx = extras.indexOf(ing);
+      if (idx >= 0) {
+        extras.splice(idx, 1);
+        precioTotal -= extraPrecio;
+        btn.style.background = "#e5e7eb";
+        btn.style.color = "#111827";
+      } else {
+        extras.push(ing);
+        precioTotal += extraPrecio;
+        btn.style.background = "#16a34a";
+        btn.style.color = "white";
+      }
+      infoP.innerText = "Total: $" + precioTotal;
+    };
+    cont.appendChild(btn);
+  });
+
+  const btnSig = document.createElement("button");
+  btnSig.innerText = "Siguiente";
+  btnSig.style.background = "#2563eb";
+  btnSig.style.color = "white";
+  btnSig.style.fontSize = "16px";
+  btnSig.style.marginTop = "10px";
+  btnSig.style.width = "100%";
+  btnSig.onclick = () => {
+    let nombre = "Torta de " + primerIngrediente;
+    if (extras.length > 0) nombre += " con " + extras.join(", ");
+    mostrarNotas(nombre, precioTotal, notasTortas);
+  };
+  cont.appendChild(btnSig);
 }
 
 function mostrarNotas(nombre, precio, opciones, siguiente) {
