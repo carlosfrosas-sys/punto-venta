@@ -1776,6 +1776,7 @@ function sincronizarClientes() {
 }
 
 function enviarPedido() {
+  document.activeElement.blur();
 
   if (productos.length === 0) return;
 
