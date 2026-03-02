@@ -1706,7 +1706,7 @@ function agregarProducto(nombre, precio) {
   scrollACategorias();
 }
 function scrollACategorias() {
-  document.getElementById("categorias").scrollIntoView({ behavior: "smooth", block: "start" });
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function renderizarLista() {
