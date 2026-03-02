@@ -877,7 +877,11 @@ if (categoria === "Licuados") {
           } else if (categoria === "Chilaquiles") {
             mostrarNotas(categoria + " de " + p.nombre, p.precio, notasChilaquiles);
           } else if (categoria === "Sandwiches") {
-            mostrarNotas(categoria + " de " + p.nombre, p.precio, notasSandwiches);
+            if (p.nombre === "Club Sandwich" || p.nombre.startsWith("Hojaldra")) {
+              mostrarNotas(p.nombre, p.precio, notasSandwiches);
+            } else {
+              mostrarNotas("Sandwich de " + p.nombre, p.precio, notasSandwiches);
+            }
           } else if (categoria === "Bagels") {
             mostrarNotas("Bagel de " + p.nombre, p.precio, notasBagels);
           } else {
@@ -933,11 +937,11 @@ if (categoria === "Licuados") {
         } else if (categoria === "Tacos" && item.nombre === "Tacos Dorados") {
           mostrarNotas("Tacos Dorados", item.precio, notasTacosDorados);
         } else if (categoria === "Tacos" && tacosConNotas.includes(item.nombre)) {
-          mostrarNotas("Taco de " + item.nombre, item.precio, notasTacos);
+          mostrarNotas("Tacos de " + item.nombre, item.precio, notasTacos);
         } else if (categoria === "Tacos" && item.nombre === "Arrachera") {
-          mostrarNotas("Taco de Arrachera", item.precio, notasTacosArrachera);
+          mostrarNotas("Tacos de Arrachera", item.precio, notasTacosArrachera);
         } else if (categoria === "Tacos" && tacosSinNota.includes(item.nombre)) {
-          agregarProductoSinNota("Taco de " + item.nombre, item.precio);
+          agregarProductoSinNota("Tacos de " + item.nombre, item.precio);
         } else if (categoria === "Bebidas" || categoria === "Café") {
           agregarProductoSinNota(item.nombre, item.precio);
         } else if (categoria === "Ensaladas") {
