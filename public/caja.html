@@ -995,7 +995,7 @@ if (categoria === "Licuados") {
           } else if (categoria === "Enchiladas") {
             mostrarNotas(categoria + " " + p, datos.precio, notasEnchiladas);
           } else if (categoria === "Burritos") {
-            mostrarNotas("Burrito de " + p, datos.precio, notasBurritos);
+            mostrarNotas("Burritos de " + p, datos.precio, notasBurritos);
           } else {
             agregarProducto(categoria + " de " + p, datos.precio);
           }
@@ -1008,7 +1008,7 @@ if (categoria === "Licuados") {
 
   // 🧀 SINCRONIZADAS - multi-selección max 3
   if (categoria === "Sincronizadas" && datos.items) {
-    mostrarMultiItems("Sincronizada de ", datos.items, 3);
+    mostrarMultiItems("Sincronizadas de ", datos.items, 3);
     return;
   }
 
@@ -1037,7 +1037,7 @@ if (categoria === "Licuados") {
         } else if (categoria === "Snacks") {
           agregarProductoSinNota(item.nombre, item.precio);
         } else if (categoria === "Sincronizadas") {
-          agregarProductoSinNota("Sincronizada de " + item.nombre, item.precio);
+          agregarProductoSinNota("Sincronizadas de " + item.nombre, item.precio);
         } else if (categoria === "Tacos" && item.nombre === "Tacos Dorados") {
           mostrarNotas("Tacos Dorados", item.precio, notasTacosDorados);
         } else if (categoria === "Tacos" && tacosConNotas.includes(item.nombre)) {
@@ -1510,7 +1510,7 @@ function mostrarMultiProteina(categoria, datos, max, notas) {
   const seleccionados = [];
 
   const esBurrito = categoria === "Burritos";
-  const prefijo = esBurrito ? "Burrito de " : categoria + " de ";
+  const prefijo = esBurrito ? "Burritos de " : categoria + " de ";
 
   cont.innerHTML = "<h3>" + categoria + ":</h3><p>Elige hasta " + max + " proteínas (son " + max + " piezas):</p>";
 
