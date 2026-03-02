@@ -845,14 +845,23 @@ const menu = {
   "Bebidas": {
     items: [
       { nombre: "Coca Cola", precio: 25 },
+      { nombre: "Coca Lata", precio: 25 },
       { nombre: "Sabor", precio: 22 },
+      { nombre: "Fuze Tea", precio: 22 },
+      { nombre: "Jumex", precio: 23 },
       { nombre: "Boing", precio: 20 },
       { nombre: "Panzoncita", precio: 18 },
+      { nombre: "Peñafielita", precio: 18 },
       { nombre: "Lechita", precio: 22 },
+      { nombre: "Yakult", precio: 10 },
       { nombre: "Electrolit", precio: 35 },
       { nombre: "Gatorade", precio: 35 },
+      { nombre: "Volt", precio: 30 },
+      { nombre: "Monster", precio: 40 },
+      { nombre: "Redbull", precio: 47 },
       { nombre: "Coca 3L", precio: 60 },
-      { nombre: "Del Valle", precio: 20 }
+      { nombre: "Del Valle", precio: 20 },
+      { nombre: "Agua", precio: 0, agua: true }
     ]
   }
 
@@ -1037,6 +1046,8 @@ if (categoria === "Licuados") {
           mostrarNotas("Tacos de Arrachera", item.precio, notasTacosArrachera);
         } else if (categoria === "Tacos" && tacosSinNota.includes(item.nombre)) {
           agregarProductoSinNota("Tacos de " + item.nombre, item.precio);
+        } else if (categoria === "Bebidas" && item.agua) {
+          mostrarTamañosAguaNatural();
         } else if (categoria === "Bebidas" || categoria === "Café") {
           agregarProductoSinNota(item.nombre, item.precio);
         } else if (categoria === "Ensaladas" && item.nombre === "Codito") {
@@ -1714,6 +1725,27 @@ function mostrarBebidaPaquete(nombre, precio, notaPrev) {
       renderizarLista();
       cont.innerHTML = "";
       scrollACategorias();
+    };
+    cont.appendChild(btn);
+  });
+}
+
+function mostrarTamañosAguaNatural() {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>Agua - Elige tamaño:</h3>";
+
+  const tamaños = [
+    { nombre: "1/2 Litro", precio: 12 },
+    { nombre: "1 Litro", precio: 16 },
+    { nombre: "1.5 Litros", precio: 20 }
+  ];
+
+  tamaños.forEach(t => {
+    const btn = document.createElement("button");
+    btn.innerText = t.nombre + " - $" + t.precio;
+    btn.onclick = () => {
+      agregarProductoSinNota("Agua " + t.nombre, t.precio);
+      cont.innerHTML = "";
     };
     cont.appendChild(btn);
   });
