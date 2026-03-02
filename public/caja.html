@@ -1024,10 +1024,10 @@ function mostrarSaboresAgua() {
   const cont = document.getElementById("proteinas");
   const seleccionados = [];
   const extraPrecio = 5;
+  let conChia = false;
 
   cont.innerHTML = "<h3>Elige sabores:</h3><p>El primero es base, cada extra +$" + extraPrecio + "</p>";
 
-  const botones = [];
   menu["Aguas"].sabores.forEach(sabor => {
     const btn = document.createElement("button");
     btn.innerText = sabor;
@@ -1046,8 +1046,19 @@ function mostrarSaboresAgua() {
       }
     };
     cont.appendChild(btn);
-    botones.push(btn);
   });
+
+  // Botón Chía +$4
+  const btnChia = document.createElement("button");
+  btnChia.innerText = "Chía +$4";
+  btnChia.style.background = "#e5e7eb";
+  btnChia.style.color = "#111827";
+  btnChia.onclick = () => {
+    conChia = !conChia;
+    btnChia.style.background = conChia ? "#16a34a" : "#e5e7eb";
+    btnChia.style.color = conChia ? "white" : "#111827";
+  };
+  cont.appendChild(btnChia);
 
   const btnSig = document.createElement("button");
   btnSig.innerText = "Siguiente";
@@ -1058,88 +1069,35 @@ function mostrarSaboresAgua() {
   btnSig.style.width = "100%";
   btnSig.onclick = () => {
     if (seleccionados.length === 0) { alert("Elige al menos un sabor"); return; }
-    mostrarTamañosAgua(seleccionados);
+    mostrarTamañosAgua(seleccionados, conChia);
   };
   cont.appendChild(btnSig);
 }
 
-function mostrarTamañosAgua(sabores) {
+function mostrarTamañosAgua(sabores, conChia) {
   const cont = document.getElementById("proteinas");
   const extraPrecio = 5;
   const extrasCount = sabores.length > 1 ? sabores.length - 1 : 0;
   const nombreBase = "Agua de " + sabores[0];
   const conExtras = sabores.length > 1 ? " con " + sabores.slice(1).join(", ") : "";
+  const chiaTxt = conChia ? " con Chía" : "";
 
-  cont.innerHTML = "<h3>" + nombreBase + conExtras + "</h3><p>Elige tamaño:</p>";
+  cont.innerHTML = "<h3>" + nombreBase + conExtras + chiaTxt + "</h3><p>Elige tamaño:</p>";
 
   const tamaños = menu["Aguas"].tamaños;
 
   for (let tamaño in tamaños) {
     const precioBase = tamaños[tamaño];
-    const precioTotal = precioBase + (extrasCount * extraPrecio);
+    const precioTotal = precioBase + (extrasCount * extraPrecio) + (conChia ? 4 : 0);
 
     const btn = document.createElement("button");
     btn.innerText = tamaño + " - $" + precioTotal;
     btn.onclick = () => {
-      mostrarNotasAgua(sabores, tamaño, precioTotal);
+      const nombreFinal = nombreBase + conExtras + chiaTxt + " " + tamaño;
+      mostrarNotas(nombreFinal, precioTotal, ["Sin Azúcar", "Poca Azúcar"]);
     };
     cont.appendChild(btn);
   }
-}
-
-function mostrarNotasAgua(sabores, tamaño, precioTotal) {
-  const cont = document.getElementById("proteinas");
-  const nombreBase = "Agua de " + sabores[0];
-  const conExtras = sabores.length > 1 ? " con " + sabores.slice(1).join(", ") : "";
-  const nombreConTamaño = nombreBase + conExtras + " " + tamaño;
-
-  cont.innerHTML = "<h3>" + nombreConTamaño + " - $" + precioTotal + "</h3><p>Selecciona opciones:</p>";
-
-  const opciones = ["Sin Azúcar", "Poca Azúcar"];
-  if (sabores.includes("Limón")) opciones.push("Con Chía +$4");
-  const seleccionadas = new Set();
-  let precioChia = 0;
-
-  opciones.forEach(op => {
-    const esChia = op.startsWith("Con Chía");
-    const btn = document.createElement("button");
-    btn.innerText = op;
-    btn.style.background = "#e5e7eb";
-    btn.style.color = "#111827";
-    btn.onclick = () => {
-      if (seleccionadas.has(op)) {
-        seleccionadas.delete(op);
-        if (esChia) precioChia -= 4;
-        btn.style.background = "#e5e7eb";
-        btn.style.color = "#111827";
-      } else {
-        seleccionadas.add(op);
-        if (esChia) precioChia += 4;
-        btn.style.background = esChia ? "#16a34a" : "#ef4444";
-        btn.style.color = "white";
-      }
-    };
-    cont.appendChild(btn);
-  });
-
-  const btnAgregar = document.createElement("button");
-  btnAgregar.innerText = "Agregar al pedido";
-  btnAgregar.style.background = "#16a34a";
-  btnAgregar.style.color = "white";
-  btnAgregar.style.fontSize = "16px";
-  btnAgregar.style.marginTop = "10px";
-  btnAgregar.style.width = "100%";
-  btnAgregar.onclick = () => {
-    let nombreFinal = nombreConTamaño;
-    const notasTxt = Array.from(seleccionadas).map(s => s.replace(" +$4", "")).join(", ");
-    if (notasTxt) nombreFinal += " " + notasTxt;
-    const precioFinal = precioTotal + precioChia;
-    productos.push({ nombre: nombreFinal, precio: precioFinal, precioBase: precioFinal, cantidad: 1, nota: "" });
-    total += precioFinal;
-    renderizarLista();
-    cont.innerHTML = "";
-  };
-  cont.appendChild(btnAgregar);
 }
 
 function mostrarSaboresLicuado() {
@@ -1183,58 +1141,13 @@ function mostrarSaboresLicuado() {
     const precioTotal = precioBase + (extrasCount * extraPrecio);
     const nombreBase = "Licuado de " + seleccionados[0];
     const conExtras = seleccionados.length > 1 ? " con " + seleccionados.slice(1).join(", ") : "";
-    mostrarNotasLicuado(nombreBase + conExtras, precioTotal);
-  };
-  cont.appendChild(btnSig);
-}
-
-function mostrarNotasLicuado(nombre, precioTotal) {
-  const cont = document.getElementById("proteinas");
-  cont.innerHTML = "<h3>" + nombre + " - $" + precioTotal + "</h3><p>Selecciona opciones:</p>";
-
-  const opciones = ["Con Avena +$4"];
-  const seleccionadas = new Set();
-  let precioExtra = 0;
-
-  opciones.forEach(op => {
-    const btn = document.createElement("button");
-    btn.innerText = op;
-    btn.style.background = "#e5e7eb";
-    btn.style.color = "#111827";
-    btn.onclick = () => {
-      if (seleccionadas.has(op)) {
-        seleccionadas.delete(op);
-        precioExtra -= 4;
-        btn.style.background = "#e5e7eb";
-        btn.style.color = "#111827";
-      } else {
-        seleccionadas.add(op);
-        precioExtra += 4;
-        btn.style.background = "#16a34a";
-        btn.style.color = "white";
-      }
-    };
-    cont.appendChild(btn);
-  });
-
-  const btnAgregar = document.createElement("button");
-  btnAgregar.innerText = "Agregar al pedido";
-  btnAgregar.style.background = "#16a34a";
-  btnAgregar.style.color = "white";
-  btnAgregar.style.fontSize = "16px";
-  btnAgregar.style.marginTop = "10px";
-  btnAgregar.style.width = "100%";
-  btnAgregar.onclick = () => {
-    let nombreFinal = nombre;
-    const notasTxt = Array.from(seleccionadas).map(s => s.replace(" +$4", "")).join(", ");
-    if (notasTxt) nombreFinal += " " + notasTxt;
-    const precioFinal = precioTotal + precioExtra;
-    productos.push({ nombre: nombreFinal, precio: precioFinal, precioBase: precioFinal, cantidad: 1, nota: "" });
-    total += precioFinal;
+    const nombreFinal = nombreBase + conExtras;
+    productos.push({ nombre: nombreFinal, precio: precioTotal, precioBase: precioTotal, cantidad: 1, nota: "" });
+    total += precioTotal;
     renderizarLista();
     cont.innerHTML = "";
   };
-  cont.appendChild(btnAgregar);
+  cont.appendChild(btnSig);
 }
 
 function mostrarPregunta(nombre, precio, pregunta, textoSi, textoNo) {
