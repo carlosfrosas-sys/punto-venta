@@ -286,7 +286,6 @@
             <span class="cliente">${pedido.cliente}</span>
             <span class="total-amount">$${pedido.total}</span>
           </div>
-          ${pedido.nota ? `<div class="nota-general">${pedido.nota}</div>` : ""}
           <ul class="productos">
             ${pedido.productos.map(p =>
               `<li>
@@ -294,6 +293,7 @@
               </li>`
             ).join("")}
           </ul>
+          ${pedido.nota ? `<div class="nota-general">${pedido.nota}</div>` : ""}
         </div>
         <button class="btn-entregado" onclick="entregar(${pedido.id})">Entregado</button>
       `;
@@ -423,7 +423,6 @@
               <span class="cliente">${p.cliente}</span>
               <span class="total-amount">$${p.total}</span>
             </div>
-            ${p.nota ? `<div class="nota-general">${p.nota}</div>` : ""}
             <ul class="productos">
               ${p.productos.map(pr =>
                 `<li>
@@ -431,6 +430,7 @@
                 </li>`
               ).join("")}
             </ul>
+            ${p.nota ? `<div class="nota-general">${p.nota}</div>` : ""}
             <div class="entrega-info">${p.fecha || ""} ${p.horaEntrega || ""}</div>
           </div>
         `;
