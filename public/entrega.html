@@ -97,6 +97,11 @@
       margin-left: 4px;
     }
 
+    .qty {
+      color: #ef4444;
+      font-weight: 800;
+    }
+
     .nota {
       font-size: 12px;
       color: #fbbf24;
@@ -195,7 +200,7 @@
           <ul class="productos">
             ${pedido.productos.map(p =>
               `<li>
-                ${p.cantidad && p.cantidad > 1 ? p.cantidad + " " : ""}${p.nombre}<span class="precio">$${p.precio}</span>${p.nota ? `<span class="nota">${p.nota}</span>` : ""}
+                ${p.cantidad && p.cantidad > 1 ? `<span class="qty">${p.cantidad}</span> ` : ""}${p.nombre}<span class="precio">$${p.precio}</span>${p.nota ? `<span class="nota">${p.nota}</span>` : ""}
               </li>`
             ).join("")}
           </ul>

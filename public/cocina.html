@@ -75,6 +75,11 @@
       margin-right: 8px;
     }
 
+    .qty {
+      color: #ef4444;
+      font-weight: 800;
+    }
+
     .nota {
       display: block;
       font-size: 14px;
@@ -137,7 +142,7 @@
         <ul class="productos">
           ${pedido.productos.map(p =>
             `<li>
-              <span class="punto">&#8226;</span> ${p.cantidad && p.cantidad > 1 ? p.cantidad + " " : ""}${p.nombre}
+              <span class="punto">&#8226;</span> ${p.cantidad && p.cantidad > 1 ? `<span class="qty">${p.cantidad}</span> ` : ""}${p.nombre}
               ${p.nota ? `<span class="nota">${p.nota.replace(/\s*\+\$\d+/g, "")}</span>` : ""}
             </li>`
           ).join("")}
