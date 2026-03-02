@@ -1106,11 +1106,11 @@ function mostrarSaboresLicuado() {
   const extraPrecio = 5;
   const precioBase = menu["Licuados"].precio;
 
-  cont.innerHTML = "<h3>Elige sabores - $" + precioBase + ":</h3><p>El primero es base, cada extra +$" + extraPrecio + "</p>";
+  cont.innerHTML = "<h3>Elige sabores - $" + precioBase + ":</h3><p>Extra +$" + extraPrecio + " (Avena +$4)</p>";
 
   menu["Licuados"].sabores.forEach(sabor => {
     const btn = document.createElement("button");
-    btn.innerText = sabor;
+    btn.innerText = sabor + (sabor === "Avena" ? " +$4" : "");
     btn.style.background = "#e5e7eb";
     btn.style.color = "#111827";
     btn.onclick = () => {
@@ -1137,8 +1137,9 @@ function mostrarSaboresLicuado() {
   btnSig.style.width = "100%";
   btnSig.onclick = () => {
     if (seleccionados.length === 0) { alert("Elige al menos un sabor"); return; }
-    const extrasCount = seleccionados.length > 1 ? seleccionados.length - 1 : 0;
-    const precioTotal = precioBase + (extrasCount * extraPrecio);
+    const extras = seleccionados.slice(1);
+    const precioExtras = extras.reduce((acc, s) => acc + (s === "Avena" ? 4 : extraPrecio), 0);
+    const precioTotal = precioBase + precioExtras;
     const nombreBase = "Licuado de " + seleccionados[0];
     const conExtras = seleccionados.length > 1 ? " con " + seleccionados.slice(1).join(", ") : "";
     const nombreFinal = nombreBase + conExtras;
