@@ -1,7 +1,9 @@
 {
+  "id": "/entrega",
   "name": "Entrega",
   "short_name": "Entrega",
   "start_url": "/entrega",
+  "scope": "/entrega",
   "display": "standalone",
   "background_color": "#111",
   "theme_color": "#111",

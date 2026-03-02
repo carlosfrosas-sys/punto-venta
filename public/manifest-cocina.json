@@ -1,7 +1,9 @@
 {
+  "id": "/cocina",
   "name": "Cocina",
   "short_name": "Cocina",
   "start_url": "/cocina",
+  "scope": "/cocina",
   "display": "standalone",
   "background_color": "#111",
   "theme_color": "#111",

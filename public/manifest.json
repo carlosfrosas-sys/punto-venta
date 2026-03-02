@@ -1,7 +1,9 @@
 {
-  "name": "Punto de Venta",
-  "short_name": "PDV",
+  "id": "/caja",
+  "name": "Caja",
+  "short_name": "Caja",
   "start_url": "/caja",
+  "scope": "/caja",
   "display": "standalone",
   "background_color": "#faf8f5",
   "theme_color": "#6b5b4f",

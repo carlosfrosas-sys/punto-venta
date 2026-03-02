@@ -1,7 +1,9 @@
 {
+  "id": "/ventas",
   "name": "Ventas",
   "short_name": "Ventas",
   "start_url": "/ventas",
+  "scope": "/ventas",
   "display": "standalone",
   "background_color": "#111",
   "theme_color": "#111",
