@@ -36,47 +36,88 @@
 
     #pedidos {
       display: flex;
-      flex-wrap: wrap;
-      gap: 20px;
+      flex-direction: column;
+      gap: 10px;
     }
 
     .pedido {
       background: #1a1a1a;
       border-left: 4px solid #60a5fa;
       border-radius: 8px;
-      padding: 20px;
-      width: 500px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
     }
 
-    .pedido-header {
+    .pedido-contenido {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .pedido-top {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 15px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid #333;
+      align-items: baseline;
+      gap: 16px;
+      margin-bottom: 4px;
     }
 
     .cliente {
-      font-size: 22px;
+      font-size: 18px;
       font-weight: 700;
       color: #60a5fa;
       text-transform: uppercase;
-      letter-spacing: 2px;
+      letter-spacing: 1px;
+    }
+
+    .total-amount {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fbbf24;
+    }
+
+    .productos {
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0 16px;
+    }
+
+    .productos li {
+      font-size: 15px;
+      font-weight: 500;
+      text-transform: uppercase;
+      color: #ccc;
+    }
+
+    .precio {
+      font-size: 13px;
+      color: #666;
+      font-weight: 400;
+      margin-left: 4px;
+    }
+
+    .nota {
+      font-size: 12px;
+      color: #fbbf24;
+      font-weight: 600;
+      margin-left: 4px;
     }
 
     .btn-entregado {
       background: #22c55e;
       color: #fff;
       border: none;
-      padding: 14px 28px;
-      font-size: 16px;
+      padding: 14px 24px;
+      font-size: 15px;
       font-weight: 700;
       border-radius: 8px;
       cursor: pointer;
       text-transform: uppercase;
       letter-spacing: 1px;
       transition: all 0.2s ease;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .btn-entregado:hover {
@@ -87,86 +128,27 @@
       transform: scale(0.97);
     }
 
-    .productos {
-      list-style: none;
-    }
-
-    .productos li {
-      font-size: 24px;
-      font-weight: 600;
-      padding: 8px 0;
-      border-bottom: 1px solid #222;
-      text-transform: uppercase;
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-    }
-
-    .productos li:last-child {
-      border-bottom: none;
-    }
-
-    .precio {
-      font-size: 16px;
-      color: #888;
-      font-weight: 400;
-    }
-
-    .nota {
-      display: block;
-      font-size: 17px;
-      color: #fbbf24;
-      font-weight: 700;
-      margin-top: 4px;
-    }
-
-    .total-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 15px;
-      padding-top: 12px;
-      border-top: 1px solid #333;
-    }
-
-    .total-label {
-      font-size: 14px;
-      color: #888;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-    }
-
-    .total-amount {
-      font-size: 24px;
-      font-weight: 700;
-      color: #60a5fa;
-    }
-
     @media (max-width: 768px) {
       .pedido {
-        width: 100%;
-      }
-
-      .pedido-header {
         flex-direction: column;
-        gap: 12px;
-        align-items: flex-start;
+        align-items: stretch;
+        gap: 10px;
       }
 
       .btn-entregado {
         width: 100%;
-        padding: 16px;
-        font-size: 18px;
+        padding: 14px;
+        font-size: 16px;
         text-align: center;
       }
 
-      .productos li {
-        font-size: 20px;
+      .productos {
         flex-direction: column;
+        gap: 2px;
       }
 
-      .nota {
-        font-size: 15px;
+      .productos li {
+        font-size: 16px;
       }
     }
   </style>
@@ -205,27 +187,20 @@
       div.className = "pedido";
 
       div.innerHTML = `
-        <div class="pedido-header">
-          <div class="cliente">${pedido.cliente}</div>
-          <button class="btn-entregado" onclick="entregar(${pedido.id})">Entregado</button>
+        <div class="pedido-contenido">
+          <div class="pedido-top">
+            <span class="cliente">${pedido.cliente}</span>
+            <span class="total-amount">$${pedido.total}</span>
+          </div>
+          <ul class="productos">
+            ${pedido.productos.map(p =>
+              `<li>
+                ${p.nombre}<span class="precio">$${p.precio}</span>${p.nota ? `<span class="nota">${p.nota}</span>` : ""}
+              </li>`
+            ).join("")}
+          </ul>
         </div>
-
-        <ul class="productos">
-          ${pedido.productos.map(p =>
-            `<li>
-              <div>
-                ${p.nombre}
-                ${p.nota ? `<span class="nota">${p.nota}</span>` : ""}
-              </div>
-              <span class="precio">$${p.precio}</span>
-            </li>`
-          ).join("")}
-        </ul>
-
-        <div class="total-row">
-          <span class="total-label">Total</span>
-          <span class="total-amount">$${pedido.total}</span>
-        </div>
+        <button class="btn-entregado" onclick="entregar(${pedido.id})">Entregado</button>
       `;
 
       contenedor.appendChild(div);
