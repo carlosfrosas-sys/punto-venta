@@ -914,6 +914,12 @@ if (categoria === "Licuados") {
     return;
   }
 
+  // 🌮 TACOS - multi-selección max 2
+  if (categoria === "Tacos" && datos.items) {
+    mostrarMultiTacos(datos.items, 2);
+    return;
+  }
+
   // 📦 ITEMS
   if (datos.items) {
 
@@ -977,6 +983,12 @@ function mostrarSubcategoria(categoria, sub) {
     } else {
       agregarProducto(datos.nombre, datos.precio);
     }
+    return;
+  }
+
+  // 🌮 SOPES - multi-selección max 4
+  if (sub === "Sopes" && datos.proteinas) {
+    mostrarMultiSopes(datos, 4);
     return;
   }
 
@@ -1217,6 +1229,119 @@ function mostrarPicoDegallo(nombre, precio) {
 
   cont.appendChild(btnSi);
   cont.appendChild(btnNo);
+}
+
+function mostrarMultiTacos(items, max) {
+  const cont = document.getElementById("proteinas");
+  const seleccionados = [];
+
+  cont.innerHTML = "<h3>Elige hasta " + max + " (son " + max + " piezas):</h3>";
+
+  items.forEach(item => {
+    const btn = document.createElement("button");
+    btn.innerText = item.nombre + " - $" + item.precio;
+    btn.style.background = "#e5e7eb";
+    btn.style.color = "#111827";
+    btn.onclick = () => {
+      const idx = seleccionados.findIndex(s => s.nombre === item.nombre);
+      if (idx >= 0) {
+        seleccionados.splice(idx, 1);
+        btn.style.background = "#e5e7eb";
+        btn.style.color = "#111827";
+      } else {
+        if (seleccionados.length >= max) return;
+        seleccionados.push({ nombre: item.nombre, precio: item.precio });
+        btn.style.background = "#16a34a";
+        btn.style.color = "white";
+      }
+    };
+    cont.appendChild(btn);
+  });
+
+  const btnSig = document.createElement("button");
+  btnSig.innerText = "Siguiente";
+  btnSig.style.background = "#2563eb";
+  btnSig.style.color = "white";
+  btnSig.style.fontSize = "16px";
+  btnSig.style.marginTop = "10px";
+  btnSig.style.width = "100%";
+  btnSig.onclick = () => {
+    if (seleccionados.length === 0) { alert("Elige al menos uno"); return; }
+    const precioFinal = Math.max(...seleccionados.map(s => s.precio));
+    const tieneDorados = seleccionados.some(s => s.nombre === "Tacos Dorados");
+    let nombreFinal;
+    if (seleccionados.length === 1) {
+      nombreFinal = seleccionados[0].nombre === "Tacos Dorados" ? "Tacos Dorados" : "Tacos de " + seleccionados[0].nombre;
+    } else {
+      const nombres = seleccionados.map(s => s.nombre);
+      nombreFinal = "Tacos de " + nombres.join(" y ");
+    }
+    // Elegir notas según los ingredientes
+    let notas = [];
+    if (tieneDorados) {
+      notas = notasTacosDorados;
+    } else if (seleccionados.some(s => s.nombre === "Arrachera")) {
+      notas = notasTacosArrachera;
+    } else if (seleccionados.some(s => tacosConNotas.includes(s.nombre))) {
+      notas = notasTacos;
+    }
+    if (notas.length > 0) {
+      mostrarNotas(nombreFinal, precioFinal, notas);
+    } else {
+      productos.push({ nombre: nombreFinal, precio: precioFinal, precioBase: precioFinal, cantidad: 1, nota: "" });
+      total += precioFinal;
+      renderizarLista();
+      cont.innerHTML = "";
+    }
+  };
+  cont.appendChild(btnSig);
+}
+
+function mostrarMultiSopes(datos, max) {
+  const cont = document.getElementById("proteinas");
+  const seleccionados = [];
+
+  cont.innerHTML = "<h3>Sopes - Elige hasta " + max + " (son " + max + " piezas):</h3>";
+
+  datos.proteinas.forEach(p => {
+    const esObjeto = typeof p === "object";
+    const nombre = esObjeto ? p.nombre : p;
+    const precio = esObjeto ? p.precio : datos.precio;
+
+    const btn = document.createElement("button");
+    btn.innerText = nombre + " - $" + precio;
+    btn.style.background = "#e5e7eb";
+    btn.style.color = "#111827";
+    btn.onclick = () => {
+      const idx = seleccionados.findIndex(s => s.nombre === nombre);
+      if (idx >= 0) {
+        seleccionados.splice(idx, 1);
+        btn.style.background = "#e5e7eb";
+        btn.style.color = "#111827";
+      } else {
+        if (seleccionados.length >= max) return;
+        seleccionados.push({ nombre, precio });
+        btn.style.background = "#16a34a";
+        btn.style.color = "white";
+      }
+    };
+    cont.appendChild(btn);
+  });
+
+  const btnSig = document.createElement("button");
+  btnSig.innerText = "Siguiente";
+  btnSig.style.background = "#2563eb";
+  btnSig.style.color = "white";
+  btnSig.style.fontSize = "16px";
+  btnSig.style.marginTop = "10px";
+  btnSig.style.width = "100%";
+  btnSig.onclick = () => {
+    if (seleccionados.length === 0) { alert("Elige al menos uno"); return; }
+    const precioFinal = Math.max(...seleccionados.map(s => s.precio));
+    const nombreFinal = "Sopes de " + seleccionados.map(s => s.nombre).join(" y ");
+    mostrarNotas(nombreFinal, precioFinal, notasAntojitos);
+  };
+  cont.appendChild(btnSig);
 }
 
 function mostrarMultiItems(prefijo, items, max) {
