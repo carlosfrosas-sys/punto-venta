@@ -167,9 +167,10 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 0;
+      padding: 10px 0;
       border-bottom: 1px solid #f0ece7;
       font-size: 15px;
+      gap: 8px;
     }
 
     #lista li:last-child {
@@ -182,16 +183,53 @@
       font-size: 12px;
     }
 
-    /* Botón eliminar */
-    #lista button {
+    .producto-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .producto-controles {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .producto-controles .cantidad {
+      font-size: 16px;
+      font-weight: 700;
+      color: #6b5b4f;
+      min-width: 20px;
+      text-align: center;
+    }
+
+    .btn-qty {
+      background: #e8e4df;
+      color: #6b5b4f;
+      padding: 4px 10px;
+      font-size: 18px;
+      font-weight: 700;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .btn-qty:hover {
+      background: #d9d0c7;
+    }
+
+    .btn-eliminar {
       background: none;
       color: #c4bab0;
       padding: 4px 8px;
       font-size: 16px;
       border-radius: 8px;
+      border: none;
+      cursor: pointer;
     }
 
-    #lista button:hover {
+    .btn-eliminar:hover {
       color: #e05252;
       background: #fef2f2;
     }
@@ -308,7 +346,7 @@
 
   <div class="input-group">
     <div class="section-title">Cliente</div>
-    <input type="text" id="cliente" placeholder="Nombre del cliente">
+    <input type="text" id="cliente" placeholder="Nombre del cliente" onkeydown="if(event.key==='Enter')enviarPedido()">
   </div>
 
   <div class="pedido-section">
@@ -737,6 +775,8 @@ if (categoria === "Licuados") {
         mostrarNotas(categoria + " Sencillos", datos.sencillo, notasChilaquiles);
       } else if (categoria === "Molletes") {
         mostrarPicoDegallo(categoria + " Sencillos", datos.sencillo);
+      } else if (categoria === "Mollequiles") {
+        mostrarNotas(categoria + " Sencillos", datos.sencillo, ["Sin Crema"]);
       } else {
         agregarProducto(categoria + " Sencillos", datos.sencillo);
       }
@@ -944,7 +984,7 @@ function mostrarPregunta(nombre, precio, pregunta, textoSi, textoNo) {
   btnSi.style.fontSize = "16px";
   btnSi.style.minWidth = "100px";
   btnSi.onclick = () => {
-    productos.push({ nombre, precio, nota: textoSi });
+    productos.push({ nombre, precio, precioBase: precio, cantidad: 1, nota: textoSi });
     total += precio;
     renderizarLista();
     cont.innerHTML = "";
@@ -957,7 +997,7 @@ function mostrarPregunta(nombre, precio, pregunta, textoSi, textoNo) {
   btnNo.style.fontSize = "16px";
   btnNo.style.minWidth = "100px";
   btnNo.onclick = () => {
-    productos.push({ nombre, precio, nota: textoNo });
+    productos.push({ nombre, precio, precioBase: precio, cantidad: 1, nota: textoNo });
     total += precio;
     renderizarLista();
     cont.innerHTML = "";
@@ -978,7 +1018,7 @@ function mostrarPicoDegallo(nombre, precio) {
   btnSi.style.fontSize = "16px";
   btnSi.style.minWidth = "100px";
   btnSi.onclick = () => {
-    productos.push({ nombre, precio, nota: "Con pico de gallo" });
+    productos.push({ nombre, precio, precioBase: precio, cantidad: 1, nota: "Con pico de gallo" });
     total += precio;
     renderizarLista();
     cont.innerHTML = "";
@@ -991,7 +1031,7 @@ function mostrarPicoDegallo(nombre, precio) {
   btnNo.style.fontSize = "16px";
   btnNo.style.minWidth = "100px";
   btnNo.onclick = () => {
-    productos.push({ nombre, precio, nota: "Sin pico de gallo" });
+    productos.push({ nombre, precio, precioBase: precio, cantidad: 1, nota: "Sin pico de gallo" });
     total += precio;
     renderizarLista();
     cont.innerHTML = "";
@@ -1045,7 +1085,7 @@ function mostrarNotas(nombre, precio, opciones, siguiente) {
     if (siguiente) {
       siguiente(nombre, precioFinal, nota);
     } else {
-      productos.push({ nombre, precio: precioFinal, nota });
+      productos.push({ nombre, precio: precioFinal, precioBase: precioFinal, cantidad: 1, nota });
       total += precioFinal;
       renderizarLista();
       cont.innerHTML = "";
@@ -1069,7 +1109,7 @@ function mostrarBebidaPaquete(nombre, precio, notaPrev) {
     btn.style.minWidth = "100px";
     btn.onclick = () => {
       const nota = notaPrev ? notaPrev + ", " + bebida : bebida;
-      productos.push({ nombre, precio, nota });
+      productos.push({ nombre, precio, precioBase: precio, cantidad: 1, nota });
       total += precio;
       renderizarLista();
       cont.innerHTML = "";
@@ -1096,7 +1136,7 @@ function mostrarProteinasNachos(precio) {
 }
 
 function agregarProductoSinNota(nombre, precio) {
-  productos.push({ nombre, precio, nota: "" });
+  productos.push({ nombre, precio, precioBase: precio, cantidad: 1, nota: "" });
   total += precio;
   renderizarLista();
 }
@@ -1108,6 +1148,8 @@ function agregarProducto(nombre, precio) {
   productos.push({
     nombre,
     precio,
+    precioBase: precio,
+    cantidad: 1,
     nota: nota ? nota : ""
   });
 
@@ -1121,13 +1163,22 @@ function renderizarLista() {
   lista.innerHTML = "";
 
   productos.forEach((prod, index) => {
+    if (!prod.cantidad) prod.cantidad = 1;
+    const precioUnitario = prod.precio / prod.cantidad;
 
     const li = document.createElement("li");
 
     li.innerHTML = `
-      <strong>${prod.nombre}</strong> - $${prod.precio}
-      ${prod.nota ? `<br><small>📝 ${prod.nota}</small>` : ""}
-      <button onclick="eliminarProducto(${index})">❌</button>
+      <div class="producto-info">
+        <strong>${prod.nombre}</strong> - $${prod.precio}
+        ${prod.nota ? `<br><small>${prod.nota}</small>` : ""}
+      </div>
+      <div class="producto-controles">
+        <button class="btn-qty" onclick="cambiarCantidad(${index}, -1)">-</button>
+        <span class="cantidad">${prod.cantidad}</span>
+        <button class="btn-qty" onclick="cambiarCantidad(${index}, 1)">+</button>
+        <button class="btn-eliminar" onclick="eliminarProducto(${index})">✕</button>
+      </div>
     `;
 
     lista.appendChild(li);
@@ -1135,6 +1186,21 @@ function renderizarLista() {
 
   document.getElementById("total").innerText = total;
 }
+
+function cambiarCantidad(index, delta) {
+  const prod = productos[index];
+
+  if (delta === -1 && prod.cantidad <= 1) {
+    eliminarProducto(index);
+    return;
+  }
+
+  prod.cantidad += delta;
+  prod.precio = prod.precioBase * prod.cantidad;
+  total = productos.reduce((acc, p) => acc + p.precio, 0);
+  renderizarLista();
+}
+
 function eliminarProducto(index) {
 
   total -= productos[index].precio;
