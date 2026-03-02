@@ -801,21 +801,7 @@ function mostrarOpciones(categoria) {
 
   // 🥤 LICUADOS (manejo especial mejorado)
 if (categoria === "Licuados") {
-
-  cont.innerHTML = "<h3>Elige sabor:</h3>";
-
-  datos.sabores.forEach(sabor => {
-
-    const btn = document.createElement("button");
-    btn.innerText = sabor + " - $" + datos.precio;
-
-    btn.onclick = () => {
-      mostrarExtrasLicuado(sabor, datos.precio);
-    };
-
-    cont.appendChild(btn);
-  });
-
+  mostrarSaboresLicuado();
   return;
 }
 
@@ -953,15 +939,8 @@ if (categoria === "Licuados") {
 
   // 🥤 AGUAS
   if (datos.sabores && categoria !== "Licuados") {
-
-    datos.sabores.forEach(sabor => {
-
-      const btn = document.createElement("button");
-      btn.innerText = sabor;
-      btn.onclick = () => mostrarTamañosAgua(sabor);
-
-      cont.appendChild(btn);
-    });
+    mostrarSaboresAgua();
+    return;
   }
 }
 function mostrarSubcategoria(categoria, sub) {
@@ -1023,61 +1002,99 @@ function mostrarSubcategoria(categoria, sub) {
 
   });
 }
-function mostrarTamañosAgua(sabor) {
+function mostrarSaboresAgua() {
   const cont = document.getElementById("proteinas");
-  cont.innerHTML = "<h3>Elige tamaño:</h3>";
+  const seleccionados = [];
+  const extraPrecio = 5;
+
+  cont.innerHTML = "<h3>Elige sabores:</h3><p>El primero es base, cada extra +$" + extraPrecio + "</p>";
+
+  const botones = [];
+  menu["Aguas"].sabores.forEach(sabor => {
+    const btn = document.createElement("button");
+    btn.innerText = sabor;
+    btn.style.background = "#e5e7eb";
+    btn.style.color = "#111827";
+    btn.onclick = () => {
+      const idx = seleccionados.indexOf(sabor);
+      if (idx >= 0) {
+        seleccionados.splice(idx, 1);
+        btn.style.background = "#e5e7eb";
+        btn.style.color = "#111827";
+      } else {
+        seleccionados.push(sabor);
+        btn.style.background = "#16a34a";
+        btn.style.color = "white";
+      }
+    };
+    cont.appendChild(btn);
+    botones.push(btn);
+  });
+
+  const btnSig = document.createElement("button");
+  btnSig.innerText = "Siguiente";
+  btnSig.style.background = "#2563eb";
+  btnSig.style.color = "white";
+  btnSig.style.fontSize = "16px";
+  btnSig.style.marginTop = "10px";
+  btnSig.style.width = "100%";
+  btnSig.onclick = () => {
+    if (seleccionados.length === 0) { alert("Elige al menos un sabor"); return; }
+    mostrarTamañosAgua(seleccionados);
+  };
+  cont.appendChild(btnSig);
+}
+
+function mostrarTamañosAgua(sabores) {
+  const cont = document.getElementById("proteinas");
+  const extraPrecio = 5;
+  const extrasCount = sabores.length > 1 ? sabores.length - 1 : 0;
+  const nombre = "Agua de " + sabores.join(", ");
+
+  cont.innerHTML = "<h3>" + nombre + "</h3><p>Elige tamaño:</p>";
 
   const tamaños = menu["Aguas"].tamaños;
 
   for (let tamaño in tamaños) {
-    const precio = tamaños[tamaño];
+    const precioBase = tamaños[tamaño];
+    const precioTotal = precioBase + (extrasCount * extraPrecio);
 
     const btn = document.createElement("button");
-    btn.innerText = tamaño + " - $" + precio;
-
+    btn.innerText = tamaño + " - $" + precioTotal;
     btn.onclick = () => {
-      mostrarExtrasAgua(sabor, tamaño, precio);
+      const nombreFinal = nombre + " " + tamaño;
+      const notas = ["Sin Azúcar", "Poca Azúcar"];
+      if (sabores.includes("Limón")) notas.push({ nombre: "Con Chía", precio: 4 });
+      mostrarNotas(nombreFinal, precioTotal, notas);
     };
-
     cont.appendChild(btn);
   }
 }
 
-function mostrarExtrasAgua(sabor, tamaño, precioBase) {
+function mostrarSaboresLicuado() {
   const cont = document.getElementById("proteinas");
-  const extras = [];
+  const seleccionados = [];
   const extraPrecio = 5;
-  let precioTotal = precioBase;
+  const precioBase = menu["Licuados"].precio;
 
-  cont.innerHTML = `<h3>Agua de ${sabor} ${tamaño} - $${precioBase}</h3><p>Sabor extra (+$${extraPrecio} c/u):</p>`;
+  cont.innerHTML = "<h3>Elige sabores - $" + precioBase + ":</h3><p>El primero es base, cada extra +$" + extraPrecio + "</p>";
 
-  const infoP = document.createElement("p");
-  infoP.style.fontWeight = "700";
-  infoP.style.color = "#6b5b4f";
-  infoP.style.fontSize = "16px";
-  infoP.innerText = "Total: $" + precioTotal;
-  cont.appendChild(infoP);
-
-  menu["Aguas"].sabores.forEach(s => {
-    if (s === sabor) return;
+  menu["Licuados"].sabores.forEach(sabor => {
     const btn = document.createElement("button");
-    btn.innerText = s + " +$" + extraPrecio;
+    btn.innerText = sabor;
     btn.style.background = "#e5e7eb";
     btn.style.color = "#111827";
     btn.onclick = () => {
-      const idx = extras.indexOf(s);
+      const idx = seleccionados.indexOf(sabor);
       if (idx >= 0) {
-        extras.splice(idx, 1);
-        precioTotal -= extraPrecio;
+        seleccionados.splice(idx, 1);
         btn.style.background = "#e5e7eb";
         btn.style.color = "#111827";
       } else {
-        extras.push(s);
-        precioTotal += extraPrecio;
+        seleccionados.push(sabor);
         btn.style.background = "#16a34a";
         btn.style.color = "white";
       }
-      infoP.innerText = "Total: $" + precioTotal;
     };
     cont.appendChild(btn);
   });
@@ -1090,101 +1107,14 @@ function mostrarExtrasAgua(sabor, tamaño, precioBase) {
   btnSig.style.marginTop = "10px";
   btnSig.style.width = "100%";
   btnSig.onclick = () => {
-    let nombre = "Agua de " + sabor;
-    if (extras.length > 0) nombre += " con " + extras.join(", ");
-    nombre += " " + tamaño;
-    const notas = ["Sin Azúcar", "Poca Azúcar"];
-    if (sabor === "Limón" || extras.includes("Limón")) notas.push({ nombre: "Con Chía", precio: 4 });
-    mostrarNotas(nombre, precioTotal, notas);
-  };
-  cont.appendChild(btnSig);
-
-  // Botón saltar si no quiere extras
-  const btnSaltar = document.createElement("button");
-  btnSaltar.innerText = "Sin extra";
-  btnSaltar.style.background = "transparent";
-  btnSaltar.style.color = "#a09080";
-  btnSaltar.style.fontSize = "14px";
-  btnSaltar.style.marginTop = "5px";
-  btnSaltar.style.width = "100%";
-  btnSaltar.style.border = "1.5px solid #d9d0c7";
-  btnSaltar.onclick = () => {
-    const nombre = "Agua de " + sabor + " " + tamaño;
-    const notas = ["Sin Azúcar", "Poca Azúcar"];
-    if (sabor === "Limón") notas.push({ nombre: "Con Chía", precio: 4 });
-    mostrarNotas(nombre, precioBase, notas);
-  };
-  cont.appendChild(btnSaltar);
-}
-
-function mostrarExtrasLicuado(sabor, precioBase) {
-  const cont = document.getElementById("proteinas");
-  const extras = [];
-  const extraPrecio = 5;
-  let precioTotal = precioBase;
-
-  cont.innerHTML = `<h3>Licuado de ${sabor} - $${precioBase}</h3><p>Sabor extra (+$${extraPrecio} c/u):</p>`;
-
-  const infoP = document.createElement("p");
-  infoP.style.fontWeight = "700";
-  infoP.style.color = "#6b5b4f";
-  infoP.style.fontSize = "16px";
-  infoP.innerText = "Total: $" + precioTotal;
-  cont.appendChild(infoP);
-
-  menu["Licuados"].sabores.forEach(s => {
-    if (s === sabor) return;
-    const btn = document.createElement("button");
-    btn.innerText = s + " +$" + extraPrecio;
-    btn.style.background = "#e5e7eb";
-    btn.style.color = "#111827";
-    btn.onclick = () => {
-      const idx = extras.indexOf(s);
-      if (idx >= 0) {
-        extras.splice(idx, 1);
-        precioTotal -= extraPrecio;
-        btn.style.background = "#e5e7eb";
-        btn.style.color = "#111827";
-      } else {
-        extras.push(s);
-        precioTotal += extraPrecio;
-        btn.style.background = "#16a34a";
-        btn.style.color = "white";
-      }
-      infoP.innerText = "Total: $" + precioTotal;
-    };
-    cont.appendChild(btn);
-  });
-
-  const btnSig = document.createElement("button");
-  btnSig.innerText = "Siguiente";
-  btnSig.style.background = "#2563eb";
-  btnSig.style.color = "white";
-  btnSig.style.fontSize = "16px";
-  btnSig.style.marginTop = "10px";
-  btnSig.style.width = "100%";
-  btnSig.onclick = () => {
-    let nombre = "Licuado de " + sabor;
-    if (extras.length > 0) nombre += " con " + extras.join(", ");
+    if (seleccionados.length === 0) { alert("Elige al menos un sabor"); return; }
+    const extrasCount = seleccionados.length > 1 ? seleccionados.length - 1 : 0;
+    const precioTotal = precioBase + (extrasCount * extraPrecio);
+    const nombre = "Licuado de " + seleccionados.join(", ");
     const notas = [{ nombre: "Con Avena", precio: 4 }];
     mostrarNotas(nombre, precioTotal, notas);
   };
   cont.appendChild(btnSig);
-
-  const btnSaltar = document.createElement("button");
-  btnSaltar.innerText = "Sin extra";
-  btnSaltar.style.background = "transparent";
-  btnSaltar.style.color = "#a09080";
-  btnSaltar.style.fontSize = "14px";
-  btnSaltar.style.marginTop = "5px";
-  btnSaltar.style.width = "100%";
-  btnSaltar.style.border = "1.5px solid #d9d0c7";
-  btnSaltar.onclick = () => {
-    const nombre = "Licuado de " + sabor;
-    const notas = [{ nombre: "Con Avena", precio: 4 }];
-    mostrarNotas(nombre, precioBase, notas);
-  };
-  cont.appendChild(btnSaltar);
 }
 
 function mostrarPregunta(nombre, precio, pregunta, textoSi, textoNo) {
