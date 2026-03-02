@@ -169,6 +169,11 @@
       color: #ccc;
     }
 
+    .punto {
+      color: #60a5fa;
+      margin-right: 4px;
+    }
+
     .precio {
       font-size: 13px;
       color: #666;
@@ -289,7 +294,7 @@
           <ul class="productos">
             ${pedido.productos.map(p =>
               `<li>
-                ${p.cantidad && p.cantidad > 1 ? `<span class="qty">${p.cantidad}</span> ` : ""}${p.nombre}<span class="precio">$${p.precio}</span>${p.nota ? `<span class="nota">${p.nota}</span>` : ""}
+                <span class="punto">&#8226;</span> ${p.cantidad && p.cantidad > 1 ? `<span class="qty">${p.cantidad}</span> ` : ""}${p.nombre}<span class="precio">$${p.precio}</span>${p.nota ? `<span class="nota">${p.nota}</span>` : ""}
               </li>`
             ).join("")}
           </ul>
@@ -426,7 +431,7 @@
             <ul class="productos">
               ${p.productos.map(pr =>
                 `<li>
-                  ${pr.cantidad && pr.cantidad > 1 ? `<span class="qty">${pr.cantidad}</span> ` : ""}${pr.nombre}<span class="precio">$${pr.precio}</span>${pr.nota ? `<span class="nota">${pr.nota}</span>` : ""}
+                  <span class="punto">&#8226;</span> ${pr.cantidad && pr.cantidad > 1 ? `<span class="qty">${pr.cantidad}</span> ` : ""}${pr.nombre}<span class="precio">$${pr.precio}</span>${pr.nota ? `<span class="nota">${pr.nota}</span>` : ""}
                 </li>`
               ).join("")}
             </ul>
