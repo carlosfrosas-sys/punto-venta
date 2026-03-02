@@ -513,7 +513,7 @@ const menu = {
   // 🥣 PAQUETES
   "Paquetes": {
     subcategorias: {
-      "Paquete 1 - $58": {
+      "Paquete 1": {
         precio: 58,
         proteinas: ["Jamón","Chorizo","Champiñones","Salchicha","Nopales","A la Mexicana"],
         bebida: true
@@ -522,12 +522,13 @@ const menu = {
         directo: true,
         nombre: "Paquete 2 - Chilaquiles con Huevo",
         precio: 58,
+        huevo: true,
         notas: ["Sin Queso", "Sin Crema"],
         bebida: true
       },
-      "Paquete 3 - $68": {
+      "Paquete 3": {
         precio: 68,
-        proteinas: ["Bistec","Pollo","Pastor"],
+        proteinas: ["Bistec","Pollo","Pastor","Arrachera"],
         notas: ["Sin Queso", "Sin Crema"],
         bebida: true
       },
@@ -1037,6 +1038,10 @@ function mostrarSubcategoria(categoria, sub) {
 
   // Si es un paquete directo (sin proteínas)
   if (datos.directo) {
+    if (datos.huevo) {
+      mostrarHuevoPaquete(datos);
+      return;
+    }
     if (datos.notas && datos.bebida) {
       mostrarNotas(datos.nombre, datos.precio, datos.notas, mostrarBebidaPaquete);
     } else if (datos.notas) {
@@ -1637,6 +1642,29 @@ function mostrarNotas(nombre, precio, opciones, siguiente) {
     }
   };
   cont.appendChild(btnAgregar);
+}
+
+function mostrarHuevoPaquete(datos) {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>" + datos.nombre + " - $" + datos.precio + "</h3><p>¿Cómo el huevo?</p>";
+
+  ["Estrellado", "Revuelto"].forEach(tipo => {
+    const btn = document.createElement("button");
+    btn.innerText = tipo;
+    btn.style.background = "#2563eb";
+    btn.style.color = "white";
+    btn.style.fontSize = "16px";
+    btn.style.minWidth = "100px";
+    btn.onclick = () => {
+      const nombre = datos.nombre + " " + tipo;
+      if (datos.notas && datos.bebida) {
+        mostrarNotas(nombre, datos.precio, datos.notas, mostrarBebidaPaquete);
+      } else if (datos.bebida) {
+        mostrarBebidaPaquete(nombre, datos.precio, "");
+      }
+    };
+    cont.appendChild(btn);
+  });
 }
 
 function mostrarBebidaPaquete(nombre, precio, notaPrev) {
