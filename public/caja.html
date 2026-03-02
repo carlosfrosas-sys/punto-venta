@@ -993,7 +993,8 @@ if (categoria === "Licuados") {
           } else if (categoria === "Chilaquiles") {
             mostrarNotas(categoria + " de " + p, datos.precio, notasChilaquiles);
           } else if (categoria === "Enchiladas") {
-            mostrarNotas(categoria + " " + p, datos.precio, notasEnchiladas);
+            const nombreEnch = p === "Verdes" ? "Enchiladas Verdes" : p === "Mole" ? "Enmoladas" : "Enfrijoladas";
+            mostrarNotas(nombreEnch, datos.precio, notasEnchiladas);
           } else if (categoria === "Burritos") {
             mostrarNotas("Burritos de " + p, datos.precio, notasBurritos);
           } else {
