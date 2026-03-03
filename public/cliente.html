@@ -472,7 +472,7 @@ const notasTortas = ["Sin Mayonesa", "Sin Queso", "Sin Frijoles", "Sin Jitomate"
 const notasHamburguesas = ["Sin Mayonesa", "Sin Catsup", "Sin Mostaza", "Sin Lechuga", "Sin Jitomate", "Sin Queso"];
 const notasHotDog = ["Sin Mayonesa", "Sin Catsup", "Sin Mostaza", "Sin Jitomate"];
 const notasBanderilla = ["Sin Mayonesa", "Sin Catsup", "Sin Mostaza"];
-const hotDogs = ["Hot Dog (1 pza)", "Hot Dog con Papas (2 pzas)"];
+const hotDogs = ["Hot Dog", "2 Hot Dogs"];
 const banderillas = ["Banderilla", "Banderilla con Papas"];
 const notasChilaquiles = ["Sin Crema", "Sin Queso"];
 const notasEnchiladas = ["Sin Lechuga", "Sin Queso", "Sin Crema"];
@@ -667,6 +667,7 @@ const menu = {
       { nombre: "Hojaldra Jamon", precio: 37 },
       { nombre: "Hojaldra Mole con Pollo", precio: 40 },
       { nombre: "Hojaldra Atun", precio: 40 },
+      { nombre: "Cuernito de Jamon", precio: 37 },
     ]
   },
 
@@ -704,6 +705,7 @@ const menu = {
       { nombre: "Campechanos", precio: 55 },
       { nombre: "Pechuga", precio: 55 },
       { nombre: "Chuleta", precio: 50 },
+      { nombre: "Alambre", precio: 55 },
       { nombre: "Tacos Dorados", precio: 55 }
     ]
   },
@@ -753,12 +755,13 @@ const menu = {
   // SNACKS
   "Snacks": {
     items: [
-      { nombre: "Hot Dog (1 pza)", precio: 17 },
-      { nombre: "Hot Dog con Papas (2 pzas)", precio: 52 },
+      { nombre: "Hot Dog", precio: 17, hotdog: true, precioConPapas: 35 },
+      { nombre: "2 Hot Dogs", precio: 34, hotdog: true, precioConPapas: 52 },
       { nombre: "Banderilla", precio: 27 },
       { nombre: "Banderilla con Papas", precio: 45 },
       { nombre: "Papas a la Francesa", precio: 40 },
-      { nombre: "Nachos", precio: 42, nachos: true }
+      { nombre: "Nachos", precio: 42, nachos: true },
+      { nombre: "Maruchan", precio: 25, maruchan: true }
     ]
   },
 
@@ -910,7 +913,7 @@ function mostrarOpciones(categoria) {
           } else if (categoria === "Chilaquiles") {
             mostrarNotas(categoria + " de " + p.nombre, p.precio, notasChilaquiles);
           } else if (categoria === "Sandwiches") {
-            if (p.nombre === "Club Sandwich" || p.nombre.startsWith("Hojaldra")) {
+            if (p.nombre === "Club Sandwich" || p.nombre.startsWith("Hojaldra") || p.nombre.startsWith("Cuernito")) {
               mostrarNotas(p.nombre, p.precio, notasSandwiches);
             } else {
               mostrarNotas("Sandwich de " + p.nombre, p.precio, notasSandwiches);
@@ -965,8 +968,10 @@ function mostrarOpciones(categoria) {
       btn.onclick = () => {
         if (categoria === "Hamburguesas") {
           mostrarNotas(item.nombre, item.precio, notasHamburguesas);
-        } else if (categoria === "Snacks" && hotDogs.includes(item.nombre)) {
-          mostrarNotas(item.nombre, item.precio, notasHotDog);
+        } else if (categoria === "Snacks" && item.hotdog) {
+          mostrarOpcionPapasHotDog(item.nombre, item.precio, item.precioConPapas);
+        } else if (categoria === "Snacks" && item.maruchan) {
+          mostrarSaboresMaruchan(item.precio);
         } else if (categoria === "Snacks" && banderillas.includes(item.nombre)) {
           mostrarNotas(item.nombre, item.precio, notasBanderilla);
         } else if (categoria === "Snacks" && item.nachos) {
@@ -1715,6 +1720,49 @@ function mostrarProteinasNachos(precio) {
     btn.innerText = p + " - $" + precio;
     btn.onclick = () => {
       agregarProductoSinNota("Nachos de " + p, precio);
+      cont.innerHTML = "";
+    };
+    cont.appendChild(btn);
+  });
+}
+
+function mostrarOpcionPapasHotDog(nombre, precioSin, precioCon) {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>" + nombre + "</h3><p>Con papas?</p>";
+
+  const btnCon = document.createElement("button");
+  btnCon.innerText = "Con Papas - $" + precioCon;
+  btnCon.style.background = "#16a34a";
+  btnCon.style.color = "white";
+  btnCon.style.fontSize = "16px";
+  btnCon.onclick = () => {
+    mostrarNotas(nombre + " con Papas", precioCon, notasHotDog);
+  };
+
+  const btnSin = document.createElement("button");
+  btnSin.innerText = "Sin Papas - $" + precioSin;
+  btnSin.style.background = "#2563eb";
+  btnSin.style.color = "white";
+  btnSin.style.fontSize = "16px";
+  btnSin.onclick = () => {
+    mostrarNotas(nombre, precioSin, notasHotDog);
+  };
+
+  cont.appendChild(btnCon);
+  cont.appendChild(btnSin);
+}
+
+function mostrarSaboresMaruchan(precio) {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>Maruchan - $" + precio + "</h3><p>Elige sabor:</p>";
+
+  const sabores = ["Camaron", "Camaron Piquin", "Camaron Habanero", "Res", "Pollo"];
+
+  sabores.forEach(sabor => {
+    const btn = document.createElement("button");
+    btn.innerText = sabor;
+    btn.onclick = () => {
+      agregarProductoSinNota("Maruchan de " + sabor, precio);
       cont.innerHTML = "";
     };
     cont.appendChild(btn);
