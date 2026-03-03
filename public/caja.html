@@ -920,6 +920,18 @@ if (categoria === "Licuados") {
     return;
   }
 
+  // 1 PIEZA para Molletes
+  if (categoria === "Molletes") {
+    const btn1p = document.createElement("button");
+    btn1p.innerText = "1 Pieza";
+    btn1p.style.background = "#f59e0b";
+    btn1p.style.color = "white";
+    btn1p.style.width = "100%";
+    btn1p.style.marginBottom = "10px";
+    btn1p.onclick = () => mostrar1PiezaMolletes(datos);
+    cont.appendChild(btn1p);
+  }
+
   // 🔥 SI TIENE OPCIÓN SENCILLO
   if (datos.sencillo) {
 
@@ -1350,6 +1362,15 @@ function mostrarMultiTacos(items, max) {
 
   cont.innerHTML = "<h3>Elige hasta " + max + " (son " + max + " piezas):</h3>";
 
+  const btn1p = document.createElement("button");
+  btn1p.innerText = "1 Pieza";
+  btn1p.style.background = "#f59e0b";
+  btn1p.style.color = "white";
+  btn1p.style.width = "100%";
+  btn1p.style.marginBottom = "10px";
+  btn1p.onclick = () => mostrar1PiezaTacos(items);
+  cont.appendChild(btn1p);
+
   items.forEach(item => {
     const btn = document.createElement("button");
     btn.innerText = item.nombre + " - $" + item.precio;
@@ -1464,6 +1485,15 @@ function mostrarMultiItems(prefijo, items, max) {
 
   cont.innerHTML = "<h3>Elige hasta " + max + " (son " + max + " piezas):</h3>";
 
+  const btn1p = document.createElement("button");
+  btn1p.innerText = "1 Pieza";
+  btn1p.style.background = "#f59e0b";
+  btn1p.style.color = "white";
+  btn1p.style.width = "100%";
+  btn1p.style.marginBottom = "10px";
+  btn1p.onclick = () => mostrar1PiezaItems(prefijo, items);
+  cont.appendChild(btn1p);
+
   items.forEach(item => {
     const btn = document.createElement("button");
     btn.innerText = item.nombre + " - $" + item.precio;
@@ -1513,6 +1543,15 @@ function mostrarMultiProteina(categoria, datos, max, notas) {
   const prefijo = esBurrito ? "Burritos de " : categoria + " de ";
 
   cont.innerHTML = "<h3>" + categoria + ":</h3><p>Elige hasta " + max + " proteínas (son " + max + " piezas):</p>";
+
+  const btn1p = document.createElement("button");
+  btn1p.innerText = "1 Pieza";
+  btn1p.style.background = "#f59e0b";
+  btn1p.style.color = "white";
+  btn1p.style.width = "100%";
+  btn1p.style.marginBottom = "10px";
+  btn1p.onclick = () => mostrar1PiezaProteina(categoria, datos, notas);
+  cont.appendChild(btn1p);
 
   // Sencillo para mollequiles
   if (datos.sencillo) {
@@ -1796,6 +1835,109 @@ function mostrarProteinasNachos(precio) {
     btn.onclick = () => {
       agregarProductoSinNota("Nachos de " + p, precio);
       cont.innerHTML = "";
+    };
+    cont.appendChild(btn);
+  });
+}
+
+function precio1Pieza(precio) {
+  return Math.round(precio / 2) + 2;
+}
+
+function mostrar1PiezaTacos(items) {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>Tacos - 1 Pieza:</h3>";
+
+  items.forEach(item => {
+    const p1 = precio1Pieza(item.precio);
+    const btn = document.createElement("button");
+    btn.innerText = item.nombre + " - $" + p1;
+    btn.onclick = () => {
+      const nombre = item.nombre === "Tacos Dorados" ? "1 Taco Dorado" : "1 Taco de " + item.nombre;
+      if (item.nombre === "Tacos Dorados") {
+        mostrarNotas(nombre, p1, notasTacosDorados);
+      } else if (item.nombre === "Arrachera") {
+        mostrarNotas(nombre, p1, notasTacosArrachera);
+      } else if (tacosConNotas.includes(item.nombre)) {
+        mostrarNotas(nombre, p1, notasTacos);
+      } else {
+        agregarProductoSinNota(nombre, p1);
+      }
+    };
+    cont.appendChild(btn);
+  });
+}
+
+function mostrar1PiezaProteina(categoria, datos, notas) {
+  const cont = document.getElementById("proteinas");
+  const esBurrito = categoria === "Burritos";
+  const prefijo = esBurrito ? "1 Burrito de " : "1 " + categoria.slice(0, -1) + " de ";
+
+  cont.innerHTML = "<h3>" + categoria + " - 1 Pieza:</h3>";
+
+  if (datos.sencillo) {
+    const p1 = precio1Pieza(datos.sencillo);
+    const btnSenc = document.createElement("button");
+    btnSenc.innerText = "Sencillo - $" + p1;
+    btnSenc.onclick = () => {
+      const nombre = esBurrito ? "1 Burrito Sencillo" : "1 " + categoria.slice(0, -1) + " Sencillo";
+      mostrarNotas(nombre, p1, notas);
+    };
+    cont.appendChild(btnSenc);
+  }
+
+  datos.proteinas.forEach(p => {
+    const esObjeto = typeof p === "object";
+    const nombre = esObjeto ? p.nombre : p;
+    const precio = esObjeto ? p.precio : datos.precio;
+    const p1 = precio1Pieza(precio);
+
+    const btn = document.createElement("button");
+    btn.innerText = nombre + " - $" + p1;
+    btn.onclick = () => {
+      mostrarNotas(prefijo + nombre, p1, notas);
+    };
+    cont.appendChild(btn);
+  });
+}
+
+function mostrar1PiezaItems(prefijo, items) {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>" + prefijo.trim() + " - 1 Pieza:</h3>";
+
+  items.forEach(item => {
+    const p1 = precio1Pieza(item.precio);
+    const btn = document.createElement("button");
+    btn.innerText = item.nombre + " - $" + p1;
+    btn.onclick = () => {
+      agregarProductoSinNota("1 Sincronizada de " + item.nombre, p1);
+    };
+    cont.appendChild(btn);
+  });
+}
+
+function mostrar1PiezaMolletes(datos) {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>Molletes - 1 Pieza:</h3>";
+
+  const p1Senc = precio1Pieza(datos.sencillo);
+  const btnSenc = document.createElement("button");
+  btnSenc.innerText = "Sencillo - $" + p1Senc;
+  btnSenc.onclick = () => {
+    mostrarPicoDegallo("1 Mollete Sencillo", p1Senc);
+  };
+  cont.appendChild(btnSenc);
+
+  datos.proteinas.forEach(p => {
+    const esObjeto = typeof p === "object";
+    const nombre = esObjeto ? p.nombre : p;
+    const precio = esObjeto ? p.precio : datos.precio;
+    const p1 = precio1Pieza(precio);
+
+    const btn = document.createElement("button");
+    btn.innerText = nombre + " - $" + p1;
+    btn.onclick = () => {
+      mostrarPicoDegallo("1 Mollete de " + nombre, p1);
     };
     cont.appendChild(btn);
   });
