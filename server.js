@@ -287,7 +287,7 @@ const TOKEN_ADMIN = require("crypto").randomBytes(32).toString("hex");
 
 app.post("/login", (req, res) => {
   const { usuario, password } = req.body;
-  if (usuario === USUARIO_ADMIN && password === PASS_ADMIN) {
+  if (usuario.normalize("NFC") === USUARIO_ADMIN.normalize("NFC") && password === PASS_ADMIN) {
     res.json({ token: TOKEN_ADMIN });
   } else {
     res.status(401).json({ error: "Usuario o contraseña incorrectos" });
