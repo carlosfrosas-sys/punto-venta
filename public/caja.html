@@ -595,6 +595,7 @@ const menu = {
         directo: true,
         nombre: "Paquete 4 - Hot Cakes con Huevo",
         precio: 50,
+        acompanamiento: ["Miel Maple", "Mermelada", "Lechera"],
         bebida: true
       },
       "Paquete 5 - Bisquet con Mermelada y Café - $38": {
@@ -901,7 +902,8 @@ const menu = {
       { nombre: "Café de Olla Grande", precio: 18 },
       { nombre: "Café con Leche", precio: 20 },
       { nombre: "Capuccino Instantáneo", precio: 28, capuccino: true },
-      { nombre: "Espumoso Chocolate", precio: 25 }
+      { nombre: "Espumoso Chocolate", precio: 25 },
+      { nombre: "Té", precio: 15 }
     ]
   },
 
@@ -1161,6 +1163,10 @@ function mostrarSubcategoria(categoria, sub) {
   if (datos.directo) {
     if (datos.huevo) {
       mostrarHuevoPaquete(datos);
+      return;
+    }
+    if (datos.acompanamiento && datos.bebida) {
+      mostrarAcompanamientoPaquete(datos.nombre, datos.precio, datos.acompanamiento);
       return;
     }
     if (datos.notas && datos.bebida) {
@@ -1802,6 +1808,20 @@ function mostrarHuevoPaquete(datos) {
       } else if (datos.bebida) {
         mostrarBebidaPaquete(nombre, datos.precio, "");
       }
+    };
+    cont.appendChild(btn);
+  });
+}
+
+function mostrarAcompanamientoPaquete(nombre, precio, opciones) {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>" + nombre + " - $" + precio + "</h3><p>Elige acompañamiento:</p>";
+
+  opciones.forEach(opcion => {
+    const btn = document.createElement("button");
+    btn.innerText = opcion;
+    btn.onclick = () => {
+      mostrarBebidaPaquete(nombre, precio, opcion);
     };
     cont.appendChild(btn);
   });
