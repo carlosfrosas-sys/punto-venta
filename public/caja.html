@@ -705,22 +705,50 @@ const menu = {
 
   // 🥪 SANDWICHES
   "Sandwiches": {
-    proteinas: [
-      { nombre: "Jamón", precio: 37 },
-      { nombre: "Pierna", precio: 37 },
-      { nombre: "Salchicha", precio: 37 },
-      { nombre: "Huevo", precio: 37 },
-
-      { nombre: "Pollo", precio: 40 },
-      { nombre: "Atún", precio: 40 },
-      { nombre: "Pechuga", precio: 40 },
-
-      { nombre: "Club Sandwich", precio: 73 },
-      { nombre: "Hojaldra Jamón", precio: 37 },
-      { nombre: "Hojaldra Mole con Pollo", precio: 40 },
-      { nombre: "Hojaldra Atún", precio: 40 },
-      { nombre: "Cuernito de Jamón", precio: 37 },
-    ]
+    subcategorias: {
+      "Sandwich": {
+        proteinas: [
+          { nombre: "Jamón", precio: 37 },
+          { nombre: "Pierna", precio: 37 },
+          { nombre: "Salchicha", precio: 37 },
+          { nombre: "Huevo", precio: 37 },
+          { nombre: "Pollo", precio: 40 },
+          { nombre: "Atún", precio: 40 },
+          { nombre: "Pechuga", precio: 40 },
+          { nombre: "Pollo c/ Mole", precio: 40 }
+        ]
+      },
+      "Cuernito": {
+        proteinas: [
+          { nombre: "Jamón", precio: 37 },
+          { nombre: "Pierna", precio: 37 },
+          { nombre: "Salchicha", precio: 37 },
+          { nombre: "Huevo", precio: 37 },
+          { nombre: "Pollo", precio: 40 },
+          { nombre: "Atún", precio: 40 },
+          { nombre: "Pechuga", precio: 40 },
+          { nombre: "Pollo c/ Mole", precio: 40 }
+        ]
+      },
+      "Hojaldra": {
+        proteinas: [
+          { nombre: "Jamón", precio: 37 },
+          { nombre: "Pierna", precio: 37 },
+          { nombre: "Salchicha", precio: 37 },
+          { nombre: "Huevo", precio: 37 },
+          { nombre: "Pollo", precio: 40 },
+          { nombre: "Atún", precio: 40 },
+          { nombre: "Pechuga", precio: 40 },
+          { nombre: "Pollo c/ Mole", precio: 40 }
+        ]
+      },
+      "Club Sandwich - $73": {
+        directo: true,
+        nombre: "Club Sandwich",
+        precio: 73,
+        notas: notasSandwiches
+      }
+    }
   },
 
   // 🍔 HAMBURGUESAS
@@ -1132,6 +1160,8 @@ function mostrarSubcategoria(categoria, sub) {
       btn.onclick = () => {
         if (categoria === "Antojitos") {
           mostrarNotas(sub + " de " + p.nombre, p.precio, notasAntojitos);
+        } else if (categoria === "Sandwiches") {
+          mostrarNotas(sub + " de " + p.nombre, p.precio, notasSandwiches);
         } else {
           agregarProducto(sub + " de " + p.nombre, p.precio);
         }
