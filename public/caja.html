@@ -1447,7 +1447,12 @@ function mostrarMultiTacos(items, max) {
     if (tieneDorados) {
       notas = notasTacosDorados;
     } else if (tieneAlambre) {
-      notas = notasTacosAlambre;
+      productos.push({ nombre: nombreFinal, precio: precioFinal, precioBase: precioFinal, cantidad: 1, nota: "" });
+      total += precioFinal;
+      renderizarLista();
+      cont.innerHTML = "";
+      scrollACategorias();
+      return;
     } else {
       notas = notasTacos;
     }
@@ -1881,7 +1886,7 @@ function mostrar1PiezaTacos(items) {
       if (item.nombre === "Tacos Dorados") {
         mostrarNotas(nombre, p1, notasTacosDorados);
       } else if (item.nombre === "Alambre") {
-        mostrarNotas(nombre, p1, notasTacosAlambre);
+        agregarProductoSinNota(nombre, p1);
       } else {
         mostrarNotas(nombre, p1, notasTacos);
       }
