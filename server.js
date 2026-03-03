@@ -280,6 +280,28 @@ app.put("/pedido/:id", async (req, res) => {
   }
 });
 
+// Login para caja y ventas
+const USUARIO_ADMIN = process.env.USUARIO_ADMIN || "admin";
+const PASS_ADMIN = process.env.PASS_ADMIN || "1234";
+const TOKEN_ADMIN = require("crypto").randomBytes(32).toString("hex");
+
+app.post("/login", (req, res) => {
+  const { usuario, password } = req.body;
+  if (usuario === USUARIO_ADMIN && password === PASS_ADMIN) {
+    res.json({ token: TOKEN_ADMIN });
+  } else {
+    res.status(401).json({ error: "Usuario o contraseña incorrectos" });
+  }
+});
+
+app.post("/verificar-token", (req, res) => {
+  if (req.body.token === TOKEN_ADMIN) {
+    res.json({ ok: true });
+  } else {
+    res.status(401).json({ error: "Token inválido" });
+  }
+});
+
 const PASS_ELIMINAR = process.env.PASS_ELIMINAR || "1234";
 
 app.delete("/pedido/:id", async (req, res) => {
