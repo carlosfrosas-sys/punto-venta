@@ -204,8 +204,8 @@ app.get("/pago-exitoso", async (req, res) => {
 
     // Crear pedido real
     const notaFinal = pendiente.nota
-      ? "[PAGO MP] " + pendiente.nota
-      : "[PAGO MP]";
+      ? "[PAGO ONLINE] " + pendiente.nota
+      : "[PAGO ONLINE]";
 
     const pedido = {
       id: idCounter++,
