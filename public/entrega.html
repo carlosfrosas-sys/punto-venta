@@ -261,26 +261,52 @@
   <script>
     const socket = io();
     const contenedor = document.getElementById("pedidos");
+    const pedidosMostrados = new Set();
 
-    // Cargar pedidos existentes al abrir la página
-    fetch("/pedidos")
-      .then(res => res.json())
-      .then(pedidos => {
-        pedidos.filter(p => p.estado === "pendiente").forEach(mostrarPedido);
-      });
+    function cargarPedidos() {
+      contenedor.innerHTML = "";
+      pedidosMostrados.clear();
+      fetch("/pedidos")
+        .then(res => res.json())
+        .then(pedidos => {
+          pedidos.filter(p => p.estado === "pendiente").forEach(mostrarPedido);
+        });
+    }
 
-    socket.on("nuevoPedido", (pedido) => {
-      mostrarPedido(pedido);
-    });
+    // Cargar al inicio
+    cargarPedidos();
 
-    socket.on("pedidoEliminado", (id) => {
-      const pedidoDiv = document.getElementById("pedido-" + id);
-      if (pedidoDiv) {
-        pedidoDiv.remove();
+    // Recargar al reconectar (celular que entra/sale de reposo)
+    socket.on("connect", () => {
+      if (pedidosMostrados.size > 0) {
+        cargarPedidos();
       }
     });
 
+    socket.on("nuevoPedido", (pedido) => {
+      if (!pedidosMostrados.has(pedido.id)) {
+        mostrarPedido(pedido);
+      }
+    });
+
+    socket.on("actualizarPedido", (pedido) => {
+      if (pedido.estado !== "pendiente") {
+        const el = document.getElementById("pedido-" + pedido.id);
+        if (el) el.remove();
+        pedidosMostrados.delete(pedido.id);
+      }
+    });
+
+    socket.on("pedidoEliminado", (id) => {
+      const el = document.getElementById("pedido-" + id);
+      if (el) el.remove();
+      pedidosMostrados.delete(id);
+    });
+
     function mostrarPedido(pedido) {
+      if (pedidosMostrados.has(pedido.id)) return;
+      pedidosMostrados.add(pedido.id);
+
       const div = document.createElement("div");
       div.id = "pedido-" + pedido.id;
       div.className = "pedido";
@@ -307,6 +333,12 @@
     }
 
     window.entregar = function(id) {
+      const btn = document.querySelector("#pedido-" + id + " .btn-entregado");
+      if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = "0.5";
+        btn.innerText = "...";
+      }
       fetch("/pedido/entregado/" + id, { method: "POST" });
     };
 
