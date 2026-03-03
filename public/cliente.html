@@ -479,8 +479,8 @@ const notasEnchiladas = ["Sin Lechuga", "Sin Queso", "Sin Crema"];
 const notasSandwiches = ["Sin Mayonesa", "Sin Queso", "Sin Aguacate", "Sin Jitomate", "Sin Lechuga"];
 const notasAntojitos = ["Sin Lechuga", "Sin Queso", { nombre: "Con Queso", precio: 5 }];
 const notasTacosDorados = ["Sin Crema", "Sin Queso", "Sin Lechuga"];
-const notasTacos = ["Sin Papa", "Sin Nopales"];
-const notasTacosArrachera = ["Sin Aguacate"];
+const notasTacos = ["Sin Papa", "Sin Nopales", { nombre: "Con Queso", precio: 10 }];
+const notasTacosAlambre = ["Sin Papa", "Sin Nopales"];
 const notasBagels = ["Sin Mayonesa", "Sin Queso"];
 const notasBurritos = ["Sin Arroz", "Sin Frijoles", "Sin Queso"];
 const tacosSinNota = ["Pastor"];
@@ -1370,23 +1370,16 @@ function mostrarMultiTacos(items, max) {
       const nombres = seleccionados.map(s => s.nombre);
       nombreFinal = "Tacos de " + nombres.join(" y ");
     }
-    let notas = [];
+    let notas;
+    const tieneAlambre = seleccionados.some(s => s.nombre === "Alambre");
     if (tieneDorados) {
       notas = notasTacosDorados;
-    } else if (seleccionados.some(s => s.nombre === "Arrachera")) {
-      notas = notasTacosArrachera;
-    } else if (seleccionados.some(s => tacosConNotas.includes(s.nombre))) {
+    } else if (tieneAlambre) {
+      notas = notasTacosAlambre;
+    } else {
       notas = notasTacos;
     }
-    if (notas.length > 0) {
-      mostrarNotas(nombreFinal, precioFinal, notas);
-    } else {
-      productos.push({ nombre: nombreFinal, precio: precioFinal, precioBase: precioFinal, cantidad: 1, nota: "" });
-      total += precioFinal;
-      renderizarLista();
-      cont.innerHTML = "";
-      scrollACategorias();
-    }
+    mostrarNotas(nombreFinal, precioFinal, notas);
   };
   cont.appendChild(btnSig);
 }
@@ -1812,12 +1805,10 @@ function mostrar1PiezaTacos(items) {
       const nombre = item.nombre === "Tacos Dorados" ? "1pza de Taco Dorado" : "1pza de Taco de " + item.nombre;
       if (item.nombre === "Tacos Dorados") {
         mostrarNotas(nombre, p1, notasTacosDorados);
-      } else if (item.nombre === "Arrachera") {
-        mostrarNotas(nombre, p1, notasTacosArrachera);
-      } else if (tacosConNotas.includes(item.nombre)) {
-        mostrarNotas(nombre, p1, notasTacos);
+      } else if (item.nombre === "Alambre") {
+        mostrarNotas(nombre, p1, notasTacosAlambre);
       } else {
-        agregarProductoSinNota(nombre, p1);
+        mostrarNotas(nombre, p1, notasTacos);
       }
     };
     cont.appendChild(btn);
