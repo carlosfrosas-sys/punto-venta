@@ -1778,7 +1778,7 @@ function mostrar1PiezaTacos(items) {
     const btn = document.createElement("button");
     btn.innerText = item.nombre + " - $" + p1;
     btn.onclick = () => {
-      const nombre = item.nombre === "Tacos Dorados" ? "1 Taco Dorado" : "1 Taco de " + item.nombre;
+      const nombre = item.nombre === "Tacos Dorados" ? "1pza de Taco Dorado" : "1pza de Taco de " + item.nombre;
       if (item.nombre === "Tacos Dorados") {
         mostrarNotas(nombre, p1, notasTacosDorados);
       } else if (item.nombre === "Arrachera") {
@@ -1796,7 +1796,7 @@ function mostrar1PiezaTacos(items) {
 function mostrar1PiezaProteina(categoria, datos, notas) {
   const cont = document.getElementById("proteinas");
   const esBurrito = categoria === "Burritos";
-  const prefijo = esBurrito ? "1 Burrito de " : "1 " + categoria.slice(0, -1) + " de ";
+  const prefijo = esBurrito ? "1pza de Burrito de " : "1pza de " + categoria.slice(0, -1) + " de ";
 
   cont.innerHTML = "<h3>" + categoria + " - 1 Pieza:</h3>";
 
@@ -1805,7 +1805,7 @@ function mostrar1PiezaProteina(categoria, datos, notas) {
     const btnSenc = document.createElement("button");
     btnSenc.innerText = "Sencillo - $" + p1;
     btnSenc.onclick = () => {
-      const nombre = esBurrito ? "1 Burrito Sencillo" : "1 " + categoria.slice(0, -1) + " Sencillo";
+      const nombre = esBurrito ? "1pza de Burrito Sencillo" : "1pza de " + categoria.slice(0, -1) + " Sencillo";
       mostrarNotas(nombre, p1, notas);
     };
     cont.appendChild(btnSenc);
@@ -1835,7 +1835,7 @@ function mostrar1PiezaItems(prefijo, items) {
     const btn = document.createElement("button");
     btn.innerText = item.nombre + " - $" + p1;
     btn.onclick = () => {
-      agregarProductoSinNota("1 Sincronizada de " + item.nombre, p1);
+      agregarProductoSinNota("1pza de Sincronizada de " + item.nombre, p1);
     };
     cont.appendChild(btn);
   });
@@ -1849,7 +1849,7 @@ function mostrar1PiezaMolletes(datos) {
   const btnSenc = document.createElement("button");
   btnSenc.innerText = "Sencillo - $" + p1Senc;
   btnSenc.onclick = () => {
-    mostrarPicoDegallo("1 Mollete Sencillo", p1Senc);
+    mostrarPicoDegallo("1pza de Mollete Sencillo", p1Senc);
   };
   cont.appendChild(btnSenc);
 
@@ -1862,7 +1862,7 @@ function mostrar1PiezaMolletes(datos) {
     const btn = document.createElement("button");
     btn.innerText = nombre + " - $" + p1;
     btn.onclick = () => {
-      mostrarPicoDegallo("1 Mollete de " + nombre, p1);
+      mostrarPicoDegallo("1pza de Mollete de " + nombre, p1);
     };
     cont.appendChild(btn);
   });
