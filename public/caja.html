@@ -1744,7 +1744,8 @@ function mostrarIngredientesTortaMulti() {
     const precioTotal = primero.precioBase + (extras.length * extraPrecio);
     let nombre = "Torta de " + primero.nombre;
     if (extras.length > 0) nombre += " con " + extras.map(e => e.nombre).join(", ");
-    mostrarNotas(nombre, precioTotal, notasTortas);
+    const tieneEnchOChil = seleccionados.some(s => s.nombre === "Enchiladas" || s.nombre === "Chilaquiles");
+    mostrarNotas(nombre, precioTotal, tieneEnchOChil ? ["Sin Queso", "Sin Crema"] : notasTortas);
   };
   cont.appendChild(btnSig);
 }
