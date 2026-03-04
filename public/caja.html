@@ -700,6 +700,7 @@ const menu = {
   subcategorias: {
 
     "Sopes": {
+  sencillo: 50,
   precio: 55,
   proteinas: [
     "Chorizo",
@@ -1136,9 +1137,9 @@ if (categoria === "Licuados") {
         } else if (categoria === "Bebidas" || categoria === "Café") {
           agregarProductoSinNota(item.nombre, item.precio);
         } else if (categoria === "Ensaladas" && item.nombre === "Codito") {
-          mostrarOpcionesCodito(item.precio);
+          mostrarOpcionesEnsalada("Codito", item.precio);
         } else if (categoria === "Ensaladas") {
-          agregarProductoSinNota("Ensalada de " + item.nombre, item.precio);
+          mostrarOpcionesEnsalada(item.nombre, item.precio);
         } else {
           agregarProducto(item.nombre, item.precio);
         }
@@ -1505,6 +1506,18 @@ function mostrarMultiSopes(datos, max) {
 
   cont.innerHTML = "<h3>Sopes - Elige hasta " + max + " (son " + max + " piezas):</h3>";
 
+  if (datos.sencillo) {
+    const btnSencillo = document.createElement("button");
+    btnSencillo.innerText = "Sencillos - $" + datos.sencillo;
+    btnSencillo.style.background = "#fbbf24";
+    btnSencillo.style.color = "#111";
+    btnSencillo.style.fontWeight = "700";
+    btnSencillo.onclick = () => {
+      mostrarNotas("Sopes Sencillos", datos.sencillo, notasAntojitos);
+    };
+    cont.appendChild(btnSencillo);
+  }
+
   datos.proteinas.forEach(p => {
     const esObjeto = typeof p === "object";
     const nombre = esObjeto ? p.nombre : p;
@@ -1852,16 +1865,24 @@ function mostrarBebidaPaquete(nombre, precio, notaPrev) {
   });
 }
 
-function mostrarOpcionesCodito(precio) {
+function mostrarOpcionesEnsalada(nombre, precio) {
   const cont = document.getElementById("proteinas");
-  cont.innerHTML = "<h3>Ensalada de Codito - $" + precio + "</h3><p>¿Con proteína?</p>";
+  cont.innerHTML = "<h3>Ensalada de " + nombre + " - $" + precio + "</h3><p>¿Con proteína? (+$20)</p>";
 
-  ["Pechuga", "Milanesa", "Solo"].forEach(opcion => {
+  const btnSolo = document.createElement("button");
+  btnSolo.innerText = "Solo - $" + precio;
+  btnSolo.onclick = () => {
+    agregarProductoSinNota("Ensalada de " + nombre, precio);
+    cont.innerHTML = "";
+  };
+  cont.appendChild(btnSolo);
+
+  ["Pechuga", "Milanesa"].forEach(opcion => {
     const btn = document.createElement("button");
-    btn.innerText = opcion;
+    const precioConProteina = precio + 20;
+    btn.innerText = opcion + " - $" + precioConProteina;
     btn.onclick = () => {
-      const nombre = opcion === "Solo" ? "Ensalada de Codito" : "Ensalada de Codito con " + opcion;
-      agregarProductoSinNota(nombre, precio);
+      agregarProductoSinNota("Ensalada de " + nombre + " con " + opcion, precioConProteina);
       cont.innerHTML = "";
     };
     cont.appendChild(btn);
