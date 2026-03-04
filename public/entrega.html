@@ -372,7 +372,12 @@
       if (!horaStr) return -1;
       const partes = horaStr.match(/(\d+):(\d+)/);
       if (!partes) return -1;
-      return parseInt(partes[1]);
+      let h = parseInt(partes[1]);
+      const esPM = /p\.?\s*m\.?/i.test(horaStr);
+      const esAM = /a\.?\s*m\.?/i.test(horaStr);
+      if (esPM && h < 12) h += 12;
+      if (esAM && h === 12) h = 0;
+      return h;
     }
 
     function toggleEntregados() {
