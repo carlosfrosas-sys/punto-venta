@@ -215,7 +215,8 @@ app.get("/pago-exitoso", async (req, res) => {
       nota: notaFinal,
       origen: "cliente",
       estado: "pendiente",
-      fecha: fechaHoy()
+      fecha: fechaHoy(),
+      horaEnvio: new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" })
     };
 
     pedidos.push(pedido);
@@ -253,7 +254,8 @@ app.post("/pedido", async (req, res) => {
     total: req.body.total,
     nota: req.body.nota || "",
     estado: "pendiente",
-    fecha: fechaHoy()
+    fecha: fechaHoy(),
+    horaEnvio: new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" })
   };
 
   pedidos.push(pedido);
@@ -341,6 +343,62 @@ app.get("/total", (req, res) => {
     .reduce((acc, p) => acc + p.total, 0);
 
   res.json({ total });
+});
+
+app.post("/pedido/listo/:id", async (req, res) => {
+  const id = parseInt(req.params.id);
+  const pedido = pedidos.find(p => p.id === id);
+
+  if (!pedido) return res.status(404).send("No encontrado");
+
+  pedido.estado = "Listo";
+  await guardarPedido(pedido);
+  io.emit("pedidoListo", pedido);
+  res.json(pedido);
+});
+
+app.get("/ventas/productos-vendidos", (req, res) => {
+  const periodo = req.query.periodo || "dia";
+  const fecha = req.query.fecha;
+  const ahora = fechaMXAhora();
+
+  let entregados;
+
+  if (periodo === "dia") {
+    const fechaFiltro = fecha || fechaHoy();
+    entregados = pedidos.filter(p => p.estado === "Entregado" && p.fecha === fechaFiltro);
+  } else if (periodo === "semana") {
+    const hace7dias = new Date(ahora);
+    hace7dias.setDate(hace7dias.getDate() - 6);
+    hace7dias.setHours(0, 0, 0, 0);
+    entregados = pedidos.filter(p => {
+      if (p.estado !== "Entregado" || !p.fecha) return false;
+      return parseFechaMX(p.fecha) >= hace7dias;
+    });
+  } else if (periodo === "mes") {
+    const mesActual = (ahora.getMonth() + 1).toString().padStart(2, "0");
+    const anioActual = ahora.getFullYear().toString();
+    entregados = pedidos.filter(p => {
+      if (p.estado !== "Entregado" || !p.fecha) return false;
+      const partes = p.fecha.split("/");
+      return partes[1] === mesActual && partes[2] === anioActual;
+    });
+  } else {
+    return res.status(400).send("Periodo inválido");
+  }
+
+  const productos = {};
+  entregados.forEach(p => {
+    p.productos.forEach(pr => {
+      const nombre = pr.nombre;
+      if (!productos[nombre]) productos[nombre] = { nombre, cantidad: 0, total: 0 };
+      productos[nombre].cantidad += pr.cantidad || 1;
+      productos[nombre].total += (pr.precio || 0) * (pr.cantidad || 1);
+    });
+  });
+
+  const resultado = Object.values(productos).sort((a, b) => b.cantidad - a.cantidad);
+  res.json(resultado);
 });
 
 app.post("/pedido/entregado/:id", async (req, res) => {

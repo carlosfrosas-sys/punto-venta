@@ -303,6 +303,53 @@
       margin-top: 40px;
     }
 
+    .tabla-productos {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    .tabla-productos th {
+      text-align: left;
+      padding: 10px 12px;
+      font-size: 13px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-bottom: 1px solid #333;
+    }
+
+    .tabla-productos td {
+      padding: 10px 12px;
+      font-size: 16px;
+      border-bottom: 1px solid #222;
+    }
+
+    .tabla-productos tr:first-child td {
+      color: #fbbf24;
+      font-weight: 700;
+    }
+
+    .tabla-productos .col-rank {
+      color: #555;
+      width: 40px;
+    }
+
+    .tabla-productos .col-nombre {
+      text-transform: uppercase;
+    }
+
+    .tabla-productos .col-cant {
+      text-align: center;
+      font-weight: 700;
+      color: #22c55e;
+    }
+
+    .tabla-productos .col-total {
+      text-align: right;
+      color: #fbbf24;
+    }
+
     @media (max-width: 768px) {
       .pedido {
         width: 100%;
@@ -365,6 +412,7 @@ function hacerLogin() {
     <button class="activo" onclick="cambiarTab('dia')">Dia</button>
     <button onclick="cambiarTab('semana')">Semana</button>
     <button onclick="cambiarTab('mes')">Mes</button>
+    <button onclick="cambiarTab('productos')">Productos</button>
   </div>
 
   <!-- Fechas (solo visible en tab dia) -->
@@ -400,23 +448,41 @@ function hacerLogin() {
 
       // Marcar tab activo
       document.querySelectorAll(".tabs button").forEach((btn, i) => {
-        const tabs = ["dia", "semana", "mes"];
+        const tabs = ["dia", "semana", "mes", "productos"];
         btn.classList.toggle("activo", tabs[i] === tab);
       });
 
-      if (tab === "dia") {
-        document.getElementById("totalLabel").innerText = "Total del dia";
-        contFechas.style.display = "flex";
+      // Mostrar/ocultar secciones según tab
+      const totalDiaDiv = document.querySelector(".total-dia");
+      const accionesDiv = document.querySelector(".acciones");
+      const contadorDiv = document.getElementById("contador");
+
+      if (tab === "productos") {
+        contFechas.style.display = "none";
+        totalDiaDiv.style.display = "none";
+        accionesDiv.style.display = "none";
+        contadorDiv.style.display = "none";
         contDesglose.innerHTML = "";
-        cargarFechas();
-      } else if (tab === "semana") {
-        document.getElementById("totalLabel").innerText = "Total semanal";
-        contFechas.style.display = "none";
-        cargarSemanal();
-      } else if (tab === "mes") {
-        document.getElementById("totalLabel").innerText = "Total mensual";
-        contFechas.style.display = "none";
-        cargarMensual();
+        cargarProductos();
+      } else {
+        totalDiaDiv.style.display = "flex";
+        accionesDiv.style.display = "flex";
+        contadorDiv.style.display = "block";
+
+        if (tab === "dia") {
+          document.getElementById("totalLabel").innerText = "Total del dia";
+          contFechas.style.display = "flex";
+          contDesglose.innerHTML = "";
+          cargarFechas();
+        } else if (tab === "semana") {
+          document.getElementById("totalLabel").innerText = "Total semanal";
+          contFechas.style.display = "none";
+          cargarSemanal();
+        } else if (tab === "mes") {
+          document.getElementById("totalLabel").innerText = "Total mensual";
+          contFechas.style.display = "none";
+          cargarMensual();
+        }
       }
     }
 
@@ -582,6 +648,55 @@ function hacerLogin() {
           } else {
             data.pedidos.forEach(mostrarPedido);
           }
+        });
+    }
+
+    let periodoProductos = "dia";
+
+    function cargarProductos() {
+      contenedor.innerHTML = "";
+      contDesglose.innerHTML = "";
+
+      // Selector de periodo para productos
+      const hoy = new Date().toLocaleDateString("es-MX", { timeZone: "America/Mexico_City", year: "numeric", month: "2-digit", day: "2-digit" });
+
+      const selectorDiv = document.createElement("div");
+      selectorDiv.className = "fechas";
+      selectorDiv.style.display = "flex";
+      ["dia", "semana", "mes"].forEach(p => {
+        const btn = document.createElement("button");
+        btn.innerText = p === "dia" ? "Hoy" : p === "semana" ? "Semana" : "Mes";
+        if (p === periodoProductos) btn.classList.add("activo");
+        btn.onclick = () => {
+          periodoProductos = p;
+          cargarProductos();
+        };
+        selectorDiv.appendChild(btn);
+      });
+      contDesglose.appendChild(selectorDiv);
+
+      let url = "/ventas/productos-vendidos?periodo=" + periodoProductos;
+      if (periodoProductos === "dia") url += "&fecha=" + encodeURIComponent(hoy);
+
+      fetch(url)
+        .then(res => res.json())
+        .then(productos => {
+          if (productos.length === 0) {
+            contenedor.innerHTML = '<div class="sin-datos">No hay productos vendidos</div>';
+            return;
+          }
+
+          let html = '<table class="tabla-productos"><thead><tr><th>#</th><th>Producto</th><th style="text-align:center">Cant.</th><th style="text-align:right">Total</th></tr></thead><tbody>';
+          productos.forEach((p, i) => {
+            html += `<tr>
+              <td class="col-rank">${i + 1}</td>
+              <td class="col-nombre">${p.nombre}</td>
+              <td class="col-cant">${p.cantidad}</td>
+              <td class="col-total">$${p.total}</td>
+            </tr>`;
+          });
+          html += '</tbody></table>';
+          contenedor.innerHTML = html;
         });
     }
 

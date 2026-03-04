@@ -94,6 +94,23 @@
       border-left: 4px solid #fbbf24;
       margin-top: 8px;
     }
+
+    .pedido-meta {
+      display: flex;
+      gap: 16px;
+      margin-top: 8px;
+      font-size: 22px;
+      color: #666;
+    }
+
+    .pedido-meta .hora-envio {
+      color: #60a5fa;
+    }
+
+    .pedido-meta .tiempo {
+      color: #f87171;
+      font-weight: 600;
+    }
   </style>
 </head>
 <body>
@@ -106,6 +123,66 @@
     const socket = io();
     const contenedor = document.getElementById("pedidos");
     const pedidosMostrados = new Set();
+
+    // Sonido de notificación (beep corto en base64)
+    const BEEP_URI = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YVoGAACAgICAgICAgICAgICAgICAgICAgICAgICAf3hxamRfW1lYWFlbXmRpb3V8gYaLj5KVl5iZmZiXlZKPi4aDfnl0b2xoZWNhYGBgYWNlZ2ptcXV5fYGEh4qNj5GSkpKSkZCOjIqIhYJ/fXp3dXNxcG9vb3BxcnR2eHt+gIOFh4mLjI2Oj46OjYyLiYeGhIJ/fnt5d3Z1dHR0dHR1dnd5e31/gYOFh4iJiouLi4uKiYmIh4WEgn9+fHp5eHd3d3d3d3h5ent8fn+BgoSFhoeIiIiIiIeHhoWEg4KBf359fHt6eXl5eXl5ent8fX5/gIGCg4SFhYaGhoaGhYWEg4OBgH9+fXx7e3p6enp6ent7fH1+f4CBgoODhIWFhYWFhISDg4KBgH9+fXx8e3t7e3t7e3t8fH1+fn+AgYGCg4OEhISEhIODgoKBgH9/fn18fHx7e3t7e3x8fH1+fn+AgIGBgoKDg4ODg4OCgoGBgIB/fn59fHx8fHx8fHx8fX1+fn+AgIGBgoKCgoKCgoKBgYGAf39+fn19fHx8fHx8fH19fX5+f4CAgIGBgYGCgoKCgYGBgICAf39+fn19fX19fX19fX5+fn9/gICAgYGBgYGBgYGBgYCAgH9/f359fX19fX19fX5+fn5/f4CAgICBgYGBgYGBgYCAgIB/f39+fn19fX19fX19fn5+f39/gICAgICBgYGBgYGAgICAgH9/fn5+fX19fX19fn5+fn9/f4CAgICAgYGBgYCAgICAgH9/f35+fn5+fn5+fn5+fn9/f39/gICAgICAgICAgICAgH9/f39/fn5+fn5+fn5+fn5/f39/f4CAgICAgICAgICAgIB/f39/f35+fn5+fn5+fn5+f39/f3+AgICAgICAgICAgICAf39/f39/fn5+fn5+fn5+fn9/f39/gICAgICAgICAgICAgH9/f39/fn5+fn5+fn5+f39/f39/f4CAgICAgICAgICAgIB/f39/f39+fn5+fn5+fn9/f39/f3+AgICAgICAgICAgIB/f39/f39/fn5+fn5+fn9/f39/f39/gICAgICAgICAgICAf39/f39/f35+fn5+fn9/f39/f39/gICAgICAgICAgICAf39/f39/f39+fn5+fn9/f39/f39/f4CAgICAgICAgICAf39/f39/f39/fn5+fn9/f39/f39/f4CAgICAgICAgICAf39/f39/f39/fn9+f39/f39/f39/f4CAgICAgICAgIB/f39/f39/f39/f39/f39/f39/f39/gICAgICAgICAgH9/f39/f39/f39/f39/f39/f39/f3+AgICAgICAgICAf39/f39/f39/f39/f39/f39/f39/f4CAgICAgICAgIB/f39/f39/f39/f39/f39/f39/f39/gICAgICAgICAgH9/f39/f39/f39/f39/f39/f39/f3+AgICAgICAgIB/f39/f39/f39/f39/f39/f39/f39/f4CAgICAgICAgH9/f39/f39/f39/f39/f39/f39/f39/gICAgICAgICAf39/f39/f39/f39/f39/f39/f39/f3+AgICAgICAgIB/f39/f39/f39/f39/f39/f39/f39/f4CAgICAgICAgH9/f39/f39/f39/f39/f39/f39/f39/gICAgICAgICAf39/f39/f39/f39/f39/f39/f39/f3+AgICAgICAgH9/f39/f39/f39/f39/f39/f39/f39/f4CAgICAgICAf39/f39/f39/f39/f39/f39/f39/f39/gICAgICAgIB/f39/f39/f39/f39/f39/f39/f39/f3+AgICAgICAgH9/f39/f39/f39/f39/f39/f39/f39/f4CAgICAgIB/f39/f39/f39/f39/f39/f39/f39/f39/gICAgICAgH9/f39/f39/f39/f39/f39/f39/f39/f4CAgICAgIB/f39/f39/f39/f39/f39/f39/f39/f39/gICAgICAgH9/f39/f39/f39/f39/f39/f39/f39/f3+AgICAgICAf39/f39/f39/f39/f39/f39/f39/f39/gICAgICAgH9/f39/f39/f39/f39/f39/f39/f39/f3+AgICAgIB/f39/f39/f39/f39/f39/f39/f39/f39/gICAgICAgH9/f39/f39/f39/f39/f39/f39/f39/f3+AgICAgIB/f39/f39/f39/f39/f39/f39/f39/f39/gA==";
+    let audioUnlocked = false;
+
+    function playNotification() {
+      try {
+        const audio = new Audio(BEEP_URI);
+        audio.volume = 1;
+        audio.play().catch(() => {});
+      } catch(e) {}
+    }
+
+    // Unlock audio on first user interaction (mobile)
+    document.addEventListener("click", function unlock() {
+      if (!audioUnlocked) {
+        const a = new Audio(BEEP_URI);
+        a.volume = 0;
+        a.play().then(() => a.pause()).catch(() => {});
+        audioUnlocked = true;
+      }
+    }, { once: true });
+
+    document.addEventListener("touchstart", function unlock() {
+      if (!audioUnlocked) {
+        const a = new Audio(BEEP_URI);
+        a.volume = 0;
+        a.play().then(() => a.pause()).catch(() => {});
+        audioUnlocked = true;
+      }
+    }, { once: true });
+
+    // Calcular tiempo transcurrido
+    function tiempoTranscurrido(horaEnvio) {
+      if (!horaEnvio) return "";
+      const ahora = new Date();
+      const partes = horaEnvio.match(/(\d+):(\d+)/);
+      if (!partes) return "";
+      let h = parseInt(partes[1]);
+      const m = parseInt(partes[2]);
+      const esPM = /p\.?\s*m\.?/i.test(horaEnvio);
+      const esAM = /a\.?\s*m\.?/i.test(horaEnvio);
+      if (esPM && h < 12) h += 12;
+      if (esAM && h === 12) h = 0;
+      const envio = new Date();
+      envio.setHours(h, m, 0, 0);
+      const diff = Math.floor((ahora - envio) / 60000);
+      if (diff < 1) return "ahora";
+      if (diff < 60) return "hace " + diff + " min";
+      return "hace " + Math.floor(diff / 60) + "h " + (diff % 60) + "m";
+    }
+
+    function actualizarTiempos() {
+      document.querySelectorAll(".tiempo").forEach(el => {
+        const hora = el.dataset.hora;
+        if (hora) el.innerText = tiempoTranscurrido(hora);
+      });
+    }
+
+    setInterval(actualizarTiempos, 60000);
 
     function cargarPedidos() {
       contenedor.innerHTML = "";
@@ -129,6 +206,7 @@
 
     socket.on("nuevoPedido", (pedido) => {
       if (!pedidosMostrados.has(pedido.id)) {
+        playNotification();
         mostrarPedido(pedido);
       }
     });
@@ -165,6 +243,10 @@
           ).join("")}
         </ul>
         ${pedido.nota ? `<div class="nota-general">${pedido.nota}</div>` : ""}
+        ${pedido.horaEnvio ? `<div class="pedido-meta">
+          <span class="hora-envio">${pedido.horaEnvio}</span>
+          <span class="tiempo" data-hora="${pedido.horaEnvio}">${tiempoTranscurrido(pedido.horaEnvio)}</span>
+        </div>` : ""}
       `;
 
       contenedor.appendChild(div);

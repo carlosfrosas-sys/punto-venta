@@ -228,6 +228,75 @@
       transform: scale(0.97);
     }
 
+    .btn-listo {
+      background: #22c55e;
+      color: #fff;
+      border: none;
+      padding: 14px 24px;
+      font-size: 15px;
+      font-weight: 700;
+      border-radius: 8px;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .btn-listo:hover {
+      background: #16a34a;
+    }
+
+    .btn-listo:disabled {
+      background: #555;
+      cursor: default;
+    }
+
+    .btn-entregado-online {
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      padding: 14px 24px;
+      font-size: 15px;
+      font-weight: 700;
+      border-radius: 8px;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .btn-entregado-online:hover {
+      background: #2563eb;
+    }
+
+    .btns-pedido {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .pedido-meta {
+      display: flex;
+      gap: 12px;
+      margin-top: 6px;
+      font-size: 13px;
+      color: #666;
+    }
+
+    .pedido-meta .hora-envio {
+      color: #60a5fa;
+    }
+
+    .pedido-meta .tiempo {
+      color: #f87171;
+      font-weight: 600;
+    }
+
     @media (max-width: 768px) {
       .pedido {
         flex-direction: column;
@@ -235,7 +304,7 @@
         gap: 10px;
       }
 
-      .btn-entregado {
+      .btn-entregado, .btn-listo, .btn-entregado-online {
         width: 100%;
         padding: 14px;
         font-size: 16px;
@@ -263,13 +332,72 @@
     const contenedor = document.getElementById("pedidos");
     const pedidosMostrados = new Set();
 
+    // Sonido de notificación
+    const BEEP_URI = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YVoGAACAgICAgICAgICAgICAgICAgICAgICAgICAf3hxamRfW1lYWFlbXmRpb3V8gYaLj5KVl5iZmZiXlZKPi4aDfnl0b2xoZWNhYGBgYWNlZ2ptcXV5fYGEh4qNj5GSkpKSkZCOjIqIhYJ/fXp3dXNxcG9vb3BxcnR2eHt+gIOFh4mLjI2Oj46OjYyLiYeGhIJ/fnt5d3Z1dHR0dHR1dnd5e31/gYOFh4iJiouLi4uKiYmIh4WEgn9+fHp5eHd3d3d3d3h5ent8fn+BgoSFhoeIiIiIiIeHhoWEg4KBf359fHt6eXl5eXl5ent8fX5/gIGCg4SFhYaGhoaGhYWEg4OBgH9+fXx7e3p6enp6ent7fH1+f4CBgoODhIWFhYWFhISDg4KBgH9+fXx8e3t7e3t7e3t8fH1+fn+AgYGCg4OEhISEhIODgoKBgH9/fn18fHx7e3t7e3x8fH1+fn+AgIGBgoKDg4ODg4OCgoGBgIB/fn59fHx8fHx8fHx8fX1+fn+AgIGBgoKCgoKCgoKBgYGAf39+fn19fHx8fHx8fH19fX5+f4CAgIGBgYGCgoKCgYGBgICAf39+fn19fX19fX19fX5+fn9/gICAgYGBgYGBgYGBgYCAgH9/f359fX19fX19fX5+fn5/f4CAgICBgYGBgYGBgYCAgIB/f39+fn19fX19fX19fn5+f39/gICAgICBgYGBgYGAgICAgH9/fn5+fX19fX19fn5+fn9/f4CAgICAgYGBgYCAgICAgH9/f35+fn5+fn5+fn5+fn9/f39/gICAgICAgICAgICAgH9/f39/fn5+fn5+fn5+fn5/f39/f4CAgICAgICAgICAgIB/f39/f35+fn5+fn5+fn5+f39/f3+AgICAgICAgICAgICAf39/f39+fn5+fn5+fn5+fn9/f39/gICAgICAgICAgICAgH9/f39/fn5+fn5+fn5+f39/f39/f4CAgICAgICAgICAgIB/f39/f39+fn5+fn5+fn9/f39/f3+AgICAgICAgICAgIB/f39/f39/fn5+fn5+fn9/f39/f39/gICAgICAgICAgICAf39/f39/f35+fn5+fn9/f39/f39/gICAgICAgICAgICAf39/f39/f39+fn5+fn9/f39/f39/f4CAgICAgICAgICAf39/f39/f39/fn5+fn9/f39/f39/f4CAgICAgICAgICAf39/f39/f39/fn9+f39/f39/f39/f4CAgICAgICAgIB/f39/f39/f39/f39/f39/f39/f39/gICAgICAgICAgH9/f39/f39/f39/f39/f39/f39/f3+AgICAgICAgICAf39/f39/f39/f39/f39/f39/f39/f4CAgICAgICAgIB/f39/f39/f39/f39/f39/f39/f39/gICAgICAgICAgH9/f39/f39/f39/f39/f39/f39/f3+AgICAgICAgIB/f39/f39/f39/f39/f39/f39/f39/f4CAgICAgICAgH9/f39/f39/f39/f39/f39/f39/f39/gICAgICAgICAf39/f39/f39/f39/f39/f39/f39/f3+AgICAgICAgIB/f39/f39/f39/f39/f39/f39/f39/f4CAgICAgICAgH9/f39/f39/f39/f39/f39/f39/f39/gICAgICAgICAf39/f39/f39/f39/f39/f39/f39/f3+AgICAgICAgH9/f39/f39/f39/f39/f39/f39/f39/f4CAgICAgICAf39/f39/f39/f39/f39/f39/f39/f39/gICAgICAgIB/f39/f39/f39/f39/f39/f39/f39/f3+AgICAgICAgH9/f39/f39/f39/f39/f39/f39/f39/f4CAgICAgIB/f39/f39/f39/f39/f39/f39/f39/f39/gICAgICAgH9/f39/f39/f39/f39/f39/f39/f39/f4CAgICAgIB/f39/f39/f39/f39/f39/f39/f39/f39/gICAgICAgH9/f39/f39/f39/f39/f39/f39/f39/f3+AgICAgICAf39/f39/f39/f39/f39/f39/f39/f39/gICAgICAgH9/f39/f39/f39/f39/f39/f39/f39/f3+AgICAgIB/f39/f39/f39/f39/f39/f39/f39/f39/gICAgICAgH9/f39/f39/f39/f39/f39/f39/f39/f3+AgICAgIB/f39/f39/f39/f39/f39/f39/f39/f39/gA==";
+    let audioUnlocked = false;
+
+    function playNotification() {
+      try {
+        const audio = new Audio(BEEP_URI);
+        audio.volume = 1;
+        audio.play().catch(() => {});
+      } catch(e) {}
+    }
+
+    document.addEventListener("click", function unlock() {
+      if (!audioUnlocked) {
+        const a = new Audio(BEEP_URI);
+        a.volume = 0;
+        a.play().then(() => a.pause()).catch(() => {});
+        audioUnlocked = true;
+      }
+    }, { once: true });
+
+    document.addEventListener("touchstart", function unlock() {
+      if (!audioUnlocked) {
+        const a = new Audio(BEEP_URI);
+        a.volume = 0;
+        a.play().then(() => a.pause()).catch(() => {});
+        audioUnlocked = true;
+      }
+    }, { once: true });
+
+    // Tiempo transcurrido
+    function tiempoTranscurrido(horaEnvio) {
+      if (!horaEnvio) return "";
+      const ahora = new Date();
+      const partes = horaEnvio.match(/(\d+):(\d+)/);
+      if (!partes) return "";
+      let h = parseInt(partes[1]);
+      const m = parseInt(partes[2]);
+      const esPM = /p\.?\s*m\.?/i.test(horaEnvio);
+      const esAM = /a\.?\s*m\.?/i.test(horaEnvio);
+      if (esPM && h < 12) h += 12;
+      if (esAM && h === 12) h = 0;
+      const envio = new Date();
+      envio.setHours(h, m, 0, 0);
+      const diff = Math.floor((ahora - envio) / 60000);
+      if (diff < 1) return "ahora";
+      if (diff < 60) return "hace " + diff + " min";
+      return "hace " + Math.floor(diff / 60) + "h " + (diff % 60) + "m";
+    }
+
+    function actualizarTiempos() {
+      document.querySelectorAll(".tiempo").forEach(el => {
+        const hora = el.dataset.hora;
+        if (hora) el.innerText = tiempoTranscurrido(hora);
+      });
+    }
+
+    setInterval(actualizarTiempos, 60000);
+
     function cargarPedidos() {
       contenedor.innerHTML = "";
       pedidosMostrados.clear();
       fetch("/pedidos")
         .then(res => res.json())
         .then(pedidos => {
-          pedidos.filter(p => p.estado === "pendiente").forEach(mostrarPedido);
+          pedidos.filter(p => p.estado === "pendiente" || p.estado === "Listo").forEach(mostrarPedido);
         });
     }
 
@@ -285,12 +413,13 @@
 
     socket.on("nuevoPedido", (pedido) => {
       if (!pedidosMostrados.has(pedido.id)) {
+        playNotification();
         mostrarPedido(pedido);
       }
     });
 
     socket.on("actualizarPedido", (pedido) => {
-      if (pedido.estado !== "pendiente") {
+      if (pedido.estado !== "pendiente" && pedido.estado !== "Listo") {
         const el = document.getElementById("pedido-" + pedido.id);
         if (el) el.remove();
         pedidosMostrados.delete(pedido.id);
@@ -303,13 +432,39 @@
       pedidosMostrados.delete(id);
     });
 
+    socket.on("pedidoListo", (pedido) => {
+      const btnListo = document.querySelector("#pedido-" + pedido.id + " .btn-listo");
+      if (btnListo) {
+        btnListo.disabled = true;
+        btnListo.innerText = "Listo";
+        btnListo.style.opacity = "0.5";
+      }
+    });
+
     function mostrarPedido(pedido) {
       if (pedidosMostrados.has(pedido.id)) return;
       pedidosMostrados.add(pedido.id);
 
+      const esOnline = pedido.origen === "cliente";
+      const esListo = pedido.estado === "Listo";
+
       const div = document.createElement("div");
       div.id = "pedido-" + pedido.id;
       div.className = "pedido";
+
+      let botonesHTML;
+      if (esOnline) {
+        botonesHTML = `
+          <div class="btns-pedido">
+            <button class="btn-listo" onclick="marcarListo(${pedido.id})" ${esListo ? 'disabled style="opacity:0.5"' : ""}>
+              ${esListo ? "Listo" : "Listo (WA)"}
+            </button>
+            <button class="btn-entregado-online" onclick="entregar(${pedido.id})">Entregado</button>
+          </div>
+        `;
+      } else {
+        botonesHTML = `<button class="btn-entregado" onclick="entregar(${pedido.id})">Entregado</button>`;
+      }
 
       div.innerHTML = `
         <div class="pedido-contenido">
@@ -325,21 +480,49 @@
             ).join("")}
           </ul>
           ${pedido.nota ? `<div class="nota-general">${pedido.nota}</div>` : ""}
+          ${pedido.horaEnvio ? `<div class="pedido-meta">
+            <span class="hora-envio">${pedido.horaEnvio}</span>
+            <span class="tiempo" data-hora="${pedido.horaEnvio}">${tiempoTranscurrido(pedido.horaEnvio)}</span>
+          </div>` : ""}
         </div>
-        <button class="btn-entregado" onclick="entregar(${pedido.id})">Entregado</button>
+        ${botonesHTML}
       `;
 
       contenedor.appendChild(div);
     }
 
     window.entregar = function(id) {
-      const btn = document.querySelector("#pedido-" + id + " .btn-entregado");
+      const el = document.getElementById("pedido-" + id);
+      const btns = el ? el.querySelectorAll("button") : [];
+      btns.forEach(b => { b.disabled = true; b.style.opacity = "0.5"; });
+      fetch("/pedido/entregado/" + id, { method: "POST" });
+    };
+
+    window.marcarListo = function(id) {
+      const btn = document.querySelector("#pedido-" + id + " .btn-listo");
       if (btn) {
         btn.disabled = true;
         btn.style.opacity = "0.5";
         btn.innerText = "...";
       }
-      fetch("/pedido/entregado/" + id, { method: "POST" });
+
+      fetch("/pedido/listo/" + id, { method: "POST" })
+        .then(res => res.json())
+        .then(pedido => {
+          if (btn) btn.innerText = "Listo";
+
+          // Extraer teléfono y nombre del campo cliente: "Nombre (Tel: 5512345678)"
+          const match = pedido.cliente.match(/^(.+?)\s*\(Tel:\s*(\d+)\)/);
+          if (match) {
+            const nombre = match[1].trim();
+            const telefono = match[2];
+            const mensaje = encodeURIComponent("Hola " + nombre + ", su pedido en La Cabaña está listo. Puede pasar a recogerlo.");
+            window.open("https://wa.me/52" + telefono + "?text=" + mensaje, "_blank");
+          }
+        })
+        .catch(() => {
+          if (btn) { btn.disabled = false; btn.style.opacity = "1"; btn.innerText = "Listo (WA)"; }
+        });
     };
 
     let mostrandoEntregados = false;
