@@ -495,7 +495,18 @@
       const el = document.getElementById("pedido-" + id);
       const btns = el ? el.querySelectorAll("button") : [];
       btns.forEach(b => { b.disabled = true; b.style.opacity = "0.5"; });
-      fetch("/pedido/entregado/" + id, { method: "POST" });
+      fetch("/pedido/entregado/" + id, { method: "POST" })
+        .then(res => {
+          if (res.ok) {
+            if (el) el.remove();
+            pedidosMostrados.delete(id);
+          } else {
+            btns.forEach(b => { b.disabled = false; b.style.opacity = "1"; });
+          }
+        })
+        .catch(() => {
+          btns.forEach(b => { b.disabled = false; b.style.opacity = "1"; });
+        });
     };
 
     window.marcarListo = function(id) {
