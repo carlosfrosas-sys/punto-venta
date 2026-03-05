@@ -206,14 +206,9 @@
     }
 
     .para-llevar {
-      font-size: 14px;
+      font-size: 12px;
       color: #f97316;
       font-weight: 700;
-      margin-top: 4px;
-      padding: 4px 8px;
-      background: #2a1500;
-      border-radius: 4px;
-      border-left: 3px solid #f97316;
       text-transform: uppercase;
     }
 
@@ -511,9 +506,9 @@
             ).join("")}
           </ul>
           ${pedido.nota ? `<div class="nota-general">${pedido.nota}</div>` : ""}
-          ${pedido.paraLlevar ? `<div class="para-llevar">Pedido para llevar</div>` : ""}
         </div>
         <div class="pedido-meta">
+          ${pedido.paraLlevar ? `<span class="para-llevar">Para llevar</span>` : ""}
           <span class="hora-envio">${hora}</span>
           <span class="tiempo" data-hora="${hora}">${tiempoTranscurrido(hora)}</span>
         </div>
