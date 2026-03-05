@@ -52,11 +52,18 @@
       width: 100%;
     }
 
+    .pedido-body {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
     .productos {
       list-style: none;
       display: flex;
       flex-direction: column;
       gap: 2px;
+      flex: 1;
     }
 
     .productos li {
@@ -84,27 +91,36 @@
       margin-left: 8px;
     }
 
+    .pedido-lado {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: flex-end;
+      flex-shrink: 0;
+      margin-left: 20px;
+    }
+
     .nota-general {
-      font-size: 30px;
+      font-size: 28px;
       color: #fbbf24;
       font-weight: 600;
       padding: 6px 12px;
       background: #2a2200;
       border-radius: 6px;
       border-left: 4px solid #fbbf24;
-      margin-top: 8px;
+      text-align: right;
     }
 
     .para-llevar {
-      font-size: 30px;
+      font-size: 28px;
       color: #f97316;
       font-weight: 700;
       padding: 6px 12px;
       background: #2a1500;
       border-radius: 6px;
       border-left: 4px solid #f97316;
-      margin-top: 8px;
       text-transform: uppercase;
+      text-align: right;
     }
 
     .pedido {
@@ -275,17 +291,22 @@
       div.id = "pedido-" + pedido.id;
       div.className = "pedido";
 
+      const tieneLado = pedido.nota || pedido.paraLlevar;
       div.innerHTML = `
-        <ul class="productos">
-          ${productosCocina.map(p =>
-            `<li>
-              <span class="punto">&#8226;</span> ${p.cantidad && p.cantidad > 1 ? `<span class="qty">${p.cantidad}</span> ` : ""}${p.nombre}
-              ${p.nota ? `<span class="nota">${p.nota.replace(/\s*\+\$\d+/g, "")}</span>` : ""}
-            </li>`
-          ).join("")}
-        </ul>
-        ${pedido.nota ? `<div class="nota-general">${pedido.nota}</div>` : ""}
-        ${pedido.paraLlevar ? `<div class="para-llevar">Para llevar</div>` : ""}
+        <div class="pedido-body">
+          <ul class="productos">
+            ${productosCocina.map(p =>
+              `<li>
+                <span class="punto">&#8226;</span> ${p.cantidad && p.cantidad > 1 ? `<span class="qty">${p.cantidad}</span> ` : ""}${p.nombre}
+                ${p.nota ? `<span class="nota">${p.nota.replace(/\s*\+\$\d+/g, "")}</span>` : ""}
+              </li>`
+            ).join("")}
+          </ul>
+          ${tieneLado ? `<div class="pedido-lado">
+            ${pedido.paraLlevar ? `<div class="para-llevar">Para llevar</div>` : ""}
+            ${pedido.nota ? `<div class="nota-general">${pedido.nota}</div>` : ""}
+          </div>` : ""}
+        </div>
         <div class="pedido-meta">
           <span class="hora-envio">${hora}</span>
           <span class="tiempo" data-hora="${hora}">${tiempoTranscurrido(hora)}</span>
