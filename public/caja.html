@@ -529,6 +529,9 @@ function hacerLogin() {
     <div class="nota-group">
       <input type="text" id="cliente" placeholder="Nombre del cliente" onkeydown="if(event.key==='Enter')enviarPedido()">
       <textarea id="notaPedido" placeholder="Nota del pedido (opcional)" rows="1" onkeydown="if(event.key==='Enter'){event.preventDefault();enviarPedido()}"></textarea>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:15px;color:#ccc;cursor:pointer;">
+        <input type="checkbox" id="paraLlevar" style="width:20px;height:20px;cursor:pointer;"> Para llevar
+      </label>
     </div>
   </div>
 
@@ -2210,7 +2213,8 @@ function enviarPedido() {
       cliente: nombreCliente,
       productos,
       total,
-      nota
+      nota,
+      paraLlevar: document.getElementById("paraLlevar").checked
     })
   });
 
@@ -2225,6 +2229,7 @@ function enviarPedido() {
   document.getElementById("cliente").value = "";
   document.getElementById("clienteHeader").value = "";
   document.getElementById("notaPedido").value = "";
+  document.getElementById("paraLlevar").checked = false;
 
   document.getElementById("categorias").scrollIntoView({ behavior: "smooth" });
 }
@@ -2240,6 +2245,7 @@ function cancelarPedido() {
   document.getElementById("cliente").value = "";
   document.getElementById("clienteHeader").value = "";
   document.getElementById("notaPedido").value = "";
+  document.getElementById("paraLlevar").checked = false;
 }
 cargarCategorias();
 sincronizarClientes();

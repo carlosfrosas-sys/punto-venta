@@ -253,6 +253,7 @@ app.post("/pedido", async (req, res) => {
     productos: req.body.productos,
     total: req.body.total,
     nota: req.body.nota || "",
+    paraLlevar: req.body.paraLlevar || false,
     estado: "pendiente",
     fecha: fechaHoy(),
     horaEnvio: new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" })
