@@ -244,9 +244,18 @@
       pedidosMostrados.delete(id);
     });
 
+    const bebidasCocina = ["Agua de ", "Licuado de ", "Café ", "Capuccino", "Espumoso", "Té", "Yakult", "Panzoncita", "Peñafielita", "Boing", "Del Valle", "Refresco de Sabor", "Fuze Tea", "Lechita", "Jumex", "Coca", "Volt", "Electrolit", "Gatorade", "Monster", "Redbull"];
+
+    function esBebida(nombre) {
+      return bebidasCocina.some(b => nombre.startsWith(b));
+    }
+
     function mostrarPedido(pedido) {
       if (pedidosMostrados.has(pedido.id)) return;
       pedidosMostrados.add(pedido.id);
+
+      const productosCocina = pedido.productos.filter(p => !esBebida(p.nombre));
+      if (productosCocina.length === 0) return;
 
       const hora = pedido.horaEnvio || new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
 
@@ -256,7 +265,7 @@
 
       div.innerHTML = `
         <ul class="productos">
-          ${pedido.productos.map(p =>
+          ${productosCocina.map(p =>
             `<li>
               <span class="punto">&#8226;</span> ${p.cantidad && p.cantidad > 1 ? `<span class="qty">${p.cantidad}</span> ` : ""}${p.nombre}
               ${p.nota ? `<span class="nota">${p.nota.replace(/\s*\+\$\d+/g, "")}</span>` : ""}
