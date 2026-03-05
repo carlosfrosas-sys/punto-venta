@@ -1397,6 +1397,8 @@ function mostrarMultiTacos(items, max) {
       cont.innerHTML = "";
       scrollACategorias();
       return;
+    } else if (seleccionados.length === 1 && seleccionados[0].nombre === "Arrachera") {
+      notas = notasTacosArrachera;
     } else {
       notas = notasTacos;
     }
@@ -1863,6 +1865,8 @@ function mostrar1PiezaTacos(items) {
         mostrarNotas(nombre, p1, notasTacosDorados);
       } else if (item.nombre === "Alambre") {
         agregarProductoSinNota(nombre, p1);
+      } else if (item.nombre === "Arrachera") {
+        mostrarNotas(nombre, p1, notasTacosArrachera);
       } else {
         mostrarNotas(nombre, p1, notasTacos);
       }
