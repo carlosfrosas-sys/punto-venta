@@ -445,6 +445,10 @@
   <div class="pedido-section">
     <div class="section-title" style="margin-top:0;">Tu Pedido</div>
     <ul id="lista"></ul>
+    <div id="paraLlevarRow" class="total-row" style="display:none;font-size:14px;color:#e65100;padding:6px 0 0;">
+      <span>Para llevar</span>
+      <span>+$10</span>
+    </div>
     <div id="descuentoRow" class="total-row" style="display:none;font-size:14px;color:#2e7d32;padding:6px 0 0;">
       <span>Descuento (<span id="descuentoPct"></span>%)</span>
       <span>-$<span id="descuentoMonto">0</span></span>
@@ -467,7 +471,7 @@
       <div id="cuponInfo" style="display:none;background:#e8f5e9;border-left:4px solid #4caf50;padding:10px 14px;border-radius:6px;font-size:14px;color:#2e7d32;"></div>
       <textarea id="notaPedido" placeholder="Nota del pedido (opcional)" rows="1"></textarea>
       <label style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:15px;color:#555;cursor:pointer;">
-        <input type="checkbox" id="paraLlevar" style="width:20px;height:20px;cursor:pointer;"> Para llevar
+        <input type="checkbox" id="paraLlevar" onchange="toggleParaLlevar()" style="width:20px;height:20px;cursor:pointer;"> Para llevar <span style="color:#e65100;font-weight:600;">+$10</span>
       </label>
     </div>
   </div>
@@ -2105,19 +2109,27 @@ function eliminarProducto(index) {
 }
 
 function actualizarTotalConDescuento() {
+  const llevar = document.getElementById("paraLlevar").checked ? 10 : 0;
+  const subtotal = total + llevar;
+  const montoDescuento = descuentoAplicado > 0 ? Math.round(subtotal * descuentoAplicado / 100) : 0;
+  const totalFinal = subtotal - montoDescuento;
+
+  document.getElementById("paraLlevarRow").style.display = llevar ? "flex" : "none";
+
   if (descuentoAplicado > 0) {
-    const montoDescuento = Math.round(total * descuentoAplicado / 100);
-    const totalFinal = total - montoDescuento;
     document.getElementById("descuentoRow").style.display = "flex";
     document.getElementById("descuentoPct").innerText = descuentoAplicado;
     document.getElementById("descuentoMonto").innerText = montoDescuento;
-    document.getElementById("total").innerText = totalFinal;
-    document.getElementById("headerTotal").innerText = "$" + totalFinal;
   } else {
     document.getElementById("descuentoRow").style.display = "none";
-    document.getElementById("total").innerText = total;
-    document.getElementById("headerTotal").innerText = "$" + total;
   }
+
+  document.getElementById("total").innerText = totalFinal;
+  document.getElementById("headerTotal").innerText = "$" + totalFinal;
+}
+
+function toggleParaLlevar() {
+  actualizarTotalConDescuento();
 }
 
 function aplicarCupon() {
@@ -2174,6 +2186,7 @@ function cancelarPedido() {
   document.getElementById("cuponInfo").style.display = "none";
   document.getElementById("notaPedido").value = "";
   document.getElementById("paraLlevar").checked = false;
+  document.getElementById("paraLlevarRow").style.display = "none";
   document.getElementById("descuentoRow").style.display = "none";
 }
 
@@ -2201,6 +2214,7 @@ async function iniciarPago() {
   const nota = document.getElementById("notaPedido").value.trim();
   const cupon = cuponAplicado;
   const paraLlevar = document.getElementById("paraLlevar").checked;
+  const totalConLlevar = paraLlevar ? total + 10 : total;
   const btnPagar = document.getElementById("btnPagar");
   btnPagar.disabled = true;
   btnPagar.innerText = "Procesando...";
@@ -2209,7 +2223,7 @@ async function iniciarPago() {
     const res = await fetch("/crear-preferencia", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cliente, telefono, productos, total, nota, cupon, paraLlevar })
+      body: JSON.stringify({ cliente, telefono, productos, total: totalConLlevar, nota, cupon, paraLlevar })
     });
 
     const data = await res.json();
