@@ -116,7 +116,6 @@
       color: #f97316;
       font-weight: 700;
       text-transform: uppercase;
-      margin-top: 4px;
     }
 
     .pedido {
@@ -314,11 +313,10 @@
               </li>`
             ).join("")}
           </ul>
-          ${pedido.nota ? `<div class="pedido-lado">
-            <div class="nota-general">${pedido.nota}</div>
+          ${pedido.nota || pedido.paraLlevar ? `<div class="pedido-lado">
+            ${pedido.paraLlevar ? `<div class="para-llevar">Para llevar</div>` : ""}
+            ${pedido.nota ? `<div class="nota-general">${pedido.nota}</div>` : ""}
           </div>` : ""}
-        </div>
-        ${pedido.paraLlevar ? `<div class="para-llevar">Para llevar</div>` : ""}
         <div class="pedido-meta">
           <span class="hora-envio">${hora}</span>
           <span class="tiempo" data-hora="${hora}">${tiempoTranscurrido(hora)}</span>
