@@ -653,11 +653,7 @@
             const hoy = fechaHoyMX();
             todosEntregados = pedidos.filter(p =>
               p.estado === "Entregado" && p.fecha === hoy
-            ).sort((a, b) => {
-              const ha = a.horaEntrega || "00:00";
-              const hb = b.horaEntrega || "00:00";
-              return hb.localeCompare(ha);
-            });
+            ).sort((a, b) => b.id - a.id);
             filtroHoraActual = "todos";
             renderEntregados();
           });
