@@ -1027,7 +1027,7 @@ function mostrarOpciones(categoria) {
 
   // SINCRONIZADAS - multi-seleccion max 3
   if (categoria === "Sincro" && datos.items) {
-    mostrarMultiItems("Sincro de ", datos.items, 3);
+    mostrarMultiItems("Sincronizadas de ", datos.items, 3);
     return;
   }
 
@@ -1056,7 +1056,7 @@ function mostrarOpciones(categoria) {
         } else if (categoria === "Snacks") {
           agregarProductoSinNota(item.nombre, item.precio);
         } else if (categoria === "Sincro") {
-          agregarProductoSinNota("Sincro de " + item.nombre, item.precio);
+          agregarProductoSinNota("Sincronizadas de " + item.nombre, item.precio);
         } else if (categoria === "Tacos" && item.nombre === "Tacos Dorados") {
           mostrarNotas("Tacos Dorados", item.precio, notasTacosDorados);
         } else if (categoria === "Tacos" && tacosConNotas.includes(item.nombre)) {
