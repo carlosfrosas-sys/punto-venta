@@ -15,6 +15,9 @@ app.use(express.static(__dirname + "/public"));
 const mpClient = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN || "" });
 const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
 
+// Cupones de descuento
+const CUPONES = { "TESTCABA100": 100, "CABANA10": 10 };
+
 // MongoDB
 let db;
 let pedidos = [];
@@ -139,14 +142,56 @@ app.get("/cliente", (req, res) => {
 
 // Mercado Pago: crear preferencia de pago
 app.post("/crear-preferencia", async (req, res) => {
-  const { cliente, telefono, productos: prods, total: monto, nota } = req.body;
+  const { cliente, telefono, productos: prods, total: monto, nota, cupon } = req.body;
 
   if (!cliente || !telefono || !prods || prods.length === 0 || !monto) {
     return res.status(400).json({ error: "Datos incompletos" });
   }
 
+  // Validar cupón
+  const cuponUpper = cupon ? cupon.trim().toUpperCase() : "";
+  const descuento = CUPONES[cuponUpper] || 0;
+
+  // Cupón 100%: crear pedido directo sin Mercado Pago
+  if (descuento === 100) {
+    try {
+      const notaFinal = nota
+        ? "[CUPON " + cuponUpper + " -100%] " + nota
+        : "[CUPON " + cuponUpper + " -100%]";
+
+      const pedido = {
+        id: idCounter++,
+        cliente: cliente + " (Tel: " + telefono + ")",
+        productos: prods,
+        total: 0,
+        nota: notaFinal,
+        origen: "cliente",
+        estado: "pendiente",
+        fecha: fechaHoy(),
+        horaEnvio: new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" })
+      };
+
+      pedidos.push(pedido);
+      await guardarPedido(pedido);
+      io.emit("nuevoPedido", pedido);
+
+      return res.json({ directo: true });
+    } catch (e) {
+      console.error("Error creando pedido directo:", e.message);
+      return res.status(500).json({ error: "Error al crear el pedido" });
+    }
+  }
+
   if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {
     return res.status(500).json({ error: "Mercado Pago no configurado" });
+  }
+
+  // Calcular monto con descuento parcial
+  let montoFinal = monto;
+  let notaConCupon = nota || "";
+  if (descuento > 0) {
+    montoFinal = Math.round(monto * (1 - descuento / 100) * 100) / 100;
+    notaConCupon = "[CUPON " + cuponUpper + " -" + descuento + "%] " + notaConCupon;
   }
 
   const ref = "pedido_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
@@ -158,7 +203,7 @@ app.post("/crear-preferencia", async (req, res) => {
         items: [{
           title: "Pedido de " + cliente,
           quantity: 1,
-          unit_price: monto,
+          unit_price: montoFinal,
           currency_id: "MXN"
         }],
         external_reference: ref,
@@ -171,7 +216,7 @@ app.post("/crear-preferencia", async (req, res) => {
       }
     });
 
-    await guardarPedidoPendiente(ref, { cliente, telefono, productos: prods, total: monto, nota });
+    await guardarPedidoPendiente(ref, { cliente, telefono, productos: prods, total: montoFinal, nota: notaConCupon });
 
     res.json({ init_point: result.init_point });
   } catch (e) {

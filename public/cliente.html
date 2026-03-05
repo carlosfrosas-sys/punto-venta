@@ -456,6 +456,7 @@
     <div class="nota-group">
       <input type="text" id="cliente" placeholder="Tu nombre" required>
       <input type="tel" id="telefono" placeholder="Tu telefono (10 digitos)" pattern="[0-9]{10}" required>
+      <input type="text" id="cupon" placeholder="Cupón de descuento (opcional)" autocapitalize="characters" style="text-transform:uppercase;">
       <textarea id="notaPedido" placeholder="Nota del pedido (opcional)" rows="1"></textarea>
     </div>
   </div>
@@ -2098,6 +2099,7 @@ function cancelarPedido() {
   document.getElementById("proteinas").innerHTML = "";
   document.getElementById("cliente").value = "";
   document.getElementById("telefono").value = "";
+  document.getElementById("cupon").value = "";
   document.getElementById("notaPedido").value = "";
 }
 
@@ -2123,6 +2125,7 @@ async function iniciarPago() {
   }
 
   const nota = document.getElementById("notaPedido").value.trim();
+  const cupon = document.getElementById("cupon").value.trim();
   const btnPagar = document.getElementById("btnPagar");
   btnPagar.disabled = true;
   btnPagar.innerText = "Procesando...";
@@ -2131,12 +2134,14 @@ async function iniciarPago() {
     const res = await fetch("/crear-preferencia", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cliente, telefono, productos, total, nota })
+      body: JSON.stringify({ cliente, telefono, productos, total, nota, cupon })
     });
 
     const data = await res.json();
 
-    if (data.init_point) {
+    if (data.directo) {
+      window.location.href = "/cliente-confirmado.html";
+    } else if (data.init_point) {
       window.location.href = data.init_point;
     } else {
       alert(data.error || "Error al crear el pago");
