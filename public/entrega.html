@@ -559,6 +559,9 @@
         btn.innerText = "...";
       }
 
+      // Abrir ventana inmediatamente (en el click) para evitar bloqueo de popups
+      const waWindow = window.open("", "_blank");
+
       fetch("/pedido/listo/" + id, { method: "POST" })
         .then(res => res.json())
         .then(pedido => {
@@ -570,7 +573,9 @@
             const nombre = match[1].trim();
             const telefono = match[2];
             const mensaje = encodeURIComponent("Hola " + nombre + ", su pedido en La Cabaña está listo. Puede pasar a recogerlo.");
-            window.open("https://wa.me/52" + telefono + "?text=" + mensaje, "_blank");
+            waWindow.location.href = "https://wa.me/52" + telefono + "?text=" + mensaje;
+          } else if (waWindow) {
+            waWindow.close();
           }
         })
         .catch(() => {
