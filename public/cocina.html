@@ -270,6 +270,20 @@
       pedidosMostrados.delete(id);
     });
 
+    socket.on("productoEntregado", ({ pedidoId, index }) => {
+      const el = document.getElementById("pedido-" + pedidoId);
+      if (!el) return;
+      const li = el.querySelector(`li[data-index="${index}"]`);
+      if (li) li.remove();
+
+      // Si no quedan productos visibles, eliminar pedido
+      const restantes = el.querySelectorAll(".productos li");
+      if (restantes.length === 0) {
+        el.remove();
+        pedidosMostrados.delete(pedidoId);
+      }
+    });
+
     const bebidasCocina = ["Agua ", "Licuado de ", "Café ", "Capuccino", "Espumoso", "Té", "Yakult", "Panzoncita", "Peñafielita", "Boing", "Del Valle", "Refresco de Sabor", "Fuze Tea", "Lechita", "Jumex", "Coca", "Volt", "Electrolit", "Gatorade", "Monster", "Redbull", "Agua Caliente"];
 
     function esBebida(nombre) {
@@ -280,7 +294,10 @@
       if (pedidosMostrados.has(pedido.id)) return;
       pedidosMostrados.add(pedido.id);
 
-      const productosCocina = pedido.productos.filter(p => !esBebida(p.nombre));
+      const entregados = pedido.productosEntregados || [];
+      const productosCocina = pedido.productos
+        .map((p, i) => ({ ...p, _index: i }))
+        .filter(p => !esBebida(p.nombre) && !entregados.includes(p._index));
       if (productosCocina.length === 0) return;
 
       const hora = pedido.horaEnvio || new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
@@ -289,12 +306,11 @@
       div.id = "pedido-" + pedido.id;
       div.className = "pedido";
 
-      const tieneLado = pedido.nota;
       div.innerHTML = `
         <div class="pedido-body">
           <ul class="productos">
             ${productosCocina.map(p =>
-              `<li>
+              `<li data-index="${p._index}">
                 <span class="punto">&#8226;</span> ${p.cantidad && p.cantidad > 1 ? `<span class="qty">${p.cantidad}</span> ` : ""}${p.nombre}
                 ${p.nota ? `<span class="nota">${p.nota.replace(/\s*\+\$\d+/g, "")}</span>` : ""}
               </li>`

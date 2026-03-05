@@ -402,6 +402,33 @@ app.get("/ventas/productos-vendidos", (req, res) => {
   res.json(resultado);
 });
 
+app.post("/pedido/:id/producto/:index", async (req, res) => {
+  const id = parseInt(req.params.id);
+  const index = parseInt(req.params.index);
+  const pedido = pedidos.find(p => p.id === id);
+
+  if (!pedido) return res.status(404).send("No encontrado");
+  if (index < 0 || index >= pedido.productos.length) return res.status(400).send("Índice inválido");
+
+  if (!pedido.productosEntregados) pedido.productosEntregados = [];
+  if (!pedido.productosEntregados.includes(index)) {
+    pedido.productosEntregados.push(index);
+  }
+
+  await guardarPedido(pedido);
+  io.emit("productoEntregado", { pedidoId: id, index });
+
+  // Si todos los productos están entregados, marcar pedido como Entregado
+  if (pedido.productosEntregados.length >= pedido.productos.length) {
+    pedido.estado = "Entregado";
+    pedido.horaEntrega = new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" });
+    await guardarPedido(pedido);
+    io.emit("pedidoEliminado", id);
+  }
+
+  res.json({ ok: true });
+});
+
 app.post("/pedido/entregado/:id", async (req, res) => {
   const id = parseInt(req.params.id);
   const pedido = pedidos.find(p => p.id === id);

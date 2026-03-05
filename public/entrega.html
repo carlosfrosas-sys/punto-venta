@@ -194,6 +194,21 @@
       margin-left: 4px;
     }
 
+    .productos li {
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .productos li:active {
+      transform: scale(0.97);
+    }
+
+    .productos li.entregado {
+      text-decoration: line-through;
+      opacity: 0.35;
+      pointer-events: none;
+    }
+
     .nota-general {
       font-size: 14px;
       color: #fbbf24;
@@ -499,8 +514,8 @@
             <span class="total-amount">$${pedido.total}</span>
           </div>
           <ul class="productos">
-            ${pedido.productos.map(p =>
-              `<li>
+            ${pedido.productos.map((p, i) =>
+              `<li data-index="${i}" data-pedido-id="${pedido.id}" onclick="entregarProducto(${pedido.id}, ${i}, this)" ${(pedido.productosEntregados || []).includes(i) ? 'class="entregado"' : ""}>
                 <span class="punto">&#8226;</span> ${p.cantidad && p.cantidad > 1 ? `<span class="qty">${p.cantidad}</span> ` : ""}${p.nombre}<span class="precio">$${p.precio}</span>${p.nota ? `<span class="nota">${p.nota}</span>` : ""}
               </li>`
             ).join("")}
@@ -562,6 +577,27 @@
           if (btn) { btn.disabled = false; btn.style.opacity = "1"; btn.innerText = "Listo (WA)"; }
         });
     };
+
+    window.entregarProducto = function(pedidoId, index, li) {
+      if (li.classList.contains("entregado")) return;
+      li.classList.add("entregado");
+      fetch("/pedido/" + pedidoId + "/producto/" + index, { method: "POST" });
+    };
+
+    socket.on("productoEntregado", ({ pedidoId, index }) => {
+      const el = document.getElementById("pedido-" + pedidoId);
+      if (!el) return;
+      const li = el.querySelector(`li[data-index="${index}"]`);
+      if (li) li.classList.add("entregado");
+
+      // Si todos están tachados, eliminar pedido
+      const todos = el.querySelectorAll(".productos li");
+      const entregados = el.querySelectorAll(".productos li.entregado");
+      if (todos.length > 0 && todos.length === entregados.length) {
+        el.remove();
+        pedidosMostrados.delete(pedidoId);
+      }
+    });
 
     let mostrandoEntregados = false;
     let todosEntregados = [];
