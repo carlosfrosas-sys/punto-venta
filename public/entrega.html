@@ -282,14 +282,15 @@
     }
 
     .pedido-meta {
-      position: absolute;
-      right: 16px;
-      bottom: 8px;
       display: flex;
-      gap: 10px;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
       font-size: 12px;
       color: #666;
-      margin: 0;
+      flex-shrink: 0;
+      white-space: nowrap;
     }
 
     .pedido-meta .hora-envio {
@@ -498,10 +499,10 @@
             ).join("")}
           </ul>
           ${pedido.nota ? `<div class="nota-general">${pedido.nota}</div>` : ""}
-          <div class="pedido-meta">
-            <span class="hora-envio">${hora}</span>
-            <span class="tiempo" data-hora="${hora}">${tiempoTranscurrido(hora)}</span>
-          </div>
+        </div>
+        <div class="pedido-meta">
+          <span class="hora-envio">${hora}</span>
+          <span class="tiempo" data-hora="${hora}">${tiempoTranscurrido(hora)}</span>
         </div>
         ${botonesHTML}
       `;
