@@ -197,11 +197,11 @@
       } catch(e) {}
     }
 
-    // Desbloquear audio en primer toque/clic (requerido en tablets/móviles)
-    ["click", "touchstart"].forEach(evt => {
-      document.addEventListener(evt, function unlock() {
-        const ctx = getAudioCtx();
-        // Tocar sonido silencioso para forzar activación en iOS
+    // Desbloquear audio en cualquier interacción (touch, click, tecla de control remoto)
+    function unlockAudio() {
+      const ctx = getAudioCtx();
+      if (ctx.state === "running") return;
+      ctx.resume().then(() => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.connect(gain);
@@ -209,9 +209,15 @@
         gain.gain.value = 0;
         osc.start();
         osc.stop(ctx.currentTime + 0.01);
-        document.removeEventListener(evt, unlock);
       });
+    }
+
+    ["click", "touchstart", "keydown"].forEach(evt => {
+      document.addEventListener(evt, unlockAudio, { once: true });
     });
+
+    // Intentar activar audio automáticamente al cargar (funciona en Android TV)
+    try { getAudioCtx().resume(); } catch(e) {}
 
     // Calcular tiempo transcurrido
     function tiempoTranscurrido(horaEnvio) {
