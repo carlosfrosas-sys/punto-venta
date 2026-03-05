@@ -445,6 +445,10 @@
   <div class="pedido-section">
     <div class="section-title" style="margin-top:0;">Tu Pedido</div>
     <ul id="lista"></ul>
+    <div id="descuentoRow" class="total-row" style="display:none;font-size:14px;color:#2e7d32;padding:6px 0 0;">
+      <span>Descuento (<span id="descuentoPct"></span>%)</span>
+      <span>-$<span id="descuentoMonto">0</span></span>
+    </div>
     <div class="total-row">
       <span class="total-label">Total</span>
       <span>$<span id="total">0</span></span>
@@ -456,8 +460,15 @@
     <div class="nota-group">
       <input type="text" id="cliente" placeholder="Tu nombre" required>
       <input type="tel" id="telefono" placeholder="Tu telefono (10 digitos)" pattern="[0-9]{10}" required>
-      <input type="text" id="cupon" placeholder="Cupón de descuento (opcional)" autocapitalize="characters" style="text-transform:uppercase;">
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="cupon" placeholder="Cupón de descuento" autocapitalize="characters" style="text-transform:uppercase;flex:1;">
+        <button type="button" onclick="aplicarCupon()" style="padding:10px 18px;background:#009ee3;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;white-space:nowrap;">Agregar</button>
+      </div>
+      <div id="cuponInfo" style="display:none;background:#e8f5e9;border-left:4px solid #4caf50;padding:10px 14px;border-radius:6px;font-size:14px;color:#2e7d32;"></div>
       <textarea id="notaPedido" placeholder="Nota del pedido (opcional)" rows="1"></textarea>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:15px;color:#555;cursor:pointer;">
+        <input type="checkbox" id="paraLlevar" style="width:20px;height:20px;cursor:pointer;"> Para llevar
+      </label>
     </div>
   </div>
 
@@ -475,6 +486,10 @@
 <script>
 let productos = [];
 let total = 0;
+let descuentoAplicado = 0;
+let cuponAplicado = "";
+
+const CUPONES_VALIDOS = { "TESTCABA100": 100, "CABANA10": 10 };
 
 const notasTortas = ["Sin Mayonesa", "Sin Queso", "Sin Frijoles", "Sin Jitomate", "Sin Aguacate"];
 const notasHamburguesas = ["Sin Mayonesa", "Sin Catsup", "Sin Mostaza", "Sin Lechuga", "Sin Jitomate", "Sin Queso"];
@@ -2066,8 +2081,7 @@ function renderizarLista() {
     lista.appendChild(li);
   });
 
-  document.getElementById("total").innerText = total;
-  document.getElementById("headerTotal").innerText = "$" + total;
+  actualizarTotalConDescuento();
 }
 
 function cambiarCantidad(index, delta) {
@@ -2090,9 +2104,65 @@ function eliminarProducto(index) {
   renderizarLista();
 }
 
+function actualizarTotalConDescuento() {
+  if (descuentoAplicado > 0) {
+    const montoDescuento = Math.round(total * descuentoAplicado / 100);
+    const totalFinal = total - montoDescuento;
+    document.getElementById("descuentoRow").style.display = "flex";
+    document.getElementById("descuentoPct").innerText = descuentoAplicado;
+    document.getElementById("descuentoMonto").innerText = montoDescuento;
+    document.getElementById("total").innerText = totalFinal;
+    document.getElementById("headerTotal").innerText = "$" + totalFinal;
+  } else {
+    document.getElementById("descuentoRow").style.display = "none";
+    document.getElementById("total").innerText = total;
+    document.getElementById("headerTotal").innerText = "$" + total;
+  }
+}
+
+function aplicarCupon() {
+  const input = document.getElementById("cupon");
+  const codigo = input.value.trim().toUpperCase();
+  const info = document.getElementById("cuponInfo");
+
+  if (!codigo) {
+    info.style.display = "block";
+    info.style.background = "#fce4ec";
+    info.style.borderColor = "#e53935";
+    info.style.color = "#c62828";
+    info.innerText = "Escribe un cupón";
+    return;
+  }
+
+  const pct = CUPONES_VALIDOS[codigo];
+  if (!pct) {
+    info.style.display = "block";
+    info.style.background = "#fce4ec";
+    info.style.borderColor = "#e53935";
+    info.style.color = "#c62828";
+    info.innerText = "Cupón inválido";
+    descuentoAplicado = 0;
+    cuponAplicado = "";
+    actualizarTotalConDescuento();
+    return;
+  }
+
+  descuentoAplicado = pct;
+  cuponAplicado = codigo;
+  input.disabled = true;
+  info.style.display = "block";
+  info.style.background = "#e8f5e9";
+  info.style.borderColor = "#4caf50";
+  info.style.color = "#2e7d32";
+  info.innerText = "Cupón aplicado: " + pct + "% de descuento";
+  actualizarTotalConDescuento();
+}
+
 function cancelarPedido() {
   productos = [];
   total = 0;
+  descuentoAplicado = 0;
+  cuponAplicado = "";
   document.getElementById("lista").innerHTML = "";
   document.getElementById("total").innerText = "0";
   document.getElementById("headerTotal").innerText = "$0";
@@ -2100,7 +2170,11 @@ function cancelarPedido() {
   document.getElementById("cliente").value = "";
   document.getElementById("telefono").value = "";
   document.getElementById("cupon").value = "";
+  document.getElementById("cupon").disabled = false;
+  document.getElementById("cuponInfo").style.display = "none";
   document.getElementById("notaPedido").value = "";
+  document.getElementById("paraLlevar").checked = false;
+  document.getElementById("descuentoRow").style.display = "none";
 }
 
 async function iniciarPago() {
@@ -2125,7 +2199,8 @@ async function iniciarPago() {
   }
 
   const nota = document.getElementById("notaPedido").value.trim();
-  const cupon = document.getElementById("cupon").value.trim();
+  const cupon = cuponAplicado;
+  const paraLlevar = document.getElementById("paraLlevar").checked;
   const btnPagar = document.getElementById("btnPagar");
   btnPagar.disabled = true;
   btnPagar.innerText = "Procesando...";
@@ -2134,7 +2209,7 @@ async function iniciarPago() {
     const res = await fetch("/crear-preferencia", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cliente, telefono, productos, total, nota, cupon })
+      body: JSON.stringify({ cliente, telefono, productos, total, nota, cupon, paraLlevar })
     });
 
     const data = await res.json();

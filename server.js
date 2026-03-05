@@ -142,7 +142,7 @@ app.get("/cliente", (req, res) => {
 
 // Mercado Pago: crear preferencia de pago
 app.post("/crear-preferencia", async (req, res) => {
-  const { cliente, telefono, productos: prods, total: monto, nota, cupon } = req.body;
+  const { cliente, telefono, productos: prods, total: monto, nota, cupon, paraLlevar } = req.body;
 
   if (!cliente || !telefono || !prods || prods.length === 0 || !monto) {
     return res.status(400).json({ error: "Datos incompletos" });
@@ -165,6 +165,7 @@ app.post("/crear-preferencia", async (req, res) => {
         productos: prods,
         total: 0,
         nota: notaFinal,
+        paraLlevar: paraLlevar || false,
         origen: "cliente",
         estado: "pendiente",
         fecha: fechaHoy(),
@@ -216,7 +217,7 @@ app.post("/crear-preferencia", async (req, res) => {
       }
     });
 
-    await guardarPedidoPendiente(ref, { cliente, telefono, productos: prods, total: montoFinal, nota: notaConCupon });
+    await guardarPedidoPendiente(ref, { cliente, telefono, productos: prods, total: montoFinal, nota: notaConCupon, paraLlevar: paraLlevar || false });
 
     res.json({ init_point: result.init_point });
   } catch (e) {
@@ -258,6 +259,7 @@ app.get("/pago-exitoso", async (req, res) => {
       productos: pendiente.productos,
       total: pendiente.total,
       nota: notaFinal,
+      paraLlevar: pendiente.paraLlevar || false,
       origen: "cliente",
       estado: "pendiente",
       fecha: fechaHoy(),
