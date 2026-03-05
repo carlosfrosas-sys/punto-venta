@@ -507,8 +507,8 @@
           </ul>
           ${pedido.nota ? `<div class="nota-general">${pedido.nota}</div>` : ""}
         </div>
+        ${pedido.paraLlevar ? `<div class="para-llevar">Para llevar</div>` : ""}
         <div class="pedido-meta">
-          ${pedido.paraLlevar ? `<span class="para-llevar">Para llevar</span>` : ""}
           <span class="hora-envio">${hora}</span>
           <span class="tiempo" data-hora="${hora}">${tiempoTranscurrido(hora)}</span>
         </div>

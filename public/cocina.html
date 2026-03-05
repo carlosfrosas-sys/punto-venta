@@ -112,7 +112,10 @@
     }
 
     .para-llevar {
-      font-size: 18px;
+      position: absolute;
+      right: 20px;
+      bottom: 32px;
+      font-size: 20px;
       color: #f97316;
       font-weight: 700;
       text-transform: uppercase;
@@ -301,8 +304,8 @@
             <div class="nota-general">${pedido.nota}</div>
           </div>` : ""}
         </div>
+        ${pedido.paraLlevar ? `<div class="para-llevar">Para llevar</div>` : ""}
         <div class="pedido-meta">
-          ${pedido.paraLlevar ? `<span class="para-llevar">Para llevar</span>` : ""}
           <span class="hora-envio">${hora}</span>
           <span class="tiempo" data-hora="${hora}">${tiempoTranscurrido(hora)}</span>
         </div>
