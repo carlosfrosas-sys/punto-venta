@@ -793,7 +793,7 @@ const menu = {
   },
 
   // 🍔 HAMBURGUESAS
-  "Hamburguesas": {
+  "Burguers": {
     items: [
       { nombre: "Ham. Sencilla", precio: 55 },
       { nombre: "Ham. Senc. c/Papas", precio: 73 },
@@ -843,7 +843,7 @@ const menu = {
   },
 
   // 🧀 SINCRONIZADAS
-  "Sincronizadas": {
+  "Sincro": {
     items: [
       { nombre: "Jamón", precio: 50 },
       { nombre: "Chorizo", precio: 50 },
@@ -1094,8 +1094,8 @@ if (categoria === "Licuados") {
   }
 
   // 🧀 SINCRONIZADAS - multi-selección max 3
-  if (categoria === "Sincronizadas" && datos.items) {
-    mostrarMultiItems("Sincronizadas de ", datos.items, 3);
+  if (categoria === "Sincro" && datos.items) {
+    mostrarMultiItems("Sincro de ", datos.items, 3);
     return;
   }
 
@@ -1113,7 +1113,7 @@ if (categoria === "Licuados") {
       const btn = document.createElement("button");
       btn.innerText = item.precio > 0 ? item.nombre + " - $" + item.precio : item.nombre;
       btn.onclick = () => {
-        if (categoria === "Hamburguesas") {
+        if (categoria === "Burguers") {
           mostrarNotas(item.nombre, item.precio, notasHamburguesas);
         } else if (categoria === "Snacks" && item.hotdog) {
           mostrarOpcionPapasHotDog(item.nombre, item.precio, item.precioConPapas);
@@ -1125,8 +1125,8 @@ if (categoria === "Licuados") {
           mostrarProteinasNachos(item.precio);
         } else if (categoria === "Snacks") {
           agregarProductoSinNota(item.nombre, item.precio);
-        } else if (categoria === "Sincronizadas") {
-          agregarProductoSinNota("Sincronizadas de " + item.nombre, item.precio);
+        } else if (categoria === "Sincro") {
+          agregarProductoSinNota("Sincro de " + item.nombre, item.precio);
         } else if (categoria === "Tacos" && item.nombre === "Tacos Dorados") {
           mostrarNotas("Tacos Dorados", item.precio, notasTacosDorados);
         } else if (categoria === "Tacos" && tacosConNotas.includes(item.nombre)) {
