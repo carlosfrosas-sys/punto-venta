@@ -463,7 +463,10 @@
     <div class="section-title">Tus datos</div>
     <div class="nota-group">
       <input type="text" id="cliente" placeholder="Tu nombre" required>
-      <input type="tel" id="telefono" placeholder="Tu telefono (10 digitos)" pattern="[0-9]{10}" required>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input type="tel" id="telefono" placeholder="Tu telefono (10 digitos)" pattern="[0-9]{10}" required style="flex:1;">
+        <span style="font-size:12px;color:#888;white-space:nowrap;">Se enviará WA al estar listo tu pedido</span>
+      </div>
       <div style="display:flex;gap:8px;">
         <input type="text" id="cupon" placeholder="Cupón de descuento" autocapitalize="characters" style="text-transform:uppercase;flex:1;">
         <button type="button" onclick="aplicarCupon()" style="padding:10px 18px;background:#009ee3;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;white-space:nowrap;">Agregar</button>
