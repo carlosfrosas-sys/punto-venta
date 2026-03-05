@@ -561,6 +561,7 @@ const notasSandwiches = ["Sin Mayonesa", "Sin Queso", "Sin Aguacate", "Sin Jitom
 const notasAntojitos = ["Sin Lechuga", "Sin Queso", { nombre: "Con Queso", precio: 5 }];
 const notasTacosDorados = ["Sin Crema", "Sin Queso", "Sin Lechuga"];
 const notasTacos = ["Sin Papa", "Sin Nopales", { nombre: "Con Queso", precio: 10 }];
+const notasTacosArrachera = ["Sin Aguacate", { nombre: "Con Queso", precio: 10 }];
 const notasTacosAlambre = ["Sin Papa", "Sin Nopales"];
 const notasBagels = ["Sin Mayonesa", "Sin Queso"];
 const notasBurritos = ["Sin Arroz", "Sin Frijoles", "Sin Queso"];
@@ -616,6 +617,7 @@ const menu = {
     "Pollo",
     "Pastor",
     "Chorizo",
+    "Huevo",
     { nombre: "Arrachera", precio: 48 },
         { nombre: "Pechuga", precio: 48 }
 
@@ -1136,10 +1138,10 @@ if (categoria === "Licuados") {
           mostrarPregunta("Capuccino Instantáneo", item.precio, "¿Qué sabor?", "Moka", "Vainilla");
         } else if (categoria === "Bebidas" || categoria === "Café") {
           agregarProductoSinNota(item.nombre, item.precio);
-        } else if (categoria === "Ensaladas" && item.nombre === "Codito") {
-          mostrarOpcionesEnsalada("Codito", item.precio);
-        } else if (categoria === "Ensaladas") {
+        } else if (categoria === "Ensaladas" && (item.nombre === "Codito" || item.nombre === "Verduras")) {
           mostrarOpcionesEnsalada(item.nombre, item.precio);
+        } else if (categoria === "Ensaladas") {
+          agregarProductoSinNota("Ensalada de " + item.nombre, item.precio);
         } else {
           agregarProducto(item.nombre, item.precio);
         }
@@ -1401,7 +1403,7 @@ function mostrarPicoDegallo(nombre, precio) {
   btnSi.style.fontSize = "16px";
   btnSi.style.minWidth = "100px";
   btnSi.onclick = () => {
-    productos.push({ nombre, precio, precioBase: precio, cantidad: 1, nota: "Con pico de gallo" });
+    productos.push({ nombre, precio, precioBase: precio, cantidad: 1 });
     total += precio;
     renderizarLista();
     cont.innerHTML = "";
