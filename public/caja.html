@@ -19,154 +19,119 @@
       font-family: 'Segoe UI', Arial, sans-serif;
       background: #faf8f5;
       color: #3d3d3d;
-      min-height: 100vh;
+      height: 100vh;
+      overflow: hidden;
     }
 
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 20px 25px;
-    }
-
-    .header {
+    /* ===== LAYOUT 2 COLUMNAS ===== */
+    .pos-layout {
       display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 12px 0;
-      border-bottom: 2px solid #e8e4df;
-      margin-bottom: 20px;
+      height: 100vh;
     }
 
-    .header-left {
+    .panel-left {
+      width: 60%;
       display: flex;
-      align-items: center;
-      gap: 10px;
-      flex: 1;
-      min-width: 0;
+      flex-direction: column;
+      border-right: 2px solid #e8e4df;
+      background: #faf8f5;
+      overflow: hidden;
     }
 
-    .header-right {
+    .panel-right {
+      width: 40%;
       display: flex;
-      align-items: center;
-      flex: 1;
-      justify-content: flex-end;
+      flex-direction: column;
+      background: #fff;
+      overflow: hidden;
     }
 
-    .header h1 {
-      font-size: 22px;
+    /* ===== PANEL IZQUIERDO ===== */
+    .panel-left-header {
+      padding: 8px 12px;
+      border-bottom: 1px solid #e8e4df;
+      flex-shrink: 0;
+    }
+
+    .panel-left-header h1 {
+      font-size: 18px;
       font-weight: 300;
       letter-spacing: 4px;
       text-transform: uppercase;
       color: #6b5b4f;
-      white-space: nowrap;
-    }
-
-    .header-total {
-      font-size: 18px;
-      font-weight: 700;
-      color: #6b5b4f;
-      white-space: nowrap;
-    }
-
-    .header-cliente {
-      flex: 1;
-      padding: 10px 14px;
-      font-size: 14px;
-      border-radius: 10px;
-      border: 1.5px solid #d9d0c7;
-      background: #fff;
-      color: #3d3d3d;
-      min-width: 0;
-    }
-
-    .header-cliente:focus {
-      outline: none;
-      border-color: #a09080;
-      box-shadow: 0 0 0 3px rgba(160,144,128,0.15);
-    }
-
-    .header-cliente::placeholder {
-      color: #c4bab0;
-    }
-
-    .btn-enviar-header {
-      background: #6b5b4f;
-      color: #fff;
-      padding: 10px 18px;
-      font-size: 14px;
-      font-weight: 600;
-      border-radius: 10px;
-      border: none;
-      cursor: pointer;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      white-space: nowrap;
-    }
-
-    .btn-enviar-header:hover {
-      background: #5a4a3f;
     }
 
     .section-title {
-      font-size: 14px;
+      font-size: 11px;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 2px;
       color: #a09080;
-      margin-bottom: 12px;
-      margin-top: 25px;
+      margin-bottom: 6px;
+      padding: 0 12px;
+      flex-shrink: 0;
     }
 
-    /* Contenedor categorías */
+    .categorias-wrap {
+      padding: 8px 12px 4px;
+      flex-shrink: 0;
+    }
+
     #categorias {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 15px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
     }
 
-    /* Contenedor opciones */
+    .proteinas-wrap {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 12px;
+      -webkit-overflow-scrolling: touch;
+    }
+
     #proteinas {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 20px;
+      gap: 8px;
       min-height: 20px;
     }
 
     #proteinas h3 {
       width: 100%;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
       color: #6b5b4f;
-      margin-bottom: 5px;
+      margin-bottom: 4px;
     }
 
     #proteinas p {
       width: 100%;
-      font-size: 13px;
+      font-size: 12px;
       color: #a09080;
-      margin-bottom: 5px;
+      margin-bottom: 4px;
     }
 
-    /* Botones generales */
+    /* ===== BOTONES GENERALES ===== */
     button {
-      padding: 14px 22px;
-      font-size: 22px;
-      border-radius: 20px;
+      padding: 10px 14px;
+      font-size: 17px;
+      border-radius: 12px;
       border: none;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.15s ease;
       font-weight: 500;
       text-transform: uppercase;
+      min-height: 48px;
     }
 
-    /* Categorías */
     #categorias button {
       background: #fff;
       color: #6b5b4f;
       border: 1.5px solid #d9d0c7;
       box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      font-size: 17px;
+      min-height: 48px;
     }
 
     #categorias button:hover {
@@ -175,12 +140,16 @@
       border-color: #6b5b4f;
     }
 
-    /* Opciones de productos */
     #proteinas button {
       background: #e5e7eb;
       color: #111827;
       border: 1.5px solid #d1d5db;
       box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      font-size: 17px;
+      min-height: 48px;
+      flex: 1 1 calc(33.33% - 6px);
+      min-width: 0;
+      text-align: center;
     }
 
     #proteinas button:hover {
@@ -188,40 +157,23 @@
       border-color: #9ca3af;
     }
 
-    /* Input cliente */
-    .input-group {
-      margin-bottom: 20px;
+    /* ===== PANEL DERECHO ===== */
+    .pedido-header {
+      padding: 8px 14px;
+      border-bottom: 1px solid #e8e4df;
+      flex-shrink: 0;
     }
 
-    input {
-      width: 100%;
-      max-width: 400px;
-      padding: 12px 16px;
-      font-size: 15px;
-      border-radius: 12px;
-      border: 1.5px solid #d9d0c7;
-      background: #fff;
-      color: #3d3d3d;
-      transition: all 0.2s ease;
+    .pedido-header .section-title {
+      padding: 0;
+      margin-bottom: 0;
     }
 
-    input:focus {
-      outline: none;
-      border-color: #a09080;
-      box-shadow: 0 0 0 3px rgba(160,144,128,0.15);
-    }
-
-    input::placeholder {
-      color: #c4bab0;
-    }
-
-    /* Lista pedido */
-    .pedido-section {
-      background: #fff;
-      border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-      border: 1px solid #e8e4df;
+    .lista-wrap {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 14px;
+      -webkit-overflow-scrolling: touch;
     }
 
     #lista {
@@ -232,10 +184,10 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 10px 0;
+      padding: 8px 0;
       border-bottom: 1px solid #f0ece7;
-      font-size: 15px;
-      gap: 8px;
+      font-size: 14px;
+      gap: 6px;
     }
 
     #lista li:last-child {
@@ -245,7 +197,7 @@
     #lista small {
       color: #c0785a;
       font-weight: 600;
-      font-size: 12px;
+      font-size: 11px;
     }
 
     .producto-info {
@@ -256,28 +208,34 @@
     .producto-controles {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
       flex-shrink: 0;
     }
 
     .producto-controles .cantidad {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 700;
       color: #6b5b4f;
-      min-width: 20px;
+      min-width: 18px;
       text-align: center;
     }
 
     .btn-qty {
+      width: 36px;
+      height: 36px;
+      min-height: 36px;
+      padding: 0;
       background: #e8e4df;
       color: #6b5b4f;
-      padding: 4px 10px;
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 700;
       border-radius: 8px;
       border: none;
       cursor: pointer;
       line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .btn-qty:hover {
@@ -287,11 +245,12 @@
     .btn-eliminar {
       background: none;
       color: #c4bab0;
-      padding: 4px 8px;
-      font-size: 16px;
+      padding: 4px 6px;
+      font-size: 15px;
       border-radius: 8px;
       border: none;
       cursor: pointer;
+      min-height: auto;
     }
 
     .btn-eliminar:hover {
@@ -299,14 +258,18 @@
       background: #fef2f2;
     }
 
-    /* Total */
+    /* ===== TOTAL + INPUTS + BOTONES (parte fija inferior derecha) ===== */
+    .pedido-footer {
+      flex-shrink: 0;
+      padding: 10px 14px;
+      border-top: 2px solid #e8e4df;
+    }
+
     .total-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-top: 15px;
-      padding-top: 15px;
-      border-top: 2px solid #e8e4df;
+      margin-bottom: 8px;
     }
 
     .total-label {
@@ -318,59 +281,83 @@
     }
 
     #total {
-      font-size: 28px;
+      font-size: 32px;
       font-weight: 700;
       color: #6b5b4f;
     }
 
-    /* Nota general */
-    .nota-group {
+    .inputs-row {
       display: flex;
-      gap: 12px;
-      margin-bottom: 20px;
+      gap: 8px;
+      margin-bottom: 8px;
     }
 
-    .nota-group input,
-    .nota-group textarea {
+    .inputs-row input,
+    .inputs-row textarea {
       flex: 1;
-    }
-
-    textarea {
-      width: 100%;
-      max-width: 400px;
-      padding: 12px 16px;
-      font-size: 15px;
-      border-radius: 12px;
+      padding: 8px 10px;
+      font-size: 16px;
+      border-radius: 10px;
       border: 1.5px solid #d9d0c7;
       background: #fff;
       color: #3d3d3d;
-      transition: all 0.2s ease;
       font-family: inherit;
-      resize: vertical;
-      min-height: 44px;
-      max-height: 100px;
+      min-width: 0;
     }
 
-    textarea:focus {
+    .inputs-row input:focus,
+    .inputs-row textarea:focus {
       outline: none;
       border-color: #a09080;
-      box-shadow: 0 0 0 3px rgba(160,144,128,0.15);
+      box-shadow: 0 0 0 2px rgba(160,144,128,0.15);
     }
 
-    textarea::placeholder {
+    .inputs-row input::placeholder,
+    .inputs-row textarea::placeholder {
       color: #c4bab0;
     }
 
-    /* Botón enviar */
+    .inputs-row textarea {
+      resize: none;
+      min-height: 38px;
+      max-height: 38px;
+    }
+
+    .options-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .options-row label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      color: #999;
+      cursor: pointer;
+    }
+
+    .options-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    .buttons-row {
+      display: flex;
+      gap: 8px;
+    }
+
     .btn-enviar {
-      width: 100%;
+      flex: 2;
       background: #6b5b4f;
       color: #fff;
       font-size: 18px;
       font-weight: 600;
-      padding: 16px;
+      min-height: 52px;
       border-radius: 12px;
-      margin-top: 20px;
       letter-spacing: 1px;
       text-transform: uppercase;
     }
@@ -379,16 +366,14 @@
       background: #5a4a3f;
     }
 
-    /* Botón cancelar */
     .btn-cancelar {
-      width: 100%;
+      flex: 1;
       background: transparent;
       color: #e05252;
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 600;
-      padding: 14px;
+      min-height: 52px;
       border-radius: 12px;
-      margin-top: 10px;
       letter-spacing: 1px;
       text-transform: uppercase;
       border: 2px solid #e05252;
@@ -397,81 +382,6 @@
     .btn-cancelar:hover {
       background: #e05252;
       color: #fff;
-    }
-
-    /* 📱 RESPONSIVE - Tablet 8.7" horizontal (~800px) */
-    @media (max-width: 900px) {
-      #categorias button {
-        padding: 10px 14px;
-        font-size: 18px;
-        flex: 1 1 calc(25% - 10px);
-        min-width: 0;
-        text-align: center;
-      }
-
-      #proteinas button {
-        padding: 10px 14px;
-        font-size: 18px;
-        flex: 1 1 calc(33% - 10px);
-        min-width: 0;
-        text-align: center;
-      }
-
-      input, textarea {
-        max-width: 100%;
-      }
-    }
-
-    /* 📱 Tablet vertical / móvil grande */
-    @media (max-width: 600px) {
-      .container {
-        padding: 15px;
-      }
-
-      .header h1 {
-        font-size: 22px;
-      }
-
-      #categorias {
-        gap: 6px;
-      }
-
-      #categorias button {
-        padding: 8px 12px;
-        font-size: 16px;
-        flex: 1 1 calc(33% - 6px);
-      }
-
-      #proteinas {
-        gap: 6px;
-      }
-
-      #proteinas button {
-        padding: 8px 12px;
-        font-size: 16px;
-        flex: 1 1 calc(50% - 6px);
-      }
-
-      .nota-group {
-        flex-direction: column;
-      }
-
-      #lista li {
-        font-size: 14px;
-      }
-    }
-
-    @media (max-width: 400px) {
-      #categorias button {
-        flex: 1 1 calc(50% - 6px);
-        font-size: 14px;
-        padding: 8px 6px;
-      }
-
-      #proteinas button {
-        flex: 1 1 calc(50% - 6px);
-        font-size: 14px;
-      }
     }
   </style>
 </head>
@@ -509,44 +419,49 @@ function hacerLogin() {
 })();
 </script>
 
-<div class="container">
-  <div class="header">
-    <div class="header-left">
-      <input type="text" class="header-cliente" id="clienteHeader" placeholder="Cliente" onkeydown="if(event.key==='Enter')enviarPedido()">
-      <span class="header-total" id="headerTotal">$0</span>
+<div class="pos-layout">
+  <!-- PANEL IZQUIERDO: Categorías + Proteínas -->
+  <div class="panel-left">
+    <div class="panel-left-header">
+      <h1>Caja</h1>
     </div>
-    <h1>Caja</h1>
-    <div class="header-right">
-      <button class="btn-enviar-header" onclick="enviarPedido()">Enviar</button>
+    <div class="categorias-wrap">
+      <div class="section-title">Platillos</div>
+      <div id="categorias"></div>
     </div>
-  </div>
-
-  <div class="section-title">Platillos</div>
-  <div id="categorias"></div>
-  <div id="proteinas"></div>
-
-  <div class="input-group">
-    <div class="section-title">Cliente</div>
-    <div class="nota-group">
-      <input type="text" id="cliente" placeholder="Nombre del cliente" onkeydown="if(event.key==='Enter')enviarPedido()">
-      <textarea id="notaPedido" placeholder="Nota del pedido (opcional)" rows="1" onkeydown="if(event.key==='Enter'){event.preventDefault();enviarPedido()}"></textarea>
-      <label style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:15px;color:#ccc;cursor:pointer;">
-        <input type="checkbox" id="paraLlevar" style="width:20px;height:20px;cursor:pointer;"> Para llevar
-      </label>
+    <div class="proteinas-wrap">
+      <div id="proteinas"></div>
     </div>
   </div>
 
-  <div class="pedido-section">
-    <div class="section-title" style="margin-top:0;">Pedido</div>
-    <ul id="lista"></ul>
-    <div class="total-row">
-      <span class="total-label">Total</span>
-      <span>$<span id="total">0</span></span>
+  <!-- PANEL DERECHO: Pedido + Total + Inputs + Botones -->
+  <div class="panel-right">
+    <div class="pedido-header">
+      <div class="section-title">Pedido</div>
+    </div>
+    <div class="lista-wrap">
+      <ul id="lista"></ul>
+    </div>
+    <div class="pedido-footer">
+      <div class="total-row">
+        <span class="total-label">Total</span>
+        <span>$<span id="total">0</span></span>
+      </div>
+      <div class="inputs-row">
+        <input type="text" id="cliente" placeholder="Cliente" onkeydown="if(event.key==='Enter')enviarPedido()">
+        <textarea id="notaPedido" placeholder="Nota (opcional)" rows="1" onkeydown="if(event.key==='Enter'){event.preventDefault();enviarPedido()}"></textarea>
+      </div>
+      <div class="options-row">
+        <label>
+          <input type="checkbox" id="paraLlevar"> Para llevar
+        </label>
+      </div>
+      <div class="buttons-row">
+        <button class="btn-enviar" onclick="enviarPedido()">Enviar</button>
+        <button class="btn-cancelar" onclick="cancelarPedido()">Cancelar</button>
+      </div>
     </div>
   </div>
-
-  <button class="btn-enviar" onclick="enviarPedido()">Enviar Pedido</button>
-  <button class="btn-cancelar" onclick="cancelarPedido()">Cancelar Pedido</button>
 </div>
 
 <script>
@@ -963,8 +878,6 @@ function mostrarOpciones(categoria) {
   const cont = document.getElementById("proteinas");
   cont.innerHTML = "";
 
-  setTimeout(() => cont.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
-
   const datos = menu[categoria];
 
   if (!datos) {
@@ -1375,7 +1288,6 @@ function mostrarSaboresLicuado() {
     total += precioTotal;
     renderizarLista();
     cont.innerHTML = "";
-    scrollACategorias();
   };
   cont.appendChild(btnSig);
 }
@@ -1391,7 +1303,6 @@ function mostrarPregunta(nombre, precio, pregunta, textoSi, textoNo) {
     total += precio;
     renderizarLista();
     cont.innerHTML = "";
-    scrollACategorias();
   };
 
   const btnNo = document.createElement("button");
@@ -1401,7 +1312,6 @@ function mostrarPregunta(nombre, precio, pregunta, textoSi, textoNo) {
     total += precio;
     renderizarLista();
     cont.innerHTML = "";
-    scrollACategorias();
   };
 
   cont.appendChild(btnSi);
@@ -1423,7 +1333,6 @@ function mostrarPicoDegallo(nombre, precio) {
     total += precio;
     renderizarLista();
     cont.innerHTML = "";
-    scrollACategorias();
   };
 
   const btnNo = document.createElement("button");
@@ -1437,7 +1346,6 @@ function mostrarPicoDegallo(nombre, precio) {
     total += precio;
     renderizarLista();
     cont.innerHTML = "";
-    scrollACategorias();
   };
 
   cont.appendChild(btnSi);
@@ -1519,7 +1427,6 @@ function mostrarMultiTacos(items, max) {
       total += precioFinal;
       renderizarLista();
       cont.innerHTML = "";
-      scrollACategorias();
       return;
     } else if (seleccionados.length === 1 && seleccionados[0].nombre === "Arrachera") {
       notas = notasTacosArrachera;
@@ -1649,7 +1556,6 @@ function mostrarMultiItems(prefijo, items, max) {
     total += precioFinal;
     renderizarLista();
     cont.innerHTML = "";
-    scrollACategorias();
   };
   cont.appendChild(btnAgregar);
 }
@@ -1848,7 +1754,6 @@ function mostrarNotas(nombre, precio, opciones, siguiente) {
       total += precioFinal;
       renderizarLista();
       cont.innerHTML = "";
-      scrollACategorias();
     }
   };
   cont.appendChild(btnAgregar);
@@ -1925,7 +1830,6 @@ function mostrarBebidaPaquete(nombre, precio, notaPrev) {
       total += precio;
       renderizarLista();
       cont.innerHTML = "";
-      scrollACategorias();
     };
     cont.appendChild(btn);
   });
@@ -2167,7 +2071,6 @@ function agregarProductoSinNota(nombre, precio) {
   productos.push({ nombre, precio, precioBase: precio, cantidad: 1, nota: "" });
   total += precio;
   renderizarLista();
-  scrollACategorias();
 }
 
 function agregarProducto(nombre, precio) {
@@ -2185,10 +2088,6 @@ function agregarProducto(nombre, precio) {
   total += precio;
 
   renderizarLista();
-  scrollACategorias();
-}
-function scrollACategorias() {
-  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function renderizarLista() {
@@ -2219,7 +2118,6 @@ function renderizarLista() {
   });
 
   document.getElementById("total").innerText = total;
-  document.getElementById("headerTotal").innerText = "$" + total;
 }
 
 function cambiarCantidad(index, delta) {
@@ -2246,16 +2144,7 @@ function eliminarProducto(index) {
 }
 
 function obtenerCliente() {
-  return document.getElementById("clienteHeader").value.trim() || document.getElementById("cliente").value.trim();
-}
-
-function sincronizarClientes() {
-  document.getElementById("clienteHeader").addEventListener("input", function() {
-    document.getElementById("cliente").value = this.value;
-  });
-  document.getElementById("cliente").addEventListener("input", function() {
-    document.getElementById("clienteHeader").value = this.value;
-  });
+  return document.getElementById("cliente").value.trim();
 }
 
 function enviarPedido() {
@@ -2290,14 +2179,10 @@ function enviarPedido() {
 
   document.getElementById("lista").innerHTML = "";
   document.getElementById("total").innerText = "0";
-  document.getElementById("headerTotal").innerText = "$0";
   document.getElementById("proteinas").innerHTML = "";
   document.getElementById("cliente").value = "";
-  document.getElementById("clienteHeader").value = "";
   document.getElementById("notaPedido").value = "";
   document.getElementById("paraLlevar").checked = false;
-
-  document.getElementById("categorias").scrollIntoView({ behavior: "smooth" });
 }
 
 function cancelarPedido() {
@@ -2306,15 +2191,12 @@ function cancelarPedido() {
 
   document.getElementById("lista").innerHTML = "";
   document.getElementById("total").innerText = "0";
-  document.getElementById("headerTotal").innerText = "$0";
   document.getElementById("proteinas").innerHTML = "";
   document.getElementById("cliente").value = "";
-  document.getElementById("clienteHeader").value = "";
   document.getElementById("notaPedido").value = "";
   document.getElementById("paraLlevar").checked = false;
 }
 cargarCategorias();
-sincronizarClientes();
 
 </script>
   <script>
