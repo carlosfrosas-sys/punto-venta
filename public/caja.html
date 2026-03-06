@@ -158,10 +158,25 @@
     }
 
     .btn-1pieza {
-      font-size: 14px !important;
+      font-size: 13px !important;
       min-height: 36px !important;
       padding: 6px 12px !important;
       opacity: 0.8;
+    }
+
+    .row-acciones {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      width: 100%;
+    }
+
+    .row-acciones .btn-1pieza {
+      flex: 0 0 auto;
+    }
+
+    .row-acciones .btn-principal {
+      flex: 1;
     }
 
     /* ===== PANEL DERECHO ===== */
@@ -1176,7 +1191,6 @@ if (categoria === "Licuados") {
     btn1p.className = "btn-1pieza";
     btn1p.style.background = "#f59e0b";
     btn1p.style.color = "white";
-    btn1p.style.width = "100%";
     btn1p.style.marginTop = "10px";
     btn1p.onclick = () => mostrar1PiezaMolletes(datos);
     cont.appendChild(btn1p);
@@ -1532,17 +1546,20 @@ function mostrarMultiTacos(items, max) {
     }
     mostrarNotas(nombreFinal, precioFinal, notas);
   };
-  cont.appendChild(btnSig);
 
+  const row = document.createElement("div");
+  row.className = "row-acciones";
   const btn1p = document.createElement("button");
   btn1p.innerText = "1 Pieza";
   btn1p.className = "btn-1pieza";
   btn1p.style.background = "#f59e0b";
   btn1p.style.color = "white";
-  btn1p.style.width = "100%";
-  btn1p.style.marginTop = "10px";
   btn1p.onclick = () => mostrar1PiezaTacos(items);
-  cont.appendChild(btn1p);
+  btnSig.style.marginTop = "0";
+  btnSig.className = "btn-principal";
+  row.appendChild(btn1p);
+  row.appendChild(btnSig);
+  cont.appendChild(row);
 }
 
 function mostrarMultiSopes(datos, max) {
@@ -1659,17 +1676,19 @@ function mostrarMultiItems(prefijo, items, max) {
     renderizarLista();
     cont.innerHTML = "";
   };
-  cont.appendChild(btnAgregar);
-
+  const row = document.createElement("div");
+  row.className = "row-acciones";
   const btn1p = document.createElement("button");
   btn1p.innerText = "1 Pieza";
   btn1p.className = "btn-1pieza";
   btn1p.style.background = "#f59e0b";
   btn1p.style.color = "white";
-  btn1p.style.width = "100%";
-  btn1p.style.marginTop = "10px";
   btn1p.onclick = () => mostrar1PiezaItems(prefijo, items);
-  cont.appendChild(btn1p);
+  btnAgregar.style.marginTop = "0";
+  btnAgregar.className = "btn-principal";
+  row.appendChild(btn1p);
+  row.appendChild(btnAgregar);
+  cont.appendChild(row);
 }
 
 function mostrarMultiProteina(categoria, datos, max, notas) {
@@ -1752,17 +1771,20 @@ function mostrarMultiProteina(categoria, datos, max, notas) {
     if (conPapas) { nombreFinal += " con Papas"; precioFinal += 18; }
     mostrarNotas(nombreFinal, precioFinal, notas);
   };
-  cont.appendChild(btnSig);
 
+  const row = document.createElement("div");
+  row.className = "row-acciones";
   const btn1p = document.createElement("button");
   btn1p.innerText = "1 Pieza";
   btn1p.className = "btn-1pieza";
   btn1p.style.background = "#f59e0b";
   btn1p.style.color = "white";
-  btn1p.style.width = "100%";
-  btn1p.style.marginTop = "10px";
   btn1p.onclick = () => mostrar1PiezaProteina(categoria, datos, notas);
-  cont.appendChild(btn1p);
+  btnSig.style.marginTop = "0";
+  btnSig.className = "btn-principal";
+  row.appendChild(btn1p);
+  row.appendChild(btnSig);
+  cont.appendChild(row);
 }
 
 function mostrarIngredientesTortaMulti() {

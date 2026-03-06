@@ -158,7 +158,7 @@
     }
 
     .btn-1pieza {
-      font-size: 14px !important;
+      font-size: 13px !important;
       min-height: 36px !important;
       padding: 6px 12px !important;
       opacity: 0.8;
@@ -1039,9 +1039,9 @@ function mostrarOpciones(categoria) {
   if (categoria === "Molletes") {
     const btn1p = document.createElement("button");
     btn1p.innerText = "1 Pieza";
+    btn1p.className = "btn-1pieza";
     btn1p.style.background = "#f59e0b";
     btn1p.style.color = "white";
-    btn1p.style.width = "100%";
     btn1p.style.marginBottom = "10px";
     btn1p.onclick = () => mostrar1PiezaMolletes(datos);
     cont.appendChild(btn1p);
@@ -1476,9 +1476,9 @@ function mostrarMultiTacos(items, max) {
 
   const btn1p = document.createElement("button");
   btn1p.innerText = "1 Pieza";
+  btn1p.className = "btn-1pieza";
   btn1p.style.background = "#f59e0b";
   btn1p.style.color = "white";
-  btn1p.style.width = "100%";
   btn1p.style.marginBottom = "10px";
   btn1p.onclick = () => mostrar1PiezaTacos(items);
   cont.appendChild(btn1p);
@@ -1618,9 +1618,9 @@ function mostrarMultiItems(prefijo, items, max) {
 
   const btn1p = document.createElement("button");
   btn1p.innerText = "1 Pieza";
+  btn1p.className = "btn-1pieza";
   btn1p.style.background = "#f59e0b";
   btn1p.style.color = "white";
-  btn1p.style.width = "100%";
   btn1p.style.marginBottom = "10px";
   btn1p.onclick = () => mostrar1PiezaItems(prefijo, items);
   cont.appendChild(btn1p);
@@ -1688,9 +1688,9 @@ function mostrarMultiProteina(categoria, datos, max, notas) {
 
   const btn1p = document.createElement("button");
   btn1p.innerText = "1 Pieza";
+  btn1p.className = "btn-1pieza";
   btn1p.style.background = "#f59e0b";
   btn1p.style.color = "white";
-  btn1p.style.width = "100%";
   btn1p.style.marginBottom = "10px";
   btn1p.onclick = () => mostrar1PiezaProteina(categoria, datos, notas);
   cont.appendChild(btn1p);
