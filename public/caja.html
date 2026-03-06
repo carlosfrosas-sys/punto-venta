@@ -851,17 +851,17 @@ const menu = {
   // 🧀 SINCRONIZADAS
   "Sincro": {
     items: [
-      { nombre: "Jamón", precio: 50 },
-      { nombre: "Chorizo", precio: 50 },
-      { nombre: "Champiñones", precio: 50 },
-      { nombre: "Pastor", precio: 50 },
-      { nombre: "Bistec", precio: 50 },
-      { nombre: "Pollo", precio: 50 },
-      { nombre: "Hawaianas", precio: 50 },
-      { nombre: "Campechanas", precio: 55 },
-      { nombre: "Mestizas", precio: 55 },
-      { nombre: "Alambre", precio: 55 },
-      { nombre: "Arrachera", precio: 60 }
+      { nombre: "Jamón", precio: 50, precio1pza: 18 },
+      { nombre: "Chorizo", precio: 50, precio1pza: 18 },
+      { nombre: "Champiñones", precio: 50, precio1pza: 18 },
+      { nombre: "Pastor", precio: 50, precio1pza: 18 },
+      { nombre: "Bistec", precio: 50, precio1pza: 18 },
+      { nombre: "Pollo", precio: 50, precio1pza: 18 },
+      { nombre: "Hawaianas", precio: 50, precio1pza: 18 },
+      { nombre: "Campechanas", precio: 55, precio1pza: 20 },
+      { nombre: "Mestizas", precio: 55, precio1pza: 20 },
+      { nombre: "Alambre", precio: 55, precio1pza: 20 },
+      { nombre: "Arrachera", precio: 60, precio1pza: 22 }
     ]
   },
 
@@ -2052,7 +2052,7 @@ function mostrar1PiezaItems(prefijo, items) {
   cont.innerHTML = "<h3>" + prefijo.trim() + " - 1 Pieza:</h3>";
 
   items.forEach(item => {
-    const p1 = precio1Pieza(item.precio);
+    const p1 = item.precio1pza || precio1Pieza(item.precio);
     const btn = document.createElement("button");
     btn.innerText = item.nombre + " - $" + p1;
     btn.onclick = () => {
