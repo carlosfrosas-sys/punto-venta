@@ -425,6 +425,29 @@
       color: #fff;
     }
 
+    .btn-tarjeta {
+      flex: 2;
+      background: #2563eb;
+      color: #fff;
+      font-size: 18px;
+      font-weight: 600;
+      min-height: 52px;
+      border-radius: 12px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn-tarjeta:hover {
+      background: #1d4ed8;
+    }
+
+    .btn-tarjeta:disabled {
+      background: #93c5fd;
+      cursor: not-allowed;
+    }
+
     /* ===== CELULAR (solo phones, no iPad) ===== */
     @media (max-width: 600px) {
       body {
@@ -585,6 +608,7 @@ function hacerLogin() {
       </div>
       <div class="buttons-row">
         <button class="btn-enviar" onclick="enviarPedido()">Enviar</button>
+        <button class="btn-tarjeta" id="btnTarjeta" onclick="cobrarTarjeta()">Tarjeta</button>
         <button class="btn-cancelar" onclick="cancelarPedido()">Cancelar</button>
       </div>
     </div>
@@ -2376,6 +2400,50 @@ function enviarPedido() {
   document.getElementById("cliente").value = "";
   document.getElementById("notaPedido").value = "";
   document.getElementById("paraLlevar").checked = false;
+}
+
+function cobrarTarjeta() {
+  document.activeElement.blur();
+  if (productos.length === 0) return;
+  const nombreCliente = obtenerCliente();
+  if (!nombreCliente) { alert("Escribe el nombre del cliente"); return; }
+  if (total < 5) { alert("El monto mínimo para tarjeta es $5"); return; }
+
+  const btn = document.getElementById("btnTarjeta");
+  btn.disabled = true;
+  btn.innerText = "Enviando...";
+
+  const nota = document.getElementById("notaPedido").value.trim();
+  const ref = "caja-" + Date.now();
+
+  // 1. Enviar cobro a terminal
+  fetch("/cobrar-terminal", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ amount: Math.round(total * 100), reference: ref })
+  })
+  .then(r => r.json().then(d => ({ ok: r.ok, data: d })))
+  .then(({ ok, data }) => {
+    if (!ok) { alert("Error terminal: " + (data.error || data.message)); btn.disabled = false; btn.innerText = "Tarjeta"; return; }
+    // 2. Crear pedido
+    fetch("/pedido", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cliente: nombreCliente, productos, total, nota, paraLlevar: document.getElementById("paraLlevar").checked })
+    });
+    // Reset
+    productos = [];
+    total = 0;
+    document.getElementById("lista").innerHTML = "";
+    document.getElementById("total").innerText = "0";
+    document.getElementById("proteinas").innerHTML = "";
+    document.getElementById("cliente").value = "";
+    document.getElementById("notaPedido").value = "";
+    document.getElementById("paraLlevar").checked = false;
+    btn.disabled = false;
+    btn.innerText = "Tarjeta";
+  })
+  .catch(() => { btn.disabled = false; btn.innerText = "Tarjeta"; alert("Error de conexión"); });
 }
 
 function cancelarPedido() {
