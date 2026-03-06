@@ -365,6 +365,35 @@ app.post("/cobrar-terminal", async (req, res) => {
   }
 });
 
+app.get("/cobrar-terminal/:intentId", async (req, res) => {
+  const token = process.env.MERCADOPAGO_ACCESS_TOKEN;
+  if (!token) return res.status(500).json({ error: "No configurado" });
+  try {
+    const resp = await fetch(`https://api.mercadopago.com/point/integration-api/payment-intents/${req.params.intentId}`, {
+      headers: { "Authorization": "Bearer " + token }
+    });
+    const data = await resp.json();
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.delete("/cobrar-terminal/:intentId", async (req, res) => {
+  const token = process.env.MERCADOPAGO_ACCESS_TOKEN;
+  if (!token) return res.status(500).json({ error: "No configurado" });
+  try {
+    await fetch(`https://api.mercadopago.com/point/integration-api/devices/${MP_DEVICE_ID}/payment-intents/${req.params.intentId}`, {
+      method: "DELETE",
+      headers: { "Authorization": "Bearer " + token }
+    });
+    lastPaymentIntentId = null;
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Login para caja y ventas
 const USUARIO_ADMIN = process.env.USUARIO_ADMIN || "admin";
 const PASS_ADMIN = process.env.PASS_ADMIN || "1234";

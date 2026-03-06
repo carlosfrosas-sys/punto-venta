@@ -2403,6 +2403,9 @@ function enviarPedido() {
   document.getElementById("paraLlevar").checked = false;
 }
 
+let _tarjetaIntentId = null;
+let _tarjetaPolling = null;
+
 function cobrarTarjeta() {
   document.activeElement.blur();
   if (productos.length === 0) return;
@@ -2411,13 +2414,15 @@ function cobrarTarjeta() {
   if (total < 5) { alert("El monto mínimo para tarjeta es $5"); return; }
 
   const btn = document.getElementById("btnTarjeta");
+  const btnEnviar = document.querySelector(".btn-enviar");
+  const btnCancelar = document.querySelector(".btn-cancelar");
   btn.disabled = true;
   btn.innerText = "Enviando...";
+  btnEnviar.disabled = true;
 
-  const nota = document.getElementById("notaPedido").value.trim();
+  const pedidoData = { cliente: nombreCliente, productos: [...productos], total, nota: document.getElementById("notaPedido").value.trim(), paraLlevar: document.getElementById("paraLlevar").checked };
   const ref = "caja-" + Date.now();
 
-  // 1. Enviar cobro a terminal
   fetch("/cobrar-terminal", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -2425,26 +2430,67 @@ function cobrarTarjeta() {
   })
   .then(r => r.json().then(d => ({ ok: r.ok, data: d })))
   .then(({ ok, data }) => {
-    if (!ok) { alert("Error terminal: " + (data.message || data.error || JSON.stringify(data))); btn.disabled = false; btn.innerText = "Tarjeta"; return; }
-    // 2. Crear pedido
-    fetch("/pedido", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cliente: nombreCliente, productos, total, nota, paraLlevar: document.getElementById("paraLlevar").checked })
-    });
-    // Reset
-    productos = [];
-    total = 0;
-    document.getElementById("lista").innerHTML = "";
-    document.getElementById("total").innerText = "0";
-    document.getElementById("proteinas").innerHTML = "";
-    document.getElementById("cliente").value = "";
-    document.getElementById("notaPedido").value = "";
-    document.getElementById("paraLlevar").checked = false;
-    btn.disabled = false;
-    btn.innerText = "Tarjeta";
+    if (!ok) { alert("Error terminal: " + (data.message || data.error || JSON.stringify(data))); btn.disabled = false; btn.innerText = "Tarjeta"; btnEnviar.disabled = false; return; }
+    _tarjetaIntentId = data.id;
+    btn.innerText = "Esperando pago...";
+    btnCancelar.innerText = "Cancelar pago";
+    btnCancelar.onclick = cancelarPagoTarjeta;
+
+    // Polling cada 3 segundos
+    _tarjetaPolling = setInterval(() => {
+      fetch("/cobrar-terminal/" + _tarjetaIntentId)
+        .then(r => r.json())
+        .then(d => {
+          if (d.state === "FINISHED" || d.state === "PROCESSED") {
+            clearInterval(_tarjetaPolling);
+            _tarjetaPolling = null;
+            _tarjetaIntentId = null;
+            // Pago acreditado, crear pedido
+            fetch("/pedido", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(pedidoData) });
+            productos = [];
+            total = 0;
+            document.getElementById("lista").innerHTML = "";
+            document.getElementById("total").innerText = "0";
+            document.getElementById("proteinas").innerHTML = "";
+            document.getElementById("cliente").value = "";
+            document.getElementById("notaPedido").value = "";
+            document.getElementById("paraLlevar").checked = false;
+            btn.disabled = false;
+            btn.innerText = "Tarjeta";
+            btnEnviar.disabled = false;
+            btnCancelar.innerText = "Cancelar";
+            btnCancelar.onclick = cancelarPedido;
+          } else if (d.state === "CANCELED" || d.state === "ERROR" || d.state === "ABANDONED") {
+            clearInterval(_tarjetaPolling);
+            _tarjetaPolling = null;
+            _tarjetaIntentId = null;
+            alert("Pago no completado: " + d.state);
+            btn.disabled = false;
+            btn.innerText = "Tarjeta";
+            btnEnviar.disabled = false;
+            btnCancelar.innerText = "Cancelar";
+            btnCancelar.onclick = cancelarPedido;
+          }
+        });
+    }, 3000);
   })
-  .catch(() => { btn.disabled = false; btn.innerText = "Tarjeta"; alert("Error de conexión"); });
+  .catch(() => { btn.disabled = false; btn.innerText = "Tarjeta"; btnEnviar.disabled = false; alert("Error de conexión"); });
+}
+
+function cancelarPagoTarjeta() {
+  if (_tarjetaPolling) { clearInterval(_tarjetaPolling); _tarjetaPolling = null; }
+  if (_tarjetaIntentId) {
+    fetch("/cobrar-terminal/" + _tarjetaIntentId, { method: "DELETE" });
+    _tarjetaIntentId = null;
+  }
+  const btn = document.getElementById("btnTarjeta");
+  const btnEnviar = document.querySelector(".btn-enviar");
+  const btnCancelar = document.querySelector(".btn-cancelar");
+  btn.disabled = false;
+  btn.innerText = "Tarjeta";
+  btnEnviar.disabled = false;
+  btnCancelar.innerText = "Cancelar";
+  btnCancelar.onclick = cancelarPedido;
 }
 
 function cancelarPedido() {
