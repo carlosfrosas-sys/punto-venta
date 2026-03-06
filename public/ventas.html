@@ -636,11 +636,7 @@ function hacerLogin() {
         body: JSON.stringify({ password: pass })
       })
         .then(res => {
-          if (res.ok) {
-            cambiarTab(tabActual);
-          } else {
-            alert("Contraseña incorrecta");
-          }
+          if (!res.ok) alert("Contraseña incorrecta");
         });
     }
 
