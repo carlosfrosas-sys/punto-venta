@@ -1529,9 +1529,6 @@ function mostrarMultiSopes(datos, max) {
   if (datos.sencillo) {
     const btnSencillo = document.createElement("button");
     btnSencillo.innerText = "Sencillos - $" + datos.sencillo;
-    btnSencillo.style.background = "#fbbf24";
-    btnSencillo.style.color = "#111";
-    btnSencillo.style.fontWeight = "700";
     btnSencillo.onclick = () => {
       mostrarNotas("Sopes Sencillos", datos.sencillo, notasAntojitos);
     };
