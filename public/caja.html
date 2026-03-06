@@ -1186,7 +1186,7 @@ function mostrarSaboresAgua() {
   const extraPrecio = 5;
   let conChia = false;
 
-  cont.innerHTML = "<h3>Elige sabores:</h3><p>El primero es base, cada extra +$" + extraPrecio + "</p>";
+  cont.innerHTML = "";
 
   menu["Aguas"].sabores.forEach(sabor => {
     const btn = document.createElement("button");
@@ -1376,7 +1376,7 @@ function mostrarMultiTacos(items, max) {
   const seleccionados = [];
   let conPapas = false;
 
-  cont.innerHTML = "<h3>Elige hasta " + max + " (son " + max + " piezas):</h3>";
+  cont.innerHTML = "";
 
   items.forEach(item => {
     const btn = document.createElement("button");
@@ -1523,7 +1523,7 @@ function mostrarMultiItems(prefijo, items, max) {
   const seleccionados = [];
   let conPapas = false;
 
-  cont.innerHTML = "<h3>Elige hasta " + max + " (son " + max + " piezas):</h3>";
+  cont.innerHTML = "";
 
   items.forEach(item => {
     const btn = document.createElement("button");
@@ -1597,7 +1597,7 @@ function mostrarMultiProteina(categoria, datos, max, notas) {
   const esBurrito = categoria === "Burritos";
   const prefijo = esBurrito ? "Burritos de " : categoria + " de ";
 
-  cont.innerHTML = "<h3>" + categoria + ":</h3><p>Elige hasta " + max + " proteínas (son " + max + " piezas):</p>";
+  cont.innerHTML = "";
 
   // Sencillo para mollequiles
   if (datos.sencillo) {
@@ -1607,14 +1607,6 @@ function mostrarMultiProteina(categoria, datos, max, notas) {
       mostrarNotas(categoria + " Sencillos", datos.sencillo, notas);
     };
     cont.appendChild(btnSencillo);
-
-    const sep = document.createElement("p");
-    sep.style.width = "100%";
-    sep.style.fontSize = "13px";
-    sep.style.color = "#a09080";
-    sep.style.marginTop = "8px";
-    sep.innerText = "Con proteína:";
-    cont.appendChild(sep);
   }
 
   datos.proteinas.forEach(p => {
@@ -1695,7 +1687,7 @@ function mostrarIngredientesTortaMulti() {
   const seleccionados = [];
   const extraPrecio = 10;
 
-  cont.innerHTML = "<h3>Elige ingredientes:</h3><p>El primero es precio base, cada extra +$" + extraPrecio + "</p>";
+  cont.innerHTML = "";
 
   const todosIngredientes = menu["Tortas"].proteinas;
   const ingredientesConPina = [...todosIngredientes, { nombre: "Piña", precio: 0 }];
