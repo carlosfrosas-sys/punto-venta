@@ -441,7 +441,7 @@ app.get("/ventas/productos-vendidos", (req, res) => {
       const nombre = pr.nombre;
       if (!productos[nombre]) productos[nombre] = { nombre, cantidad: 0, total: 0 };
       productos[nombre].cantidad += pr.cantidad || 1;
-      productos[nombre].total += (pr.precio || 0) * (pr.cantidad || 1);
+      productos[nombre].total += pr.precio || 0;
     });
   });
 
