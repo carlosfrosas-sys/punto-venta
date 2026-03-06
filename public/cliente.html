@@ -19,114 +19,119 @@
       font-family: 'Segoe UI', Arial, sans-serif;
       background: #f0f7fb;
       color: #3d3d3d;
-      min-height: 100vh;
+      height: 100vh;
+      overflow: hidden;
     }
 
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 20px 25px;
-    }
-
-    .header {
+    /* ===== LAYOUT 2 COLUMNAS ===== */
+    .pos-layout {
       display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 12px 0;
-      border-bottom: 2px solid #d0e8f2;
-      margin-bottom: 20px;
+      height: 100vh;
     }
 
-    .header-left {
+    .panel-left {
+      width: 70%;
       display: flex;
-      align-items: center;
-      gap: 10px;
-      flex: 1;
-      min-width: 0;
+      flex-direction: column;
+      border-right: 2px solid #d0e8f2;
+      background: #f0f7fb;
+      overflow: hidden;
     }
 
-    .header-right {
+    .panel-right {
+      width: 30%;
       display: flex;
-      align-items: center;
-      flex: 1;
-      justify-content: flex-end;
+      flex-direction: column;
+      background: #fff;
+      overflow: hidden;
     }
 
-    .header h1 {
-      font-size: 22px;
+    /* ===== PANEL IZQUIERDO ===== */
+    .panel-left-header {
+      padding: 8px 12px;
+      border-bottom: 1px solid #d0e8f2;
+      flex-shrink: 0;
+    }
+
+    .panel-left-header h1 {
+      font-size: 18px;
       font-weight: 300;
       letter-spacing: 4px;
       text-transform: uppercase;
       color: #009ee3;
-      white-space: nowrap;
-    }
-
-    .header-total {
-      font-size: 18px;
-      font-weight: 700;
-      color: #009ee3;
-      white-space: nowrap;
     }
 
     .section-title {
-      font-size: 14px;
+      font-size: 11px;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 2px;
       color: #6b9ab8;
-      margin-bottom: 12px;
-      margin-top: 25px;
+      margin-bottom: 6px;
+      padding: 0 12px;
+      flex-shrink: 0;
     }
 
-    /* Contenedor categorias */
+    .categorias-wrap {
+      padding: 8px 12px 4px;
+      flex-shrink: 0;
+    }
+
     #categorias {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 15px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
     }
 
-    /* Contenedor opciones */
+    .proteinas-wrap {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 12px;
+      -webkit-overflow-scrolling: touch;
+    }
+
     #proteinas {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 20px;
+      gap: 8px;
       min-height: 20px;
     }
 
     #proteinas h3 {
       width: 100%;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
       color: #007bb5;
-      margin-bottom: 5px;
+      margin-bottom: 4px;
     }
 
     #proteinas p {
       width: 100%;
-      font-size: 13px;
+      font-size: 12px;
       color: #6b9ab8;
-      margin-bottom: 5px;
+      margin-bottom: 4px;
     }
 
-    /* Botones generales */
+    /* ===== BOTONES GENERALES ===== */
     button {
-      padding: 14px 22px;
-      font-size: 17px;
-      border-radius: 20px;
+      padding: 12px 16px;
+      font-size: 20px;
+      border-radius: 12px;
       border: none;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.15s ease;
       font-weight: 500;
+      text-transform: uppercase;
+      min-height: 52px;
     }
 
-    /* Categorias */
     #categorias button {
       background: #fff;
       color: #007bb5;
       border: 1.5px solid #b8d8e8;
       box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      font-size: 20px;
+      min-height: 52px;
     }
 
     #categorias button:hover {
@@ -135,12 +140,16 @@
       border-color: #009ee3;
     }
 
-    /* Opciones de productos */
     #proteinas button {
       background: #e5e7eb;
       color: #111827;
       border: 1.5px solid #d1d5db;
       box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      font-size: 20px;
+      min-height: 52px;
+      flex: 1 1 calc(33.33% - 6px);
+      min-width: 0;
+      text-align: center;
     }
 
     #proteinas button:hover {
@@ -148,36 +157,30 @@
       border-color: #9ca3af;
     }
 
-    /* Inputs */
-    input {
-      width: 100%;
-      max-width: 400px;
-      padding: 12px 16px;
-      font-size: 15px;
-      border-radius: 12px;
-      border: 1.5px solid #b8d8e8;
-      background: #fff;
-      color: #3d3d3d;
-      transition: all 0.2s ease;
+    .btn-1pieza {
+      font-size: 14px !important;
+      min-height: 36px !important;
+      padding: 6px 12px !important;
+      opacity: 0.8;
     }
 
-    input:focus {
-      outline: none;
-      border-color: #009ee3;
-      box-shadow: 0 0 0 3px rgba(0,158,227,0.15);
+    /* ===== PANEL DERECHO ===== */
+    .pedido-header {
+      padding: 8px 14px;
+      border-bottom: 1px solid #d0e8f2;
+      flex-shrink: 0;
     }
 
-    input::placeholder {
-      color: #a0c4d8;
+    .pedido-header .section-title {
+      padding: 0;
+      margin-bottom: 0;
     }
 
-    /* Lista pedido */
-    .pedido-section {
-      background: #fff;
-      border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-      border: 1px solid #d0e8f2;
+    .lista-wrap {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 14px;
+      -webkit-overflow-scrolling: touch;
     }
 
     #lista {
@@ -188,10 +191,10 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 10px 0;
+      padding: 8px 0;
       border-bottom: 1px solid #e8f2f7;
-      font-size: 15px;
-      gap: 8px;
+      font-size: 14px;
+      gap: 6px;
     }
 
     #lista li:last-child {
@@ -201,7 +204,7 @@
     #lista small {
       color: #c0785a;
       font-weight: 600;
-      font-size: 12px;
+      font-size: 11px;
     }
 
     .producto-info {
@@ -212,28 +215,34 @@
     .producto-controles {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
       flex-shrink: 0;
     }
 
     .producto-controles .cantidad {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 700;
       color: #007bb5;
-      min-width: 20px;
+      min-width: 18px;
       text-align: center;
     }
 
     .btn-qty {
+      width: 36px;
+      height: 36px;
+      min-height: 36px;
+      padding: 0;
       background: #d0e8f2;
       color: #007bb5;
-      padding: 4px 10px;
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 700;
       border-radius: 8px;
       border: none;
       cursor: pointer;
       line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .btn-qty:hover {
@@ -243,11 +252,12 @@
     .btn-eliminar {
       background: none;
       color: #a0c4d8;
-      padding: 4px 8px;
-      font-size: 16px;
+      padding: 4px 6px;
+      font-size: 15px;
       border-radius: 8px;
       border: none;
       cursor: pointer;
+      min-height: auto;
     }
 
     .btn-eliminar:hover {
@@ -255,14 +265,37 @@
       background: #fef2f2;
     }
 
-    /* Total */
+    /* ===== TOTAL + INPUTS + BOTONES (parte fija inferior derecha) ===== */
+    .pedido-footer {
+      flex-shrink: 0;
+      padding: 10px 14px;
+      border-top: 2px solid #d0e8f2;
+    }
+
+    #btnDeshacer {
+      display: none;
+      width: 100%;
+      padding: 4px 0;
+      margin-bottom: 6px;
+      background: transparent;
+      border: 1px solid #b8d8e8;
+      border-radius: 6px;
+      color: #6b9ab8;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      letter-spacing: 1px;
+    }
+
+    #btnDeshacer:active {
+      background: #e8f2f7;
+    }
+
     .total-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-top: 15px;
-      padding-top: 15px;
-      border-top: 2px solid #d0e8f2;
+      margin-bottom: 8px;
     }
 
     .total-label {
@@ -274,55 +307,108 @@
     }
 
     #total {
-      font-size: 28px;
+      font-size: 32px;
       font-weight: 700;
       color: #009ee3;
     }
 
-    /* Nota general */
-    .nota-group {
+    .inputs-row {
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      margin-bottom: 20px;
+      gap: 6px;
+      margin-bottom: 8px;
     }
 
-    textarea {
+    .inputs-row input,
+    .inputs-row textarea {
       width: 100%;
-      max-width: 400px;
-      padding: 12px 16px;
-      font-size: 15px;
-      border-radius: 12px;
+      padding: 8px 10px;
+      font-size: 14px;
+      border-radius: 10px;
       border: 1.5px solid #b8d8e8;
       background: #fff;
       color: #3d3d3d;
-      transition: all 0.2s ease;
       font-family: inherit;
-      resize: vertical;
-      min-height: 44px;
-      max-height: 100px;
+      min-width: 0;
     }
 
-    textarea:focus {
+    .inputs-row input:focus,
+    .inputs-row textarea:focus {
       outline: none;
       border-color: #009ee3;
-      box-shadow: 0 0 0 3px rgba(0,158,227,0.15);
+      box-shadow: 0 0 0 2px rgba(0,158,227,0.15);
     }
 
-    textarea::placeholder {
+    .inputs-row input::placeholder,
+    .inputs-row textarea::placeholder {
       color: #a0c4d8;
     }
 
-    /* Boton pagar */
-    .btn-pagar {
-      width: 100%;
+    .inputs-row textarea {
+      resize: none;
+      min-height: 34px;
+      max-height: 34px;
+    }
+
+    .inputs-row .cupon-row {
+      display: flex;
+      gap: 6px;
+    }
+
+    .inputs-row .cupon-row input {
+      flex: 1;
+      text-transform: uppercase;
+    }
+
+    .inputs-row .btn-cupon {
+      padding: 8px 14px;
       background: #009ee3;
       color: #fff;
-      font-size: 18px;
+      border: none;
+      border-radius: 10px;
+      font-size: 13px;
       font-weight: 600;
-      padding: 16px;
+      cursor: pointer;
+      white-space: nowrap;
+      min-height: auto;
+      text-transform: none;
+    }
+
+    .options-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .options-row label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: #999;
+      cursor: pointer;
+    }
+
+    .options-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    .buttons-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-pagar {
+      flex: 2;
+      background: #009ee3;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      min-height: 48px;
       border-radius: 12px;
-      margin-top: 20px;
       letter-spacing: 1px;
       text-transform: uppercase;
     }
@@ -336,16 +422,14 @@
       cursor: not-allowed;
     }
 
-    /* Boton cancelar */
     .btn-cancelar {
-      width: 100%;
+      flex: 1;
       background: transparent;
       color: #e05252;
-      font-size: 16px;
+      font-size: 14px;
       font-weight: 600;
-      padding: 14px;
+      min-height: 48px;
       border-radius: 12px;
-      margin-top: 10px;
       letter-spacing: 1px;
       text-transform: uppercase;
       border: 2px solid #e05252;
@@ -356,157 +440,154 @@
       color: #fff;
     }
 
-    #btnDeshacer {
-      display: none;
-      width: 100%;
-      padding: 6px 0;
-      margin-top: 10px;
-      background: transparent;
-      border: 1px solid #b8d8e8;
-      border-radius: 8px;
+    #cuponInfo {
+      background: #e8f5e9;
+      border-left: 3px solid #4caf50;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #2e7d32;
+    }
+
+    .info-box {
+      font-size: 11px;
+      line-height: 1.5;
       color: #6b9ab8;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      letter-spacing: 1px;
+      padding: 8px 0 0;
+      border-top: 1px solid #d0e8f2;
+      margin-top: 8px;
     }
 
-    #btnDeshacer:active {
-      background: #e8f2f7;
-    }
-
-    /* Responsive */
-    @media (max-width: 900px) {
-      #categorias button {
-        padding: 10px 14px;
-        font-size: 14px;
-        flex: 1 1 calc(25% - 10px);
-        min-width: 0;
-        text-align: center;
-      }
-
-      #proteinas button {
-        padding: 10px 14px;
-        font-size: 14px;
-        flex: 1 1 calc(33% - 10px);
-        min-width: 0;
-        text-align: center;
-      }
-
-      input, textarea {
-        max-width: 100%;
-      }
-    }
-
+    /* ===== CELULAR (solo phones, no iPad) ===== */
     @media (max-width: 600px) {
-      .container {
-        padding: 15px;
+      body {
+        height: auto;
+        overflow: auto;
       }
 
-      .header h1 {
-        font-size: 18px;
-        letter-spacing: 2px;
+      .pos-layout {
+        flex-direction: column;
+        height: auto;
+        min-height: 100vh;
+      }
+
+      .panel-left {
+        width: 100%;
+        border-right: none;
+        border-bottom: 2px solid #d0e8f2;
+        overflow: visible;
+      }
+
+      .panel-right {
+        width: 100%;
+        overflow: visible;
+      }
+
+      .proteinas-wrap {
+        overflow: visible;
+        max-height: none;
+      }
+
+      .lista-wrap {
+        overflow: visible;
+        max-height: none;
       }
 
       #categorias {
+        grid-template-columns: repeat(3, 1fr);
         gap: 6px;
       }
 
       #categorias button {
-        padding: 8px 12px;
-        font-size: 13px;
-        flex: 1 1 calc(33% - 6px);
-      }
-
-      #proteinas {
-        gap: 6px;
-      }
-
-      #proteinas button {
-        padding: 8px 12px;
-        font-size: 13px;
-        flex: 1 1 calc(50% - 6px);
-      }
-
-      #lista li {
-        font-size: 14px;
-      }
-    }
-
-    @media (max-width: 400px) {
-      #categorias button {
-        flex: 1 1 calc(50% - 6px);
-        font-size: 12px;
+        font-size: 15px;
+        min-height: 44px;
         padding: 8px 6px;
       }
 
       #proteinas button {
-        flex: 1 1 calc(50% - 6px);
-        font-size: 12px;
+        font-size: 16px;
+        min-height: 44px;
+      }
+
+      .btn-pagar {
+        font-size: 15px;
+        min-height: 46px;
+      }
+
+      .btn-cancelar {
+        font-size: 13px;
+        min-height: 46px;
+      }
+
+      #total {
+        font-size: 26px;
       }
     }
   </style>
 </head>
 <body>
 
-<div class="container">
-  <div class="header">
-    <div class="header-left">
-      <span class="header-total" id="headerTotal">$0</span>
+<div class="pos-layout">
+  <!-- PANEL IZQUIERDO: Categorías + Opciones -->
+  <div class="panel-left">
+    <div class="panel-left-header">
+      <h1>La Cabaña</h1>
     </div>
-    <h1>La Cabaña</h1>
+    <div class="section-title">Menú</div>
+    <div class="categorias-wrap">
+      <div id="categorias"></div>
+    </div>
+    <div class="proteinas-wrap">
+      <div id="proteinas"></div>
+    </div>
   </div>
 
-  <div class="section-title">Menú</div>
-  <div id="categorias"></div>
-  <div id="proteinas"></div>
-
-  <div class="pedido-section">
-    <div class="section-title" style="margin-top:0;">Tu Pedido</div>
-    <ul id="lista"></ul>
-    <div id="paraLlevarRow" class="total-row" style="display:none;font-size:14px;color:#e65100;padding:6px 0 0;">
-      <span>Para llevar</span>
-      <span>+$10</span>
+  <!-- PANEL DERECHO: Pedido + Total + Inputs + Botones -->
+  <div class="panel-right">
+    <div class="pedido-header">
+      <div class="section-title">Tu Pedido</div>
     </div>
-    <div id="descuentoRow" class="total-row" style="display:none;font-size:14px;color:#2e7d32;padding:6px 0 0;">
-      <span>Descuento (<span id="descuentoPct"></span>%)</span>
-      <span>-$<span id="descuentoMonto">0</span></span>
+    <div class="lista-wrap">
+      <ul id="lista"></ul>
     </div>
-    <div class="total-row">
-      <span class="total-label">Total</span>
-      <span>$<span id="total">0</span></span>
-    </div>
-    <button id="btnDeshacer" onclick="deshacerUltimo()">Deshacer</button>
-  </div>
-
-  <div class="input-group">
-    <div class="section-title">Tus datos</div>
-    <div class="nota-group">
-      <input type="text" id="cliente" placeholder="Tu nombre" required>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <input type="tel" id="telefono" placeholder="Tu telefono (10 digitos)" pattern="[0-9]{10}" required style="flex:1;">
-        <span style="font-size:12px;color:#888;white-space:nowrap;">Se enviará WA al estar listo tu pedido</span>
+    <div class="pedido-footer">
+      <button id="btnDeshacer" onclick="deshacerUltimo()">Deshacer</button>
+      <div id="paraLlevarRow" class="total-row" style="display:none;font-size:12px;color:#e65100;margin-bottom:0;">
+        <span>Para llevar</span>
+        <span>+$10</span>
       </div>
-      <div style="display:flex;gap:8px;">
-        <input type="text" id="cupon" placeholder="Cupón de descuento" autocapitalize="characters" style="text-transform:uppercase;flex:1;">
-        <button type="button" onclick="aplicarCupon()" style="padding:10px 18px;background:#009ee3;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;white-space:nowrap;">Agregar</button>
+      <div id="descuentoRow" class="total-row" style="display:none;font-size:12px;color:#2e7d32;margin-bottom:0;">
+        <span>Descuento (<span id="descuentoPct"></span>%)</span>
+        <span>-$<span id="descuentoMonto">0</span></span>
       </div>
-      <div id="cuponInfo" style="display:none;background:#e8f5e9;border-left:4px solid #4caf50;padding:10px 14px;border-radius:6px;font-size:14px;color:#2e7d32;"></div>
-      <textarea id="notaPedido" placeholder="Nota del pedido (opcional)" rows="1"></textarea>
-      <label style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:15px;color:#555;cursor:pointer;">
-        <input type="checkbox" id="paraLlevar" onchange="toggleParaLlevar()" style="width:20px;height:20px;cursor:pointer;"> Para llevar <span style="color:#e65100;font-weight:600;">+$10</span>
-      </label>
+      <div class="total-row">
+        <span class="total-label">Total</span>
+        <span>$<span id="total">0</span></span>
+      </div>
+      <span id="headerTotal" style="display:none;">$0</span>
+      <div class="inputs-row">
+        <input type="text" id="cliente" placeholder="Tu nombre" required>
+        <input type="tel" id="telefono" placeholder="Teléfono (10 dígitos)" pattern="[0-9]{10}" required>
+        <div class="cupon-row">
+          <input type="text" id="cupon" placeholder="Cupón" autocapitalize="characters">
+          <button type="button" class="btn-cupon" onclick="aplicarCupon()">Aplicar</button>
+        </div>
+        <div id="cuponInfo" style="display:none;"></div>
+        <textarea id="notaPedido" placeholder="Nota (opcional)" rows="1"></textarea>
+      </div>
+      <div class="options-row">
+        <label>
+          <input type="checkbox" id="paraLlevar" onchange="toggleParaLlevar()"> Para llevar <span style="color:#e65100;font-weight:600;">+$10</span>
+        </label>
+      </div>
+      <div class="buttons-row">
+        <button class="btn-pagar" onclick="iniciarPago()" id="btnPagar">Pagar</button>
+        <button class="btn-cancelar" onclick="cancelarPedido()">Cancelar</button>
+      </div>
+      <div class="info-box">
+        Una vez acreditado el pago, su pedido se enviará automáticamente a preparación. Tiempo estimado: hasta 10 min.
+      </div>
     </div>
-  </div>
-
-  <button class="btn-pagar" onclick="iniciarPago()" id="btnPagar">Pagar con Mercado Pago</button>
-  <button class="btn-cancelar" onclick="cancelarPedido()">Cancelar Pedido</button>
-
-  <div style="background:#e3f2fd;border-left:4px solid #009ee3;padding:14px 16px;border-radius:6px;margin-top:20px;font-size:14px;line-height:1.6;color:#3d3d3d;">
-    <p>Una vez acreditado el pago, su pedido se enviará automáticamente a nuestra fila de preparación.</p>
-    <p style="margin-top:8px;">El tiempo estimado de elaboración es de hasta 10 minutos. Le pedimos pasar a recogerlo y preguntar proporcionando su nombre.</p>
-    <p style="margin-top:8px;">Si su pedido aún no se encuentra listo al momento de llegar, le solicitamos esperar a que sea mencionado por su nombre para realizar la entrega correspondiente.</p>
-    <p style="margin-top:8px;">Le recordamos que al realizar su pago en línea no es necesario formarse. Únicamente deberá acudir al área de entrega para recoger su pedido.</p>
   </div>
 </div>
 
@@ -923,7 +1004,7 @@ function cargarCategorias() {
 function mostrarOpciones(categoria) {
   const cont = document.getElementById("proteinas");
   cont.innerHTML = "";
-  setTimeout(() => cont.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+  setTimeout(() => { const pw = document.querySelector(".proteinas-wrap"); if (pw) pw.scrollTop = 0; }, 50);
   const datos = menu[categoria];
 
   if (!datos) {
@@ -2145,7 +2226,8 @@ function agregarProductoConNota(nombre, precio) {
 }
 
 function scrollACategorias() {
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  const pw = document.querySelector(".proteinas-wrap");
+  if (pw) pw.scrollTop = 0;
 }
 
 let _prevProductCount = 0;
