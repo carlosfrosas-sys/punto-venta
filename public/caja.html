@@ -995,6 +995,8 @@ if (categoria === "Licuados") {
             mostrarPicoDegallo(categoria + " de " + p, datos.precio);
           } else if (categoria === "Mollequiles") {
             mostrarNotas(categoria + " de " + p, datos.precio, ["Sin Crema"]);
+          } else if (categoria === "Chilaquiles" && p === "Huevo") {
+            mostrarTipoHuevoChilaquiles(datos.precio);
           } else if (categoria === "Chilaquiles") {
             mostrarNotas(categoria + " de " + p, datos.precio, notasChilaquiles);
           } else if (categoria === "Enchiladas") {
@@ -1780,6 +1782,22 @@ function mostrarNotas(nombre, precio, opciones, siguiente) {
     }
   };
   cont.appendChild(btnAgregar);
+}
+
+function mostrarTipoHuevoChilaquiles(precio) {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>Chilaquiles de Huevo - $" + precio + "</h3><p>¿Cómo el huevo?</p>";
+
+  ["Estrellado", "Revuelto"].forEach(tipo => {
+    const btn = document.createElement("button");
+    btn.innerText = tipo;
+    btn.style.background = "#2563eb";
+    btn.style.color = "white";
+    btn.onclick = () => {
+      mostrarNotas("Chilaquiles de Huevo " + tipo, precio, notasChilaquiles);
+    };
+    cont.appendChild(btn);
+  });
 }
 
 function mostrarHuevoPaquete(datos) {
