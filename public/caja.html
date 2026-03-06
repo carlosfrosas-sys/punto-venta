@@ -388,11 +388,12 @@
 
     .buttons-row {
       display: flex;
+      flex-wrap: wrap;
       gap: 8px;
     }
 
     .btn-enviar {
-      flex: 2;
+      width: 100%;
       background: #6b5b4f;
       color: #fff;
       font-size: 18px;
@@ -413,7 +414,7 @@
       color: #e05252;
       font-size: 15px;
       font-weight: 600;
-      min-height: 52px;
+      min-height: 44px;
       border-radius: 12px;
       letter-spacing: 1px;
       text-transform: uppercase;
@@ -426,12 +427,12 @@
     }
 
     .btn-tarjeta {
-      flex: 2;
+      flex: 1;
       background: #2563eb;
       color: #fff;
-      font-size: 18px;
+      font-size: 15px;
       font-weight: 600;
-      min-height: 52px;
+      min-height: 44px;
       border-radius: 12px;
       letter-spacing: 1px;
       text-transform: uppercase;
@@ -608,8 +609,8 @@ function hacerLogin() {
       </div>
       <div class="buttons-row">
         <button class="btn-enviar" onclick="enviarPedido()">Enviar</button>
-        <button class="btn-tarjeta" id="btnTarjeta" onclick="cobrarTarjeta()">Tarjeta</button>
         <button class="btn-cancelar" onclick="cancelarPedido()">Cancelar</button>
+        <button class="btn-tarjeta" id="btnTarjeta" onclick="cobrarTarjeta()">Tarjeta</button>
       </div>
     </div>
   </div>

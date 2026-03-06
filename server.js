@@ -331,7 +331,7 @@ app.put("/pedido/:id", async (req, res) => {
 });
 
 // Mercado Pago Point: cobrar con terminal
-const MP_DEVICE_ID = process.env.MP_DEVICE_ID || "DSPREAD_D20__12098604524110712263";
+const MP_DEVICE_ID = process.env.MP_DEVICE_ID || "DSPREAD_D20__12098604524071803694";
 
 let lastPaymentIntentId = null;
 
