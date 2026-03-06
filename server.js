@@ -382,7 +382,32 @@ app.get("/ventas/fechas", (req, res) => {
 app.get("/ventas/fecha/:fecha", (req, res) => {
   const entregados = pedidos.filter(p => p.estado === "Entregado" && p.fecha === req.params.fecha);
   const total = entregados.reduce((acc, p) => acc + p.total, 0);
-  res.json({ pedidos: entregados, total });
+
+  // Categorías
+  const cats = {};
+  entregados.forEach(p => {
+    p.productos.forEach(pr => {
+      const cat = detectarCategoria(pr.nombre);
+      const cant = pr.cantidad || 1;
+      if (!cats[cat]) cats[cat] = { nombre: cat, cantidad: 0, total: 0 };
+      cats[cat].cantidad += cant;
+      cats[cat].total += pr.precio || 0;
+    });
+  });
+  const categorias = Object.values(cats).sort((a, b) => b.cantidad - a.cantidad);
+
+  // Por hora
+  const horas = {};
+  entregados.forEach(p => {
+    const h = (p.horaEnvio || "").split(":")[0];
+    if (!h) return;
+    if (!horas[h]) horas[h] = { hora: h + ":00", pedidos: 0, total: 0 };
+    horas[h].pedidos++;
+    horas[h].total += p.total;
+  });
+  const porHora = Object.values(horas).sort((a, b) => a.hora.localeCompare(b.hora));
+
+  res.json({ pedidos: entregados, total, categorias, porHora });
 });
 
 app.get("/total", (req, res) => {
@@ -404,6 +429,39 @@ app.post("/pedido/listo/:id", async (req, res) => {
   io.emit("pedidoListo", pedido);
   res.json(pedido);
 });
+
+// Mapa de categorías por palabra clave en nombre del producto
+function detectarCategoria(nombre) {
+  const n = nombre.toLowerCase();
+  if (n.includes("paquete") || n.includes("hot cakes") || n.includes("hotcakes") || n.includes("orden de huevo") || n.includes("bisquet")) return "Desayunos";
+  if (n.includes("chilaquil")) return "Chilaquiles";
+  if (n.includes("mollete") && !n.includes("mollequil")) return "Molletes";
+  if (n.includes("mollequil")) return "Mollequiles";
+  if (n.includes("burrito")) return "Burritos";
+  if (n.includes("enchilada") || n.includes("enmolada") || n.includes("enfrijolada")) return "Enchiladas";
+  if (n.includes("torta")) return "Tortas";
+  if (n.includes("sope")) return "Sopes";
+  if (n.includes("quesadilla")) return "Quesadillas";
+  if (n.includes("tostada")) return "Tostadas";
+  if (n.includes("sandwich") || n.includes("cuernito") || n.includes("hojaldra") || n.includes("club sandwich")) return "Sandwiches";
+  if (n.includes("ham.") || n.includes("hamburguesa")) return "Hamburguesas";
+  if (n.includes("bagel")) return "Bagels";
+  if (n.includes("taco")) return "Tacos";
+  if (n.includes("gringa")) return "Gringas";
+  if (n.includes("norteña")) return "Norteñas";
+  if (n.includes("sincronizada")) return "Sincronizadas";
+  if (n.includes("ensalada")) return "Ensaladas";
+  if (n.includes("hot dog")) return "Snacks";
+  if (n.includes("banderilla")) return "Snacks";
+  if (n.includes("papas")) return "Snacks";
+  if (n.includes("nachos")) return "Snacks";
+  if (n.includes("maruchan")) return "Snacks";
+  if (n.includes("agua de") || n.includes("agua ")) return "Aguas";
+  if (n.includes("licuado")) return "Licuados";
+  if (n.includes("café") || n.includes("capuccino") || n.includes("espumoso") || n.includes("agua caliente")) return "Café";
+  if (n.includes("coca") || n.includes("boing") || n.includes("fuze") || n.includes("jumex") || n.includes("gatorade") || n.includes("monster") || n.includes("redbull") || n.includes("volt") || n.includes("electrolit") || n.includes("yakult") || n.includes("panzoncita") || n.includes("peñafielita") || n.includes("del valle") || n.includes("refresco") || n.includes("lechita")) return "Bebidas";
+  return "Otros";
+}
 
 app.get("/ventas/productos-vendidos", (req, res) => {
   const periodo = req.query.periodo || "dia";
@@ -433,39 +491,6 @@ app.get("/ventas/productos-vendidos", (req, res) => {
     });
   } else {
     return res.status(400).send("Periodo inválido");
-  }
-
-  // Mapa de categorías por palabra clave en nombre del producto
-  function detectarCategoria(nombre) {
-    const n = nombre.toLowerCase();
-    if (n.includes("paquete") || n.includes("hot cakes") || n.includes("hotcakes") || n.includes("orden de huevo") || n.includes("bisquet")) return "Desayunos";
-    if (n.includes("chilaquil")) return "Chilaquiles";
-    if (n.includes("mollete") && !n.includes("mollequil")) return "Molletes";
-    if (n.includes("mollequil")) return "Mollequiles";
-    if (n.includes("burrito")) return "Burritos";
-    if (n.includes("enchilada") || n.includes("enmolada") || n.includes("enfrijolada")) return "Enchiladas";
-    if (n.includes("torta")) return "Tortas";
-    if (n.includes("sope")) return "Sopes";
-    if (n.includes("quesadilla")) return "Quesadillas";
-    if (n.includes("tostada")) return "Tostadas";
-    if (n.includes("sandwich") || n.includes("cuernito") || n.includes("hojaldra") || n.includes("club sandwich")) return "Sandwiches";
-    if (n.includes("ham.") || n.includes("hamburguesa")) return "Hamburguesas";
-    if (n.includes("bagel")) return "Bagels";
-    if (n.includes("taco")) return "Tacos";
-    if (n.includes("gringa")) return "Gringas";
-    if (n.includes("norteña")) return "Norteñas";
-    if (n.includes("sincronizada")) return "Sincronizadas";
-    if (n.includes("ensalada")) return "Ensaladas";
-    if (n.includes("hot dog")) return "Snacks";
-    if (n.includes("banderilla")) return "Snacks";
-    if (n.includes("papas")) return "Snacks";
-    if (n.includes("nachos")) return "Snacks";
-    if (n.includes("maruchan")) return "Snacks";
-    if (n.includes("agua de") || n.includes("agua ")) return "Aguas";
-    if (n.includes("licuado")) return "Licuados";
-    if (n.includes("café") || n.includes("capuccino") || n.includes("espumoso") || n.includes("agua caliente")) return "Café";
-    if (n.includes("coca") || n.includes("boing") || n.includes("fuze") || n.includes("jumex") || n.includes("gatorade") || n.includes("monster") || n.includes("redbull") || n.includes("volt") || n.includes("electrolit") || n.includes("yakult") || n.includes("panzoncita") || n.includes("peñafielita") || n.includes("del valle") || n.includes("refresco") || n.includes("lechita")) return "Bebidas";
-    return "Otros";
   }
 
   // Productos individuales
@@ -577,21 +602,40 @@ function fechaMXAhora() {
   return new Date(new Date().toLocaleString("en-US", { timeZone: "America/Mexico_City" }));
 }
 
-app.get("/ventas/semanal", (req, res) => {
+app.get("/ventas/semanal", async (req, res) => {
   const ahora = fechaMXAhora();
   const hace7dias = new Date(ahora);
   hace7dias.setDate(hace7dias.getDate() - 6);
   hace7dias.setHours(0, 0, 0, 0);
 
-  const entregados = pedidos.filter(p => {
-    if (p.estado !== "Entregado" || !p.fecha) return false;
-    const fechaPedido = parseFechaMX(p.fecha);
-    return fechaPedido >= hace7dias;
-  });
+  let entregados;
+
+  if (db) {
+    try {
+      const fechasValidas = [];
+      for (let d = new Date(hace7dias); d <= ahora; d.setDate(d.getDate() + 1)) {
+        const dd = d.getDate().toString().padStart(2, "0");
+        const mm = (d.getMonth() + 1).toString().padStart(2, "0");
+        const yyyy = d.getFullYear();
+        fechasValidas.push(dd + "/" + mm + "/" + yyyy);
+      }
+      entregados = await db.collection("pedidos").find({ estado: "Entregado", fecha: { $in: fechasValidas } }).toArray();
+      entregados.forEach(p => delete p._id);
+    } catch (e) {
+      console.error("Error query semanal MongoDB:", e.message);
+      entregados = null;
+    }
+  }
+
+  if (!entregados) {
+    entregados = pedidos.filter(p => {
+      if (p.estado !== "Entregado" || !p.fecha) return false;
+      return parseFechaMX(p.fecha) >= hace7dias;
+    });
+  }
 
   const total = entregados.reduce((acc, p) => acc + p.total, 0);
 
-  // Agrupar por fecha
   const porDia = {};
   entregados.forEach(p => {
     if (!porDia[p.fecha]) porDia[p.fecha] = { pedidos: [], total: 0 };
@@ -602,21 +646,33 @@ app.get("/ventas/semanal", (req, res) => {
   res.json({ pedidos: entregados, total, porDia });
 });
 
-app.get("/ventas/mensual", (req, res) => {
+app.get("/ventas/mensual", async (req, res) => {
   const ahora = fechaMXAhora();
   const mesActual = (ahora.getMonth() + 1).toString().padStart(2, "0");
   const anioActual = ahora.getFullYear().toString();
 
-  const entregados = pedidos.filter(p => {
-    if (p.estado !== "Entregado" || !p.fecha) return false;
-    // fecha formato dd/mm/yyyy
-    const partes = p.fecha.split("/");
-    return partes[1] === mesActual && partes[2] === anioActual;
-  });
+  let entregados;
+
+  if (db) {
+    try {
+      entregados = await db.collection("pedidos").find({ estado: "Entregado", fecha: { $regex: "\\/" + mesActual + "\\/" + anioActual + "$" } }).toArray();
+      entregados.forEach(p => delete p._id);
+    } catch (e) {
+      console.error("Error query mensual MongoDB:", e.message);
+      entregados = null;
+    }
+  }
+
+  if (!entregados) {
+    entregados = pedidos.filter(p => {
+      if (p.estado !== "Entregado" || !p.fecha) return false;
+      const partes = p.fecha.split("/");
+      return partes[1] === mesActual && partes[2] === anioActual;
+    });
+  }
 
   const total = entregados.reduce((acc, p) => acc + p.total, 0);
 
-  // Agrupar por fecha
   const porDia = {};
   entregados.forEach(p => {
     if (!porDia[p.fecha]) porDia[p.fecha] = { pedidos: [], total: 0 };

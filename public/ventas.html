@@ -350,6 +350,88 @@
       color: #fbbf24;
     }
 
+    .resumen-cats {
+      background: #1a1a1a;
+      border-radius: 8px;
+      padding: 14px 20px;
+      margin-bottom: 15px;
+      border-left: 4px solid #22c55e;
+    }
+
+    .resumen-cats h3 {
+      color: #888;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 10px;
+    }
+
+    .cat-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      border-bottom: 1px solid #222;
+      font-size: 14px;
+    }
+
+    .cat-row:last-child { border-bottom: none; }
+    .cat-nombre { color: #ccc; text-transform: uppercase; }
+    .cat-cant { color: #22c55e; font-weight: 700; margin: 0 12px; }
+    .cat-total { color: #fbbf24; font-weight: 600; }
+
+    .hora-pico {
+      background: #1a1a1a;
+      border-radius: 8px;
+      padding: 14px 20px;
+      margin-bottom: 15px;
+      border-left: 4px solid #8b5cf6;
+    }
+
+    .hora-pico h3 {
+      color: #888;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 10px;
+    }
+
+    .hora-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 6px;
+      font-size: 13px;
+    }
+
+    .hora-label {
+      width: 50px;
+      color: #aaa;
+      flex-shrink: 0;
+    }
+
+    .hora-bar-wrap {
+      flex: 1;
+      height: 20px;
+      background: #222;
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 0 10px;
+    }
+
+    .hora-bar {
+      height: 100%;
+      background: #8b5cf6;
+      border-radius: 4px;
+      transition: width 0.3s;
+    }
+
+    .hora-info {
+      width: 100px;
+      text-align: right;
+      color: #888;
+      flex-shrink: 0;
+      font-size: 12px;
+    }
+
     @media (max-width: 768px) {
       .pedido {
         width: 100%;
@@ -432,6 +514,7 @@ function hacerLogin() {
 
   <div id="desglose" class="desglose"></div>
 
+  <div id="resumenDia"></div>
   <div id="pedidos"></div>
 
   <script src="/socket.io/socket.io.js"></script>
@@ -463,6 +546,7 @@ function hacerLogin() {
         accionesDiv.style.display = "none";
         contadorDiv.style.display = "none";
         contDesglose.innerHTML = "";
+        document.getElementById("resumenDia").innerHTML = "";
         cargarProductos();
       } else {
         totalDiaDiv.style.display = "flex";
@@ -568,6 +652,7 @@ function hacerLogin() {
       fechaActual = fecha;
       contenedor.innerHTML = "";
       contDesglose.innerHTML = "";
+      document.getElementById("resumenDia").innerHTML = "";
 
       // Marcar boton activo
       document.querySelectorAll(".fechas button").forEach(btn => {
@@ -580,6 +665,28 @@ function hacerLogin() {
           if (data.pedidos.length === 0) {
             contenedor.innerHTML = '<div class="sin-datos">No hay ventas en esta fecha</div>';
           } else {
+            // Categorías
+            if (data.categorias && data.categorias.length > 0) {
+              let html = '<div class="resumen-cats"><h3>Por Categoría</h3>';
+              data.categorias.forEach(c => {
+                html += '<div class="cat-row"><span class="cat-nombre">' + c.nombre + '</span><span><span class="cat-cant">' + c.cantidad + '</span><span class="cat-total">$' + c.total + '</span></span></div>';
+              });
+              html += '</div>';
+              document.getElementById("resumenDia").innerHTML += html;
+            }
+
+            // Hora pico
+            if (data.porHora && data.porHora.length > 0) {
+              const maxPedidos = Math.max(...data.porHora.map(h => h.pedidos));
+              let html = '<div class="hora-pico"><h3>Hora Pico</h3>';
+              data.porHora.forEach(h => {
+                const pct = Math.round((h.pedidos / maxPedidos) * 100);
+                html += '<div class="hora-row"><span class="hora-label">' + h.hora + '</span><div class="hora-bar-wrap"><div class="hora-bar" style="width:' + pct + '%"></div></div><span class="hora-info">' + h.pedidos + ' pedidos · $' + h.total + '</span></div>';
+              });
+              html += '</div>';
+              document.getElementById("resumenDia").innerHTML += html;
+            }
+
             data.pedidos.forEach(mostrarPedido);
           }
           actualizarTotal(data.total, data.pedidos.length);
@@ -620,6 +727,7 @@ function hacerLogin() {
     function cargarSemanal() {
       contenedor.innerHTML = "";
       contDesglose.innerHTML = "";
+      document.getElementById("resumenDia").innerHTML = "";
 
       fetch("/ventas/semanal")
         .then(res => res.json())
@@ -637,6 +745,7 @@ function hacerLogin() {
     function cargarMensual() {
       contenedor.innerHTML = "";
       contDesglose.innerHTML = "";
+      document.getElementById("resumenDia").innerHTML = "";
 
       fetch("/ventas/mensual")
         .then(res => res.json())

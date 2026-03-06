@@ -279,6 +279,25 @@
       margin-bottom: 8px;
     }
 
+    #btnDeshacer {
+      display: none;
+      width: 100%;
+      padding: 4px 0;
+      margin-bottom: 6px;
+      background: transparent;
+      border: 1px solid #d4c8bc;
+      border-radius: 6px;
+      color: #a09080;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      letter-spacing: 1px;
+    }
+
+    #btnDeshacer:active {
+      background: #f5f0eb;
+    }
+
     .total-label {
       font-size: 14px;
       font-weight: 600;
@@ -450,6 +469,7 @@ function hacerLogin() {
       <ul id="lista"></ul>
     </div>
     <div class="pedido-footer">
+      <button id="btnDeshacer" onclick="deshacerUltimo()">Deshacer</button>
       <div class="total-row">
         <span class="total-label">Total</span>
         <span>$<span id="total">0</span></span>
@@ -2115,23 +2135,39 @@ function agregarProductoSinNota(nombre, precio) {
 }
 
 function agregarProducto(nombre, precio) {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>" + nombre + "</h3><p>¿Alguna indicación? (opcional)</p>";
 
-  const nota = prompt("¿Alguna indicación especial?\n(Ej: sin cebolla)");
+  const input = document.createElement("input");
+  input.type = "text";
+  input.placeholder = "Ej: sin cebolla";
+  input.style.cssText = "width:100%;padding:10px;font-size:16px;border:1.5px solid #d4c8bc;border-radius:8px;margin-bottom:8px;font-family:inherit;";
 
-  productos.push({
-    nombre,
-    precio,
-    precioBase: precio,
-    cantidad: 1,
-    nota: nota ? nota : ""
-  });
+  const btnAgregar = document.createElement("button");
+  btnAgregar.innerText = "Agregar al pedido";
+  btnAgregar.style.cssText = "background:#16a34a;color:white;font-size:16px;width:100%;padding:10px;border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:600;";
 
-  total += precio;
+  function hacerAgregar() {
+    const nota = input.value.trim();
+    productos.push({ nombre, precio, precioBase: precio, cantidad: 1, nota });
+    total += precio;
+    renderizarLista();
+    cont.innerHTML = "";
+  }
 
-  renderizarLista();
+  btnAgregar.onclick = hacerAgregar;
+  input.onkeydown = (e) => { if (e.key === "Enter") hacerAgregar(); };
+
+  cont.appendChild(input);
+  cont.appendChild(btnAgregar);
+  input.focus();
 }
 
+let _prevProductCount = 0;
+
 function renderizarLista() {
+  if (productos.length > _prevProductCount && navigator.vibrate) navigator.vibrate(50);
+  _prevProductCount = productos.length;
 
   const lista = document.getElementById("lista");
   lista.innerHTML = "";
@@ -2159,6 +2195,15 @@ function renderizarLista() {
   });
 
   document.getElementById("total").innerText = total;
+  document.getElementById("btnDeshacer").style.display = productos.length > 0 ? "block" : "none";
+}
+
+function deshacerUltimo() {
+  if (productos.length === 0) return;
+  const ultimo = productos.pop();
+  total -= ultimo.precio;
+  _prevProductCount = productos.length;
+  renderizarLista();
 }
 
 function cambiarCantidad(index, delta) {
