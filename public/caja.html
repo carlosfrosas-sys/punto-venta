@@ -603,6 +603,12 @@ const menu = {
         acompanamiento: ["Miel Maple", "Mermelada", "Lechera"],
         bebida: true
       },
+      "HotCakes - $40": {
+        directo: true,
+        nombre: "HotCakes",
+        precio: 40,
+        acompanamiento: ["Mermelada", "Miel", "Lechera"]
+      },
       "Paquete 5 - Bisquet con Mermelada y Café - $38": {
         directo: true,
         nombre: "Paquete 5 - Bisquet con Mermelada y Café con Leche",
@@ -1175,6 +1181,10 @@ function mostrarSubcategoria(categoria, sub) {
     }
     if (datos.acompanamiento && datos.bebida) {
       mostrarAcompanamientoPaquete(datos.nombre, datos.precio, datos.acompanamiento);
+      return;
+    }
+    if (datos.acompanamiento && !datos.bebida) {
+      mostrarAcompanamientoSolo(datos.nombre, datos.precio, datos.acompanamiento);
       return;
     }
     if (datos.notas && datos.bebida) {
@@ -1831,6 +1841,21 @@ function mostrarHuevoPaquete(datos) {
       } else if (datos.bebida) {
         mostrarBebidaPaquete(nombre, datos.precio, "");
       }
+    };
+    cont.appendChild(btn);
+  });
+}
+
+function mostrarAcompanamientoSolo(nombre, precio, opciones) {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>" + nombre + " - $" + precio + "</h3><p>Elige acompañamiento:</p>";
+
+  opciones.forEach(opcion => {
+    const btn = document.createElement("button");
+    btn.innerText = opcion;
+    btn.onclick = () => {
+      agregarProducto(nombre + " con " + opcion, precio);
+      cont.innerHTML = "";
     };
     cont.appendChild(btn);
   });
