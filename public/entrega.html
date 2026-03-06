@@ -324,22 +324,87 @@
       font-weight: 600;
     }
 
-    @media (max-width: 768px) {
+    /* ===== CELULAR (solo phones, no iPad) ===== */
+    @media (max-width: 600px) {
+      body {
+        padding: 10px;
+      }
+
+      h1 {
+        font-size: 16px;
+        letter-spacing: 3px;
+      }
+
+      .header-entrega {
+        margin-bottom: 12px;
+        padding-bottom: 10px;
+      }
+
+      .btn-entregados {
+        padding: 6px 10px;
+        font-size: 11px;
+      }
+
       .pedido {
-        flex-direction: column;
-        align-items: stretch;
+        padding: 8px 10px;
         gap: 10px;
       }
 
-      .btn-entregado, .btn-listo, .btn-entregado-online {
-        width: 100%;
-        padding: 14px;
-        font-size: 16px;
-        text-align: center;
+      .cliente {
+        font-size: 14px;
+      }
+
+      .total-amount {
+        font-size: 14px;
+      }
+
+      .pedido-top {
+        gap: 8px;
+        margin-bottom: 2px;
       }
 
       .productos li {
-        font-size: 16px;
+        font-size: 12px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .precio {
+        display: none;
+      }
+
+      .nota {
+        font-size: 10px;
+      }
+
+      .nota-general {
+        font-size: 11px;
+        padding: 3px 6px;
+        margin-top: 2px;
+      }
+
+      .pedido-meta {
+        font-size: 10px;
+      }
+
+      .btn-entregado, .btn-listo, .btn-entregado-online {
+        padding: 10px 12px;
+        font-size: 12px;
+        letter-spacing: 0;
+      }
+
+      .btns-pedido {
+        gap: 4px;
+      }
+
+      .para-llevar {
+        font-size: 10px;
+      }
+
+      .filtros-hora button {
+        padding: 4px 8px;
+        font-size: 10px;
       }
     }
   </style>
