@@ -535,13 +535,6 @@ const menu = {
         precio: 45,
         proteinas: ["Jamón","Chorizo","Champiñones","Salchicha","Nopales","A la Mexicana"]
       },
-      "Hot Cakes con Huevo - $50": {
-        directo: true,
-        nombre: "Hot Cakes con Huevo",
-        precio: 50,
-        acompanamiento: ["Miel Maple", "Mermelada", "Lechera"],
-        bebida: true
-      },
       "HotCakes - $40": {
         directo: true,
         nombre: "HotCakes",
@@ -1169,6 +1162,8 @@ function mostrarSubcategoria(categoria, sub) {
           mostrarNotas(sub + " de " + p, datos.precio, datos.notas);
         } else if (datos.bebida) {
           mostrarBebidaPaquete(sub + " de " + p, datos.precio, "");
+        } else if (categoria === "Desayunos") {
+          agregarProductoSinNota(sub + " de " + p, datos.precio);
         } else {
           agregarProducto(sub + " de " + p, datos.precio);
         }
