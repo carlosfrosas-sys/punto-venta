@@ -474,12 +474,12 @@ function hacerLogin() {
   fetch("/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ usuario, password }) })
     .then(r => r.json().then(d => ({ ok: r.ok, data: d })))
     .then(({ ok, data }) => {
-      if (ok) { sessionStorage.setItem("token_admin", data.token); document.getElementById("loginOverlay").style.display = "none"; }
+      if (ok) { localStorage.setItem("token_admin", data.token); document.getElementById("loginOverlay").style.display = "none"; }
       else { errorDiv.innerText = data.error; errorDiv.style.display = "block"; }
     });
 }
 (function() {
-  const token = sessionStorage.getItem("token_admin");
+  const token = localStorage.getItem("token_admin");
   if (token) {
     fetch("/verificar-token", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token }) })
       .then(r => { if (r.ok) document.getElementById("loginOverlay").style.display = "none"; });
