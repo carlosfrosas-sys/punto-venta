@@ -397,8 +397,8 @@
 <div id="loginOverlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:#faf8f5;z-index:9999;display:flex;align-items:center;justify-content:center;">
   <div style="text-align:center;width:280px;">
     <h2 style="font-size:20px;font-weight:300;letter-spacing:4px;text-transform:uppercase;color:#6b5b4f;margin-bottom:24px;">Iniciar Sesión</h2>
-    <input type="text" id="loginUsuario" placeholder="Usuario" style="width:100%;padding:12px;font-size:16px;border:2px solid #e8e4df;border-radius:8px;margin-bottom:10px;outline:none;font-family:inherit;">
-    <input type="password" id="loginPassword" placeholder="Contraseña" style="width:100%;padding:12px;font-size:16px;border:2px solid #e8e4df;border-radius:8px;margin-bottom:10px;outline:none;font-family:inherit;" onkeydown="if(event.key==='Enter')hacerLogin()">
+    <input type="text" id="loginUsuario" placeholder="Usuario" autocomplete="username" inputmode="text" style="width:100%;padding:12px;font-size:16px;border:2px solid #e8e4df;border-radius:8px;margin-bottom:10px;outline:none;font-family:inherit;touch-action:manipulation;-webkit-user-select:text;user-select:text;" ontouchstart="this.focus()">
+    <input type="password" id="loginPassword" placeholder="Contraseña" autocomplete="current-password" inputmode="text" style="width:100%;padding:12px;font-size:16px;border:2px solid #e8e4df;border-radius:8px;margin-bottom:10px;outline:none;font-family:inherit;touch-action:manipulation;-webkit-user-select:text;user-select:text;" ontouchstart="this.focus()" onkeydown="if(event.key==='Enter')hacerLogin()">
     <div id="loginError" style="color:#ef4444;font-size:14px;margin-bottom:10px;display:none;"></div>
     <button onclick="hacerLogin()" style="width:100%;padding:12px;font-size:16px;font-weight:600;background:#6b5b4f;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit;">Entrar</button>
   </div>
