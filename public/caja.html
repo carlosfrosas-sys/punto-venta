@@ -1939,6 +1939,15 @@ function mostrarProteinasNachos(precio) {
   const cont = document.getElementById("proteinas");
   cont.innerHTML = "<h3>Elige proteína:</h3>";
 
+  // Sencillos
+  const btnS = document.createElement("button");
+  btnS.innerText = "Sencillos - $35";
+  btnS.onclick = () => {
+    agregarProductoSinNota("Nachos Sencillos", 35);
+    cont.innerHTML = "";
+  };
+  cont.appendChild(btnS);
+
   const proteinas = ["Chorizo", "Pastor", "Arrachera"];
 
   proteinas.forEach(p => {
