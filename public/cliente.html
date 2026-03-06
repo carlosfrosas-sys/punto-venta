@@ -1403,6 +1403,17 @@ function mostrarMultiTacos(items, max) {
     cont.appendChild(btn);
   });
 
+  const btnPapas = document.createElement("button");
+  btnPapas.innerText = "+ Papas $18";
+  btnPapas.style.background = "#f59e0b";
+  btnPapas.style.color = "white";
+  btnPapas.style.width = "100%";
+  btnPapas.style.marginTop = "10px";
+  btnPapas.onclick = () => {
+    agregarProductoSinNota("Papas a la Francesa", 18);
+  };
+  cont.appendChild(btnPapas);
+
   const btnSig = document.createElement("button");
   btnSig.innerText = "Siguiente";
   btnSig.style.background = "#2563eb";
@@ -1534,6 +1545,17 @@ function mostrarMultiItems(prefijo, items, max) {
     cont.appendChild(btn);
   });
 
+  const btnPapas = document.createElement("button");
+  btnPapas.innerText = "+ Papas $18";
+  btnPapas.style.background = "#f59e0b";
+  btnPapas.style.color = "white";
+  btnPapas.style.width = "100%";
+  btnPapas.style.marginTop = "10px";
+  btnPapas.onclick = () => {
+    agregarProductoSinNota("Papas a la Francesa", 18);
+  };
+  cont.appendChild(btnPapas);
+
   const btnAgregar = document.createElement("button");
   btnAgregar.innerText = "Agregar al pedido";
   btnAgregar.style.background = "#16a34a";
@@ -1613,6 +1635,17 @@ function mostrarMultiProteina(categoria, datos, max, notas) {
     };
     cont.appendChild(btn);
   });
+
+  const btnPapas = document.createElement("button");
+  btnPapas.innerText = "+ Papas $18";
+  btnPapas.style.background = "#f59e0b";
+  btnPapas.style.color = "white";
+  btnPapas.style.width = "100%";
+  btnPapas.style.marginTop = "10px";
+  btnPapas.onclick = () => {
+    agregarProductoSinNota("Papas a la Francesa", 18);
+  };
+  cont.appendChild(btnPapas);
 
   const btnSig = document.createElement("button");
   btnSig.innerText = "Siguiente";
