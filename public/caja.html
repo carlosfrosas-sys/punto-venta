@@ -926,7 +926,7 @@ if (categoria === "Licuados") {
   if (datos.sencillo) {
 
     const btnSencillo = document.createElement("button");
-    btnSencillo.innerText = "Sencillos - $" + datos.sencillo;
+    btnSencillo.innerText = "Sencillos";
     btnSencillo.onclick = () => {
       if (categoria === "Chilaquiles") {
         mostrarNotas(categoria + " Sencillos", datos.sencillo, notasChilaquiles);
@@ -968,7 +968,7 @@ if (categoria === "Licuados") {
       const btn = document.createElement("button");
 
       if (typeof p === "object") {
-        btn.innerText = p.nombre + " - $" + p.precio;
+        btn.innerText = p.nombre;
         btn.onclick = () => {
           if (categoria === "Molletes") {
             mostrarPicoDegallo(categoria + " de " + p.nombre, p.precio);
@@ -989,7 +989,7 @@ if (categoria === "Licuados") {
           }
         };
       } else {
-        btn.innerText = p + " - $" + datos.precio;
+        btn.innerText = p;
         btn.onclick = () => {
           if (categoria === "Molletes") {
             mostrarPicoDegallo(categoria + " de " + p, datos.precio);
@@ -1032,7 +1032,7 @@ if (categoria === "Licuados") {
     datos.items.forEach(item => {
 
       const btn = document.createElement("button");
-      btn.innerText = item.precio > 0 ? item.nombre + " - $" + item.precio : item.nombre;
+      btn.innerText = item.nombre;
       btn.onclick = () => {
         if (categoria === "Burguers") {
           mostrarNotas(item.nombre, item.precio, notasHamburguesas);
@@ -1141,7 +1141,7 @@ function mostrarSubcategoria(categoria, sub) {
 
     if (typeof p === "object") {
 
-      btn.innerText = p.nombre + " - $" + p.precio;
+      btn.innerText = p.nombre;
       btn.onclick = () => {
         if (categoria === "Antojitos") {
           mostrarNotas(sub + " de " + p.nombre, p.precio, notasAntojitos);
@@ -1154,7 +1154,7 @@ function mostrarSubcategoria(categoria, sub) {
 
     } else {
 
-      btn.innerText = p + " - $" + datos.precio;
+      btn.innerText = p;
       btn.onclick = () => {
         if (categoria === "Antojitos") {
           mostrarNotas(sub + " de " + p, datos.precio, notasAntojitos);
@@ -1248,7 +1248,7 @@ function mostrarTamañosAgua(sabores, conChia) {
     const precioTotal = precioBase + (extrasCount * extraPrecio) + (conChia ? 4 : 0);
 
     const btn = document.createElement("button");
-    btn.innerText = tamaño + " - $" + precioTotal;
+    btn.innerText = tamaño;
     btn.onclick = () => {
       const nombreFinal = nombreBase + conExtras + chiaTxt + " " + tamaño;
       mostrarNotas(nombreFinal, precioTotal, ["Sin Azúcar", "Poca Azúcar"]);
@@ -1263,7 +1263,7 @@ function mostrarSaboresLicuado() {
   const extraPrecio = 5;
   const precioBase = menu["Licuados"].precio;
 
-  cont.innerHTML = "<h3>Elige sabores - $" + precioBase + ":</h3><p>Extra +$" + extraPrecio + " (Avena +$4)</p>";
+  cont.innerHTML = "";
 
   menu["Licuados"].sabores.forEach(sabor => {
     const btn = document.createElement("button");
@@ -1310,7 +1310,7 @@ function mostrarSaboresLicuado() {
 
 function mostrarPregunta(nombre, precio, pregunta, textoSi, textoNo) {
   const cont = document.getElementById("proteinas");
-  cont.innerHTML = "<h3>" + nombre + " - $" + precio + "</h3><p>" + pregunta + "</p>";
+  cont.innerHTML = "<h3>" + nombre + "</h3><p>" + pregunta + "</p>";
 
   const btnSi = document.createElement("button");
   btnSi.innerText = textoSi;
@@ -1336,7 +1336,7 @@ function mostrarPregunta(nombre, precio, pregunta, textoSi, textoNo) {
 
 function mostrarPicoDegallo(nombre, precio) {
   const cont = document.getElementById("proteinas");
-  cont.innerHTML = "<h3>" + nombre + " - $" + precio + "</h3><p>¿Con pico de gallo?</p>";
+  cont.innerHTML = "<h3>" + nombre + "</h3><p>¿Con pico de gallo?</p>";
 
   const btnSi = document.createElement("button");
   btnSi.innerText = "Sí";
@@ -1377,7 +1377,7 @@ function mostrarMultiTacos(items, max) {
 
   items.forEach(item => {
     const btn = document.createElement("button");
-    btn.innerText = item.nombre + " - $" + item.precio;
+    btn.innerText = item.nombre;
     btn.style.background = "#e5e7eb";
     btn.style.color = "#111827";
     btn.onclick = () => {
@@ -1467,7 +1467,7 @@ function mostrarMultiSopes(datos, max) {
 
   if (datos.sencillo) {
     const btnSencillo = document.createElement("button");
-    btnSencillo.innerText = "Sencillos - $" + datos.sencillo;
+    btnSencillo.innerText = "Sencillos";
     btnSencillo.onclick = () => {
       mostrarNotas("Sopes Sencillos", datos.sencillo, notasAntojitos);
     };
@@ -1480,7 +1480,7 @@ function mostrarMultiSopes(datos, max) {
     const precio = esObjeto ? p.precio : datos.precio;
 
     const btn = document.createElement("button");
-    btn.innerText = nombre + " - $" + precio;
+    btn.innerText = nombre;
     btn.style.background = "#e5e7eb";
     btn.style.color = "#111827";
     btn.onclick = () => {
@@ -1524,7 +1524,7 @@ function mostrarMultiItems(prefijo, items, max) {
 
   items.forEach(item => {
     const btn = document.createElement("button");
-    btn.innerText = item.nombre + " - $" + item.precio;
+    btn.innerText = item.nombre;
     btn.style.background = "#e5e7eb";
     btn.style.color = "#111827";
     btn.onclick = () => {
@@ -1599,7 +1599,7 @@ function mostrarMultiProteina(categoria, datos, max, notas) {
   // Sencillo para mollequiles
   if (datos.sencillo) {
     const btnSencillo = document.createElement("button");
-    btnSencillo.innerText = "Sencillos - $" + datos.sencillo;
+    btnSencillo.innerText = "Sencillos";
     btnSencillo.onclick = () => {
       mostrarNotas(categoria + " Sencillos", datos.sencillo, notas);
     };
@@ -1612,7 +1612,7 @@ function mostrarMultiProteina(categoria, datos, max, notas) {
     const precio = esObjeto ? p.precio : datos.precio;
 
     const btn = document.createElement("button");
-    btn.innerText = nombre + " - $" + precio;
+    btn.innerText = nombre;
     btn.style.background = "#e5e7eb";
     btn.style.color = "#111827";
     btn.onclick = () => {
@@ -1693,7 +1693,7 @@ function mostrarIngredientesTortaMulti() {
     const nombre = p.nombre;
     const precioBase = p.precio || 0;
     const btn = document.createElement("button");
-    btn.innerText = nombre + (precioBase ? " - $" + precioBase : " +$" + extraPrecio);
+    btn.innerText = nombre;
     btn.style.background = "#e5e7eb";
     btn.style.color = "#111827";
     btn.onclick = () => {
@@ -1733,7 +1733,7 @@ function mostrarIngredientesTortaMulti() {
 
 function mostrarNotas(nombre, precio, opciones, siguiente) {
   const cont = document.getElementById("proteinas");
-  cont.innerHTML = "<h3>" + nombre + " - $" + precio + "</h3><p>Selecciona las opciones:</p>";
+  cont.innerHTML = "<h3>" + nombre + "</h3><p>Selecciona las opciones:</p>";
 
   const seleccionadas = new Set();
 
@@ -1786,7 +1786,7 @@ function mostrarNotas(nombre, precio, opciones, siguiente) {
 
 function mostrarTipoHuevoChilaquiles(precio) {
   const cont = document.getElementById("proteinas");
-  cont.innerHTML = "<h3>Chilaquiles de Huevo - $" + precio + "</h3><p>¿Cómo el huevo?</p>";
+  cont.innerHTML = "<h3>Chilaquiles de Huevo</h3><p>¿Cómo el huevo?</p>";
 
   ["Estrellado", "Revuelto"].forEach(tipo => {
     const btn = document.createElement("button");
@@ -1802,7 +1802,7 @@ function mostrarTipoHuevoChilaquiles(precio) {
 
 function mostrarHuevoPaquete(datos) {
   const cont = document.getElementById("proteinas");
-  cont.innerHTML = "<h3>" + datos.nombre + " - $" + datos.precio + "</h3><p>¿Cómo el huevo?</p>";
+  cont.innerHTML = "<h3>" + datos.nombre + "</h3><p>¿Cómo el huevo?</p>";
 
   ["Estrellado", "Revuelto"].forEach(tipo => {
     const btn = document.createElement("button");
@@ -1825,7 +1825,7 @@ function mostrarHuevoPaquete(datos) {
 
 function mostrarAcompanamientoSolo(nombre, precio, opciones) {
   const cont = document.getElementById("proteinas");
-  cont.innerHTML = "<h3>" + nombre + " - $" + precio + "</h3><p>Elige acompañamiento:</p>";
+  cont.innerHTML = "<h3>" + nombre + "</h3><p>Elige acompañamiento:</p>";
 
   opciones.forEach(opcion => {
     const btn = document.createElement("button");
@@ -1840,7 +1840,7 @@ function mostrarAcompanamientoSolo(nombre, precio, opciones) {
 
 function mostrarAcompanamientoPaquete(nombre, precio, opciones) {
   const cont = document.getElementById("proteinas");
-  cont.innerHTML = "<h3>" + nombre + " - $" + precio + "</h3><p>Elige acompañamiento:</p>";
+  cont.innerHTML = "<h3>" + nombre + "</h3><p>Elige acompañamiento:</p>";
 
   opciones.forEach(opcion => {
     const btn = document.createElement("button");
@@ -1854,7 +1854,7 @@ function mostrarAcompanamientoPaquete(nombre, precio, opciones) {
 
 function mostrarBebidaPaquete(nombre, precio, notaPrev) {
   const cont = document.getElementById("proteinas");
-  cont.innerHTML = "<h3>" + nombre + " - $" + precio + "</h3><p>Elige tu bebida:</p>";
+  cont.innerHTML = "<h3>" + nombre + "</h3><p>Elige tu bebida:</p>";
 
   const bebidas = ["Té", "Café", "Jugo"];
 
@@ -1878,10 +1878,10 @@ function mostrarBebidaPaquete(nombre, precio, notaPrev) {
 
 function mostrarOpcionesEnsalada(nombre, precio) {
   const cont = document.getElementById("proteinas");
-  cont.innerHTML = "<h3>Ensalada de " + nombre + " - $" + precio + "</h3><p>¿Con proteína? (+$20)</p>";
+  cont.innerHTML = "<h3>Ensalada de " + nombre + "</h3><p>¿Con proteína?</p>";
 
   const btnSolo = document.createElement("button");
-  btnSolo.innerText = "Solo - $" + precio;
+  btnSolo.innerText = "Solo";
   btnSolo.onclick = () => {
     agregarProductoSinNota("Ensalada de " + nombre, precio);
     cont.innerHTML = "";
@@ -1891,7 +1891,7 @@ function mostrarOpcionesEnsalada(nombre, precio) {
   ["Pechuga", "Milanesa"].forEach(opcion => {
     const btn = document.createElement("button");
     const precioConProteina = precio + 20;
-    btn.innerText = opcion + " - $" + precioConProteina;
+    btn.innerText = opcion;
     btn.onclick = () => {
       agregarProductoSinNota("Ensalada de " + nombre + " con " + opcion, precioConProteina);
       cont.innerHTML = "";
@@ -1902,7 +1902,7 @@ function mostrarOpcionesEnsalada(nombre, precio) {
 
 function mostrarSaboresBebida(nombre, precio, sabores) {
   const cont = document.getElementById("proteinas");
-  cont.innerHTML = "<h3>" + nombre + " - $" + precio + "</h3><p>Elige sabor:</p>";
+  cont.innerHTML = "<h3>" + nombre + "</h3><p>Elige sabor:</p>";
 
   sabores.forEach(sabor => {
     const btn = document.createElement("button");
@@ -1927,7 +1927,7 @@ function mostrarTamañosAguaNatural() {
 
   tamaños.forEach(t => {
     const btn = document.createElement("button");
-    btn.innerText = t.nombre + " - $" + t.precio;
+    btn.innerText = t.nombre;
     btn.onclick = () => {
       agregarProductoSinNota("Agua " + t.nombre, t.precio);
       cont.innerHTML = "";
@@ -1942,7 +1942,7 @@ function mostrarProteinasNachos(precio) {
 
   // Sencillos
   const btnS = document.createElement("button");
-  btnS.innerText = "Sencillos - $35";
+  btnS.innerText = "Sencillos";
   btnS.onclick = () => {
     agregarProductoSinNota("Nachos Sencillos", 35);
     cont.innerHTML = "";
@@ -1953,7 +1953,7 @@ function mostrarProteinasNachos(precio) {
 
   proteinas.forEach(p => {
     const btn = document.createElement("button");
-    btn.innerText = p + " - $" + precio;
+    btn.innerText = p;
     btn.onclick = () => {
       agregarProductoSinNota("Nachos de " + p, precio);
       cont.innerHTML = "";
@@ -1973,7 +1973,7 @@ function mostrar1PiezaTacos(items) {
   items.forEach(item => {
     const p1 = precio1Pieza(item.precio);
     const btn = document.createElement("button");
-    btn.innerText = item.nombre + " - $" + p1;
+    btn.innerText = item.nombre;
     btn.onclick = () => {
       const nombre = item.nombre === "Tacos Dorados" ? "1pza de Taco Dorado" : "1pza de Taco de " + item.nombre;
       if (item.nombre === "Tacos Dorados") {
@@ -2000,7 +2000,7 @@ function mostrar1PiezaProteina(categoria, datos, notas) {
   if (datos.sencillo) {
     const p1 = precio1Pieza(datos.sencillo);
     const btnSenc = document.createElement("button");
-    btnSenc.innerText = "Sencillo - $" + p1;
+    btnSenc.innerText = "Sencillo";
     btnSenc.onclick = () => {
       const nombre = esBurrito ? "1pza de Burrito Sencillo" : "1pza de " + categoria.slice(0, -1) + " Sencillo";
       mostrarNotas(nombre, p1, notas);
@@ -2015,7 +2015,7 @@ function mostrar1PiezaProteina(categoria, datos, notas) {
     const p1 = precio1Pieza(precio);
 
     const btn = document.createElement("button");
-    btn.innerText = nombre + " - $" + p1;
+    btn.innerText = nombre;
     btn.onclick = () => {
       mostrarNotas(prefijo + nombre, p1, notas);
     };
@@ -2030,7 +2030,7 @@ function mostrar1PiezaItems(prefijo, items) {
   items.forEach(item => {
     const p1 = item.precio1pza || precio1Pieza(item.precio);
     const btn = document.createElement("button");
-    btn.innerText = item.nombre + " - $" + p1;
+    btn.innerText = item.nombre;
     btn.onclick = () => {
       agregarProductoSinNota("1pza de Sincronizada de " + item.nombre, p1);
     };
@@ -2044,7 +2044,7 @@ function mostrar1PiezaMolletes(datos) {
 
   const p1Senc = precio1Pieza(datos.sencillo);
   const btnSenc = document.createElement("button");
-  btnSenc.innerText = "Sencillo - $" + p1Senc;
+  btnSenc.innerText = "Sencillo";
   btnSenc.onclick = () => {
     mostrarPicoDegallo("1pza de Mollete Sencillo", p1Senc);
   };
@@ -2057,7 +2057,7 @@ function mostrar1PiezaMolletes(datos) {
     const p1 = precio1Pieza(precio);
 
     const btn = document.createElement("button");
-    btn.innerText = nombre + " - $" + p1;
+    btn.innerText = nombre;
     btn.onclick = () => {
       mostrarPicoDegallo("1pza de Mollete de " + nombre, p1);
     };
@@ -2070,7 +2070,7 @@ function mostrarOpcionPapasHotDog(nombre, precioSin, precioCon) {
   cont.innerHTML = "<h3>" + nombre + "</h3><p>¿Con papas?</p>";
 
   const btnCon = document.createElement("button");
-  btnCon.innerText = "Con Papas - $" + precioCon;
+  btnCon.innerText = "Con Papas";
   btnCon.style.background = "#16a34a";
   btnCon.style.color = "white";
   btnCon.style.fontSize = "16px";
@@ -2079,7 +2079,7 @@ function mostrarOpcionPapasHotDog(nombre, precioSin, precioCon) {
   };
 
   const btnSin = document.createElement("button");
-  btnSin.innerText = "Sin Papas - $" + precioSin;
+  btnSin.innerText = "Sin Papas";
   btnSin.style.background = "#2563eb";
   btnSin.style.color = "white";
   btnSin.style.fontSize = "16px";
@@ -2093,7 +2093,7 @@ function mostrarOpcionPapasHotDog(nombre, precioSin, precioCon) {
 
 function mostrarSaboresMaruchan(precio) {
   const cont = document.getElementById("proteinas");
-  cont.innerHTML = "<h3>Maruchan - $" + precio + "</h3><p>Elige sabor:</p>";
+  cont.innerHTML = "<h3>Maruchan</h3><p>Elige sabor:</p>";
 
   const sabores = ["Camarón", "Camarón Piquín", "Camarón Habanero", "Res", "Pollo"];
 
