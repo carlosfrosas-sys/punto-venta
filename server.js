@@ -333,12 +333,24 @@ app.put("/pedido/:id", async (req, res) => {
 // Mercado Pago Point: cobrar con terminal
 const MP_DEVICE_ID = process.env.MP_DEVICE_ID || "DSPREAD_D20__12098604524110712263";
 
+let lastPaymentIntentId = null;
+
 app.post("/cobrar-terminal", async (req, res) => {
   const { amount, reference } = req.body;
   if (!amount || amount < 500) return res.status(400).json({ error: "Monto mínimo $5" });
   const token = process.env.MERCADOPAGO_ACCESS_TOKEN;
   if (!token) return res.status(500).json({ error: "Mercado Pago no configurado" });
   try {
+    // Cancelar intent anterior si existe
+    if (lastPaymentIntentId) {
+      try {
+        await fetch(`https://api.mercadopago.com/point/integration-api/devices/${MP_DEVICE_ID}/payment-intents/${lastPaymentIntentId}`, {
+          method: "DELETE",
+          headers: { "Authorization": "Bearer " + token }
+        });
+      } catch (e) {}
+      lastPaymentIntentId = null;
+    }
     const resp = await fetch(`https://api.mercadopago.com/point/integration-api/devices/${MP_DEVICE_ID}/payment-intents`, {
       method: "POST",
       headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" },
@@ -346,6 +358,7 @@ app.post("/cobrar-terminal", async (req, res) => {
     });
     const data = await resp.json();
     if (!resp.ok) return res.status(resp.status).json(data);
+    lastPaymentIntentId = data.id;
     res.json(data);
   } catch (e) {
     res.status(500).json({ error: e.message });
