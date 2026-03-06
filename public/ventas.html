@@ -680,22 +680,52 @@ function hacerLogin() {
 
       fetch(url)
         .then(res => res.json())
-        .then(productos => {
-          if (productos.length === 0) {
+        .then(data => {
+          if (data.productos.length === 0) {
             contenedor.innerHTML = '<div class="sin-datos">No hay productos vendidos</div>';
             return;
           }
 
-          let html = '<table class="tabla-productos"><thead><tr><th>#</th><th>Producto</th><th style="text-align:center">Cant.</th><th style="text-align:right">Total</th></tr></thead><tbody>';
-          productos.forEach((p, i) => {
-            html += `<tr>
-              <td class="col-rank">${i + 1}</td>
-              <td class="col-nombre">${p.nombre}</td>
-              <td class="col-cant">${p.cantidad}</td>
-              <td class="col-total">$${p.total}</td>
-            </tr>`;
+          let html = '';
+
+          // Categorías resumen
+          html += '<div style="margin-bottom:20px;"><h3 style="color:#888;font-size:13px;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;">Por Categoría</h3>';
+          html += '<table class="tabla-productos"><thead><tr><th>Categoría</th><th style="text-align:center">Cant.</th><th style="text-align:right">Total</th></tr></thead><tbody>';
+          data.categorias.forEach(c => {
+            html += `<tr><td class="col-nombre">${c.nombre}</td><td class="col-cant">${c.cantidad}</td><td class="col-total">$${c.total}</td></tr>`;
           });
-          html += '</tbody></table>';
+          html += '</tbody></table></div>';
+
+          // Por día (solo si semana/mes con múltiples días)
+          if (data.porDia && data.porDia.length > 1) {
+            data.porDia.forEach(dia => {
+              html += `<div style="margin-bottom:20px;border:1px solid #333;border-radius:10px;padding:14px;">`;
+              html += `<h3 style="color:#fbbf24;font-size:15px;margin-bottom:10px;">${dia.fecha}</h3>`;
+
+              // Categorías del día
+              html += '<table class="tabla-productos" style="margin-bottom:10px;"><thead><tr><th>Categoría</th><th style="text-align:center">Cant.</th><th style="text-align:right">Total</th></tr></thead><tbody>';
+              dia.categorias.forEach(c => {
+                html += `<tr><td class="col-nombre">${c.nombre}</td><td class="col-cant">${c.cantidad}</td><td class="col-total">$${c.total}</td></tr>`;
+              });
+              html += '</tbody></table>';
+
+              // Productos del día
+              html += '<table class="tabla-productos"><thead><tr><th>#</th><th>Producto</th><th style="text-align:center">Cant.</th><th style="text-align:right">Total</th></tr></thead><tbody>';
+              dia.productos.forEach((p, i) => {
+                html += `<tr><td class="col-rank">${i + 1}</td><td class="col-nombre">${p.nombre}</td><td class="col-cant">${p.cantidad}</td><td class="col-total">$${p.total}</td></tr>`;
+              });
+              html += '</tbody></table></div>';
+            });
+          } else {
+            // Un solo día: solo tabla de productos
+            html += '<div style="margin-bottom:20px;"><h3 style="color:#888;font-size:13px;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;">Productos</h3>';
+            html += '<table class="tabla-productos"><thead><tr><th>#</th><th>Producto</th><th style="text-align:center">Cant.</th><th style="text-align:right">Total</th></tr></thead><tbody>';
+            data.productos.forEach((p, i) => {
+              html += `<tr><td class="col-rank">${i + 1}</td><td class="col-nombre">${p.nombre}</td><td class="col-cant">${p.cantidad}</td><td class="col-total">$${p.total}</td></tr>`;
+            });
+            html += '</tbody></table></div>';
+          }
+
           contenedor.innerHTML = html;
         });
     }

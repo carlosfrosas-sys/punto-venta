@@ -435,18 +435,94 @@ app.get("/ventas/productos-vendidos", (req, res) => {
     return res.status(400).send("Periodo inválido");
   }
 
+  // Mapa de categorías por palabra clave en nombre del producto
+  function detectarCategoria(nombre) {
+    const n = nombre.toLowerCase();
+    if (n.includes("paquete") || n.includes("hot cakes") || n.includes("hotcakes") || n.includes("orden de huevo") || n.includes("bisquet")) return "Desayunos";
+    if (n.includes("chilaquil")) return "Chilaquiles";
+    if (n.includes("mollete") && !n.includes("mollequil")) return "Molletes";
+    if (n.includes("mollequil")) return "Mollequiles";
+    if (n.includes("burrito")) return "Burritos";
+    if (n.includes("enchilada") || n.includes("enmolada") || n.includes("enfrijolada")) return "Enchiladas";
+    if (n.includes("torta")) return "Tortas";
+    if (n.includes("sope")) return "Sopes";
+    if (n.includes("quesadilla")) return "Quesadillas";
+    if (n.includes("tostada")) return "Tostadas";
+    if (n.includes("sandwich") || n.includes("cuernito") || n.includes("hojaldra") || n.includes("club sandwich")) return "Sandwiches";
+    if (n.includes("ham.") || n.includes("hamburguesa")) return "Hamburguesas";
+    if (n.includes("bagel")) return "Bagels";
+    if (n.includes("taco")) return "Tacos";
+    if (n.includes("gringa")) return "Gringas";
+    if (n.includes("norteña")) return "Norteñas";
+    if (n.includes("sincronizada")) return "Sincronizadas";
+    if (n.includes("ensalada")) return "Ensaladas";
+    if (n.includes("hot dog")) return "Snacks";
+    if (n.includes("banderilla")) return "Snacks";
+    if (n.includes("papas")) return "Snacks";
+    if (n.includes("nachos")) return "Snacks";
+    if (n.includes("maruchan")) return "Snacks";
+    if (n.includes("agua de") || n.includes("agua ")) return "Aguas";
+    if (n.includes("licuado")) return "Licuados";
+    if (n.includes("café") || n.includes("capuccino") || n.includes("espumoso") || n.includes("agua caliente")) return "Café";
+    if (n.includes("coca") || n.includes("boing") || n.includes("fuze") || n.includes("jumex") || n.includes("gatorade") || n.includes("monster") || n.includes("redbull") || n.includes("volt") || n.includes("electrolit") || n.includes("yakult") || n.includes("panzoncita") || n.includes("peñafielita") || n.includes("del valle") || n.includes("refresco") || n.includes("lechita")) return "Bebidas";
+    return "Otros";
+  }
+
+  // Productos individuales
   const productos = {};
+  // Por categoría
+  const categorias = {};
+  // Por día
+  const porDia = {};
+
   entregados.forEach(p => {
+    const dia = p.fecha || "Sin fecha";
+
+    if (!porDia[dia]) porDia[dia] = { fecha: dia, productos: {}, categorias: {} };
+
     p.productos.forEach(pr => {
       const nombre = pr.nombre;
+      const cant = pr.cantidad || 1;
+      const precio = pr.precio || 0;
+      const cat = detectarCategoria(nombre);
+
+      // Global productos
       if (!productos[nombre]) productos[nombre] = { nombre, cantidad: 0, total: 0 };
-      productos[nombre].cantidad += pr.cantidad || 1;
-      productos[nombre].total += pr.precio || 0;
+      productos[nombre].cantidad += cant;
+      productos[nombre].total += precio;
+
+      // Global categorías
+      if (!categorias[cat]) categorias[cat] = { nombre: cat, cantidad: 0, total: 0 };
+      categorias[cat].cantidad += cant;
+      categorias[cat].total += precio;
+
+      // Por día - productos
+      if (!porDia[dia].productos[nombre]) porDia[dia].productos[nombre] = { nombre, cantidad: 0, total: 0 };
+      porDia[dia].productos[nombre].cantidad += cant;
+      porDia[dia].productos[nombre].total += precio;
+
+      // Por día - categorías
+      if (!porDia[dia].categorias[cat]) porDia[dia].categorias[cat] = { nombre: cat, cantidad: 0, total: 0 };
+      porDia[dia].categorias[cat].cantidad += cant;
+      porDia[dia].categorias[cat].total += precio;
     });
   });
 
-  const resultado = Object.values(productos).sort((a, b) => b.cantidad - a.cantidad);
-  res.json(resultado);
+  // Formatear porDia
+  const diasArr = Object.values(porDia).map(d => ({
+    fecha: d.fecha,
+    productos: Object.values(d.productos).sort((a, b) => b.cantidad - a.cantidad),
+    categorias: Object.values(d.categorias).sort((a, b) => b.cantidad - a.cantidad)
+  })).sort((a, b) => {
+    const pa = a.fecha.split("/"); const pb = b.fecha.split("/");
+    return new Date(pb[2], pb[1]-1, pb[0]) - new Date(pa[2], pa[1]-1, pa[0]);
+  });
+
+  res.json({
+    productos: Object.values(productos).sort((a, b) => b.cantidad - a.cantidad),
+    categorias: Object.values(categorias).sort((a, b) => b.cantidad - a.cantidad),
+    porDia: diasArr
+  });
 });
 
 app.post("/pedido/:id/producto/:index", async (req, res) => {
