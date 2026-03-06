@@ -2424,7 +2424,7 @@ function cobrarTarjeta() {
   })
   .then(r => r.json().then(d => ({ ok: r.ok, data: d })))
   .then(({ ok, data }) => {
-    if (!ok) { alert("Error terminal: " + (data.error || data.message)); btn.disabled = false; btn.innerText = "Tarjeta"; return; }
+    if (!ok) { alert("Error terminal: " + (data.message || data.error || JSON.stringify(data))); btn.disabled = false; btn.innerText = "Tarjeta"; return; }
     // 2. Crear pedido
     fetch("/pedido", {
       method: "POST",
