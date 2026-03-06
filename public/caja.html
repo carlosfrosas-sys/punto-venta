@@ -496,15 +496,15 @@ const tacosConNotas = ["Bistec", "Pechuga", "Chuleta", "Campechanos"];
 
 const menu = {
 
-  // 🥣 PAQUETES
-  "Paquetes": {
+  // 🥣 DESAYUNOS
+  "Desayunos": {
     subcategorias: {
       "Paquete 1": {
         precio: 58,
         proteinas: ["Jamón","Chorizo","Champiñones","Salchicha","Nopales","A la Mexicana"],
         bebida: true
       },
-      "Paquete 2 - Chilaquiles con Huevo - $58": {
+      "Paquete 2": {
         directo: true,
         nombre: "Paquete 2 - Chilaquiles con Huevo",
         precio: 58,
@@ -518,9 +518,28 @@ const menu = {
         notas: ["Sin Queso", "Sin Crema"],
         bebida: true
       },
-      "Paquete 4 - Hot Cakes con Huevo - $50": {
+      "Paquete 4": {
         directo: true,
         nombre: "Paquete 4 - Hot Cakes con Huevo",
+        precio: 50,
+        acompanamiento: ["Miel Maple", "Mermelada", "Lechera"],
+        bebida: true
+      },
+      "Paquete 5": {
+        directo: true,
+        nombre: "Paquete 5 - Bisquet con Mermelada y Café con Leche",
+        precio: 38,
+        bebida: true
+      }
+    }
+  },
+
+  // 🥞 HOT CAKES
+  "Hot Cakes": {
+    subcategorias: {
+      "Hot Cakes con Huevo - $50": {
+        directo: true,
+        nombre: "Hot Cakes con Huevo",
         precio: 50,
         acompanamiento: ["Miel Maple", "Mermelada", "Lechera"],
         bebida: true
@@ -530,12 +549,6 @@ const menu = {
         nombre: "HotCakes",
         precio: 40,
         acompanamiento: ["Mermelada", "Miel", "Lechera"]
-      },
-      "Paquete 5 - Bisquet con Mermelada y Café - $38": {
-        directo: true,
-        nombre: "Paquete 5 - Bisquet con Mermelada y Café con Leche",
-        precio: 38,
-        bebida: true
       }
     }
   },
