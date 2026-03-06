@@ -356,6 +356,25 @@
       color: #fff;
     }
 
+    #btnDeshacer {
+      display: none;
+      width: 100%;
+      padding: 6px 0;
+      margin-top: 10px;
+      background: transparent;
+      border: 1px solid #b8d8e8;
+      border-radius: 8px;
+      color: #6b9ab8;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      letter-spacing: 1px;
+    }
+
+    #btnDeshacer:active {
+      background: #e8f2f7;
+    }
+
     /* Responsive */
     @media (max-width: 900px) {
       #categorias button {
@@ -457,6 +476,7 @@
       <span class="total-label">Total</span>
       <span>$<span id="total">0</span></span>
     </div>
+    <button id="btnDeshacer" onclick="deshacerUltimo()">Deshacer</button>
   </div>
 
   <div class="input-group">
@@ -2128,7 +2148,20 @@ function scrollACategorias() {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
+let _prevProductCount = 0;
+
+function deshacerUltimo() {
+  if (productos.length === 0) return;
+  const ultimo = productos.pop();
+  total -= ultimo.precio;
+  _prevProductCount = productos.length;
+  renderizarLista();
+}
+
 function renderizarLista() {
+  if (productos.length > _prevProductCount && navigator.vibrate) navigator.vibrate(50);
+  _prevProductCount = productos.length;
+
   const lista = document.getElementById("lista");
   lista.innerHTML = "";
 
@@ -2154,6 +2187,7 @@ function renderizarLista() {
   });
 
   actualizarTotalConDescuento();
+  document.getElementById("btnDeshacer").style.display = productos.length > 0 ? "block" : "none";
 }
 
 function cambiarCantidad(index, delta) {
