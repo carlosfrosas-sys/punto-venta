@@ -481,6 +481,39 @@
       }
     }
 
+    /* ===== TABLET PEQUEÑA landscape (8.7" ~1340x800px) ===== */
+    @media (orientation: landscape) and (max-height: 850px) and (min-width: 851px) and (max-width: 1400px) {
+      .panel-left { width: 65%; }
+      .panel-right { width: 35%; }
+
+      .panel-left-header { padding: 4px 12px; }
+      .panel-left-header h1 { font-size: 16px; }
+
+      .categorias-wrap { padding: 4px 12px 2px; }
+
+      #categorias {
+        grid-template-columns: repeat(5, 1fr);
+        gap: 6px;
+      }
+
+      #categorias button {
+        font-size: 14px;
+        min-height: 40px;
+        padding: 6px 8px;
+      }
+
+      #proteinas button {
+        font-size: 15px;
+        min-height: 40px;
+        padding: 6px 8px;
+      }
+
+      .pedido-header { padding: 4px 10px; }
+      .total-bar { padding: 4px 10px; }
+      .input-row { padding: 4px 10px; gap: 6px; }
+      .botones-wrap { padding: 4px 10px; }
+    }
+
     /* ===== CELULAR (solo phones, no iPad) ===== */
     @media (max-width: 600px) {
       body {
