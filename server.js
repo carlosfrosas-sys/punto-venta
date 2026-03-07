@@ -382,10 +382,11 @@ app.get("/cobrar-terminal/:intentId", async (req, res) => {
 app.delete("/cobrar-terminal/:intentId", async (req, res) => {
   if (!MP_TOKEN_PRESENCIAL) return res.status(500).json({ error: "No configurado" });
   try {
-    await fetch(`https://api.mercadopago.com/point/integration-api/devices/${MP_DEVICE_ID}/payment-intents/${req.params.intentId}`, {
+    const resp = await fetch(`https://api.mercadopago.com/point/integration-api/devices/${MP_DEVICE_ID}/payment-intents/${req.params.intentId}`, {
       method: "DELETE",
       headers: { "Authorization": "Bearer " + MP_TOKEN_PRESENCIAL }
     });
+    if (!resp.ok) return res.status(resp.status).json(await resp.json());
     lastPaymentIntentId = null;
     res.json({ ok: true });
   } catch (e) {
