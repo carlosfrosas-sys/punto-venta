@@ -620,7 +620,154 @@ const tacosConNotas = ["Bistec", "Pechuga", "Chuleta", "Campechanos"];
 
 const menu = {
 
-  // PAQUETES
+  "Aguas": {
+    sabores: ["Horchata","Jamaica","Sandia","Melon","Papaya","Pina","Limon","Fresa","Guayaba","Avena"],
+    tamanos: {
+      "1/2 Litro": 20,
+      "1 Litro": 35
+    },
+    extra: 4
+  },
+
+  "Bagels": {
+    proteinas: [
+      { nombre: "Jamon", precio: 45 },
+      { nombre: "Choriqueso", precio: 45 },
+      { nombre: "Salchicha", precio: 45 },
+      { nombre: "Alambre", precio: 50 },
+      { nombre: "Pollo", precio: 50 },
+      { nombre: "Hamburguesa", precio: 50 },
+      { nombre: "Pastor", precio: 50 },
+      { nombre: "Bistec", precio: 50 },
+      { nombre: "Arrachera", precio: 55 }
+    ]
+  },
+
+  "Bebidas": {
+    items: [
+      { nombre: "Agua", precio: 0, agua: true },
+      { nombre: "Yakult", precio: 10 },
+      { nombre: "Panzoncita", precio: 18 },
+      { nombre: "Penafielita", precio: 18 },
+      { nombre: "Boing", precio: 20, sabores: ["Mango", "Guayaba", "Manzana", "Fresa", "Uva", "Naranja"] },
+      { nombre: "Del Valle", precio: 20 },
+      { nombre: "Refresco de Sabor", precio: 24 },
+      { nombre: "Fuze Tea", precio: 22, sabores: ["Te Negro", "Te Verde", "Durazno"] },
+      { nombre: "Lechita", precio: 22 },
+      { nombre: "Jumex", precio: 23 },
+      { nombre: "Coca Cola", precio: 25 },
+      { nombre: "Coca Lata", precio: 25 },
+      { nombre: "Volt", precio: 30 },
+      { nombre: "Electrolit", precio: 35 },
+      { nombre: "Gatorade", precio: 35 },
+      { nombre: "Monster", precio: 40 },
+      { nombre: "Redbull", precio: 47 },
+      { nombre: "Coca 3L", precio: 60 }
+    ]
+  },
+
+  "Burguers": {
+    items: [
+      { nombre: "Ham. Sencilla", precio: 55 },
+      { nombre: "Ham. Senc. c/Papas", precio: 73 },
+      { nombre: "Ham. Hawaiana", precio: 60 },
+      { nombre: "Ham. Hawaiana c/Papas", precio: 78 }
+    ]
+  },
+
+  "Burritos": {
+    precio: 52,
+    proteinas: ["Pollo","Bistec","Pastor","Chorizo","Arrachera","Campechanos"]
+  },
+
+  "Cafe": {
+    items: [
+      { nombre: "Cafe de Olla Chico", precio: 15 },
+      { nombre: "Cafe de Olla Grande", precio: 18 },
+      { nombre: "Cafe con Leche", precio: 20 },
+      { nombre: "Capuccino Instantaneo", precio: 28, capuccino: true },
+      { nombre: "Espumoso Chocolate", precio: 25 },
+      { nombre: "Te", precio: 18 },
+      { nombre: "Agua Caliente", precio: 18 }
+    ]
+  },
+
+  "Chilaquiles": {
+    sencillo: 38,
+    precio: 45,
+    proteinas: [
+      "Bistec",
+      "Pollo",
+      "Pastor",
+      "Chorizo",
+      "Huevo",
+      { nombre: "Arrachera", precio: 48 },
+      { nombre: "Pechuga", precio: 48 }
+    ]
+  },
+
+  "Enchiladas": {
+    precio: 60,
+    proteinas: ["Verdes","Mole","Enfrijoladas"]
+  },
+
+  "Ensaladas": {
+    items: [
+      { nombre: "Pechuga Asada", precio: 58 },
+      { nombre: "Pollo", precio: 58 },
+      { nombre: "Pechuga Empanizada", precio: 58 },
+      { nombre: "Atun", precio: 58 },
+      { nombre: "Jamon con Queso", precio: 50 },
+      { nombre: "Codito", precio: 35 },
+      { nombre: "Verduras", precio: 35 }
+    ]
+  },
+
+  "Gringa": {
+    directo: true,
+    precio: 35
+  },
+
+  "Licuados": {
+    precio: 32,
+    sabores: ["Fresa","Chocolate","Platano","Guayaba","Mamey","Avena"]
+  },
+
+  "Mollequiles": {
+    sencillo: 37,
+    precio: 43,
+    proteinas: [
+      "Pollo",
+      "Bistec",
+      "Pastor",
+      "Chorizo",
+      "Huevo",
+      { nombre: "Mestizos", precio: 48 },
+      { nombre: "Pechuga", precio: 48 },
+      { nombre: "Campechanos", precio: 48 },
+      { nombre: "Arrachera", precio: 48 }
+    ]
+  },
+
+  "Molletes": {
+    sencillo: 32,
+    precio: 38,
+    proteinas: [
+      "Jamon",
+      "Chorizo",
+      "Combinados",
+      { nombre: "Pollo", precio: 42 },
+      { nombre: "Pastor", precio: 42 },
+      { nombre: "Bistec", precio: 42 },
+      { nombre: "Campechanos", precio: 42 }
+    ]
+  },
+
+  "Nortena": {
+    directo: true,
+    precio: 35
+  },
+
   "Paquetes": {
     subcategorias: {
       "Paquete 1": {
@@ -664,136 +811,24 @@ const menu = {
     }
   },
 
-  // CHILAQUILES
- "Chilaquiles": {
-  sencillo: 38,
-  precio: 45,
-  proteinas: [
-    "Bistec",
-    "Pollo",
-    "Pastor",
-    "Chorizo",
-    "Huevo",
-    { nombre: "Arrachera", precio: 48 },
-    { nombre: "Pechuga", precio: 48 }
-  ]
-},
-
-  // MOLLETES
-"Molletes": {
-  sencillo: 32,
-  precio: 38,
-  proteinas: [
-    "Jamon",
-    "Chorizo",
-    "Combinados",
-    { nombre: "Pollo", precio: 42 },
-    { nombre: "Pastor", precio: 42 },
-    { nombre: "Bistec", precio: 42 },
-    { nombre: "Campechanos", precio: 42 }
-  ]
-},
-
-  // MOLLEQUILES
- "Mollequiles": {
-  sencillo: 37,
-  precio: 43,
-  proteinas: [
-    "Pollo",
-    "Bistec",
-    "Pastor",
-    "Chorizo",
-    "Huevo",
-    { nombre: "Mestizos", precio: 48 },
-    { nombre: "Pechuga", precio: 48 },
-    { nombre: "Campechanos", precio: 48 },
-    { nombre: "Arrachera", precio: 48 }
-  ]
-},
-
-  // BURRITOS
-  "Burritos": {
-    precio: 52,
-    proteinas: ["Pollo","Bistec","Pastor","Chorizo","Arrachera","Campechanos"]
-  },
-
-  // ENCHILADAS
-  "Enchiladas": {
-    precio: 60,
-    proteinas: ["Verdes","Mole","Enfrijoladas"]
-  },
-
-  // TORTAS
-  "Tortas": {
-    proteinas: [
-      { nombre: "Jamon", precio: 48 },
-      { nombre: "Pierna", precio: 48 },
-      { nombre: "Salchicha", precio: 48 },
-      { nombre: "Chorizo", precio: 48 },
-      { nombre: "Chuleta", precio: 48 },
-      { nombre: "Huevo", precio: 48 },
-
-      { nombre: "Milanesa", precio: 50 },
-      { nombre: "Bistec", precio: 50 },
-      { nombre: "Alambre", precio: 50 },
-      { nombre: "Hawaiana", precio: 50 },
-      { nombre: "Enchiladas", precio: 50 },
-      { nombre: "Chilaquiles", precio: 50 },
-      { nombre: "Pechuga", precio: 50 },
-      { nombre: "Pollo", precio: 50 },
-      { nombre: "3 Quesos", precio: 50 },
-      { nombre: "Vegetariana", precio: 50 },
-      { nombre: "Pastor", precio: 50 },
-      { nombre: "Pollo con Mole", precio: 50 },
-
-      { nombre: "Arrachera", precio: 55 }
-    ]
-  },
-
-  // ANTOJITOS
-"Antojitos": {
-  subcategorias: {
-
-    "Sopes": {
-  sencillo: 50,
-  precio: 55,
-  proteinas: [
-    "Chorizo",
-    "Pollo",
-    "Pastor",
-    "Bistec",
-    { nombre: "Campechanos", precio: 60 },
-    { nombre: "Arrachera", precio: 60 }
-  ]
-},
-
-    "Quesadilla": {
-      precio: 28,
-      proteinas: [
-        "Tinga",
-        "Pollo",
-        "Chicharron",
-        "Picadillo",
-        "Queso",
-        "Choriqueso",
-        "Champinones con Queso",
-        { nombre: "Bistec", precio: 33 }
-      ]
-    },
-
-    "Tostadas": {
-      precio: 28,
-      proteinas: [
-        "Tinga de Pollo",
-        "Picadillo",
-        "Pollo"
-      ]
+  "Quesadillas": {
+    subcategorias: {
+      "Quesadilla": {
+        precio: 28,
+        proteinas: [
+          "Tinga",
+          "Pollo",
+          "Chicharron",
+          "Picadillo",
+          "Queso",
+          "Choriqueso",
+          "Champinones con Queso",
+          { nombre: "Bistec", precio: 33 }
+        ]
+      }
     }
+  },
 
-  }
-},
-
-  // SANDWICHES
   "Sandwiches": {
     subcategorias: {
       "Sandwich": {
@@ -841,58 +876,6 @@ const menu = {
     }
   },
 
-  // HAMBURGUESAS
-  "Burguers": {
-    items: [
-      { nombre: "Ham. Sencilla", precio: 55 },
-      { nombre: "Ham. Senc. c/Papas", precio: 73 },
-      { nombre: "Ham. Hawaiana", precio: 60 },
-      { nombre: "Ham. Hawaiana c/Papas", precio: 78 }
-    ]
-  },
-
-  // BAGELS
-"Bagels": {
-  proteinas: [
-    { nombre: "Jamon", precio: 45 },
-    { nombre: "Choriqueso", precio: 45 },
-    { nombre: "Salchicha", precio: 45 },
-    { nombre: "Alambre", precio: 50 },
-    { nombre: "Pollo", precio: 50 },
-    { nombre: "Hamburguesa", precio: 50 },
-    { nombre: "Pastor", precio: 50 },
-    { nombre: "Bistec", precio: 50 },
-    { nombre: "Arrachera", precio: 55 }
-  ]
-},
-
-  // TACOS
-  "Tacos": {
-    items: [
-      { nombre: "Pastor", precio: 50 },
-      { nombre: "Bistec", precio: 50 },
-      { nombre: "Chuleta", precio: 50 },
-      { nombre: "Campechanos", precio: 55 },
-      { nombre: "Pechuga", precio: 55 },
-      { nombre: "Alambre", precio: 55 },
-      { nombre: "Tacos Dorados", precio: 55 },
-      { nombre: "Arrachera", precio: 60 }
-    ]
-  },
-
-  // GRINGA
-  "Gringa": {
-    directo: true,
-    precio: 35
-  },
-
-  // NORTENA
-  "Nortena": {
-    directo: true,
-    precio: 35
-  },
-
-  // SINCRONIZADAS
   "Sincro": {
     items: [
       { nombre: "Jamon", precio: 50, precio1pza: 18 },
@@ -910,20 +893,6 @@ const menu = {
     ]
   },
 
-  // ENSALADAS
-  "Ensaladas": {
-    items: [
-      { nombre: "Pechuga Asada", precio: 58 },
-      { nombre: "Pollo", precio: 58 },
-      { nombre: "Pechuga Empanizada", precio: 58 },
-      { nombre: "Atun", precio: 58 },
-      { nombre: "Jamon con Queso", precio: 50 },
-      { nombre: "Codito", precio: 35 },
-      { nombre: "Verduras", precio: 35 }
-    ]
-  },
-
-  // SNACKS
   "Snacks": {
     items: [
       { nombre: "Hot Dog", precio: 17, hotdog: true, precioConPapas: 35 },
@@ -936,57 +905,73 @@ const menu = {
     ]
   },
 
-  // AGUAS
-  "Aguas": {
-    sabores: ["Horchata","Jamaica","Sandia","Melon","Papaya","Pina","Limon","Fresa","Guayaba","Avena"],
-    tamanos: {
-      "1/2 Litro": 20,
-      "1 Litro": 35
-    },
-    extra: 4
+  "Sopes": {
+    subcategorias: {
+      "Sopes": {
+        sencillo: 50,
+        precio: 55,
+        proteinas: [
+          "Chorizo",
+          "Pollo",
+          "Pastor",
+          "Bistec",
+          { nombre: "Campechanos", precio: 60 },
+          { nombre: "Arrachera", precio: 60 }
+        ]
+      }
+    }
   },
 
-  // LICUADOS
- "Licuados": {
-  precio: 32,
-  sabores: ["Fresa","Chocolate","Platano","Guayaba","Mamey","Avena"]
-},
-
-  // CAFE
-  "Cafe": {
+  "Tacos": {
     items: [
-      { nombre: "Cafe de Olla Chico", precio: 15 },
-      { nombre: "Cafe de Olla Grande", precio: 18 },
-      { nombre: "Cafe con Leche", precio: 20 },
-      { nombre: "Capuccino Instantaneo", precio: 28, capuccino: true },
-      { nombre: "Espumoso Chocolate", precio: 25 },
-      { nombre: "Te", precio: 18 },
-      { nombre: "Agua Caliente", precio: 18 }
+      { nombre: "Pastor", precio: 50 },
+      { nombre: "Bistec", precio: 50 },
+      { nombre: "Chuleta", precio: 50 },
+      { nombre: "Campechanos", precio: 55 },
+      { nombre: "Pechuga", precio: 55 },
+      { nombre: "Alambre", precio: 55 },
+      { nombre: "Tacos Dorados", precio: 55 },
+      { nombre: "Arrachera", precio: 60 }
     ]
   },
 
-  // BEBIDAS
-  "Bebidas": {
-    items: [
-      { nombre: "Agua", precio: 0, agua: true },
-      { nombre: "Yakult", precio: 10 },
-      { nombre: "Panzoncita", precio: 18 },
-      { nombre: "Penafielita", precio: 18 },
-      { nombre: "Boing", precio: 20, sabores: ["Mango", "Guayaba", "Manzana", "Fresa", "Uva", "Naranja"] },
-      { nombre: "Del Valle", precio: 20 },
-      { nombre: "Refresco de Sabor", precio: 24 },
-      { nombre: "Fuze Tea", precio: 22, sabores: ["Te Negro", "Te Verde", "Durazno"] },
-      { nombre: "Lechita", precio: 22 },
-      { nombre: "Jumex", precio: 23 },
-      { nombre: "Coca Cola", precio: 25 },
-      { nombre: "Coca Lata", precio: 25 },
-      { nombre: "Volt", precio: 30 },
-      { nombre: "Electrolit", precio: 35 },
-      { nombre: "Gatorade", precio: 35 },
-      { nombre: "Monster", precio: 40 },
-      { nombre: "Redbull", precio: 47 },
-      { nombre: "Coca 3L", precio: 60 }
+  "Tortas": {
+    proteinas: [
+      { nombre: "Jamon", precio: 48 },
+      { nombre: "Pierna", precio: 48 },
+      { nombre: "Salchicha", precio: 48 },
+      { nombre: "Chorizo", precio: 48 },
+      { nombre: "Chuleta", precio: 48 },
+      { nombre: "Huevo", precio: 48 },
+
+      { nombre: "Milanesa", precio: 50 },
+      { nombre: "Bistec", precio: 50 },
+      { nombre: "Alambre", precio: 50 },
+      { nombre: "Hawaiana", precio: 50 },
+      { nombre: "Enchiladas", precio: 50 },
+      { nombre: "Chilaquiles", precio: 50 },
+      { nombre: "Pechuga", precio: 50 },
+      { nombre: "Pollo", precio: 50 },
+      { nombre: "3 Quesos", precio: 50 },
+      { nombre: "Vegetariana", precio: 50 },
+      { nombre: "Pastor", precio: 50 },
+      { nombre: "Pollo con Mole", precio: 50 },
+
+      { nombre: "Arrachera", precio: 55 }
     ]
+  },
+
+  "Tostadas": {
+    subcategorias: {
+      "Tostadas": {
+        precio: 28,
+        proteinas: [
+          "Tinga de Pollo",
+          "Picadillo",
+          "Pollo"
+        ]
+      }
+    }
   }
 
 };
@@ -1243,7 +1228,7 @@ function mostrarSubcategoria(categoria, sub) {
     if (typeof p === "object") {
       btn.innerText = p.nombre + " - $" + p.precio;
       btn.onclick = () => {
-        if (categoria === "Antojitos") {
+        if (categoria === "Quesadillas" || categoria === "Sopes" || categoria === "Tostadas") {
           mostrarNotas(sub + " de " + p.nombre, p.precio, notasAntojitos);
         } else if (categoria === "Sandwiches") {
           mostrarNotas(sub + " de " + p.nombre, p.precio, notasSandwiches);
@@ -1254,7 +1239,7 @@ function mostrarSubcategoria(categoria, sub) {
     } else {
       btn.innerText = p + " - $" + datos.precio;
       btn.onclick = () => {
-        if (categoria === "Antojitos") {
+        if (categoria === "Quesadillas" || categoria === "Sopes" || categoria === "Tostadas") {
           mostrarNotas(sub + " de " + p, datos.precio, notasAntojitos);
         } else if (datos.notas && datos.bebida) {
           mostrarNotas(sub + " de " + p, datos.precio, datos.notas, mostrarBebidaPaquete);
