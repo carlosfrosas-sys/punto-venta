@@ -483,8 +483,8 @@
 
     /* ===== TABLET PEQUEÑA landscape (8.7" ~1340x800px) ===== */
     @media (orientation: landscape) and (max-height: 850px) and (min-width: 851px) and (max-width: 1400px) {
-      .panel-left { width: 60%; }
-      .panel-right { width: 40%; }
+      .panel-left { width: 75%; }
+      .panel-right { width: 25%; }
 
       .panel-left-header { padding: 4px 12px; }
       .panel-left-header h1 { font-size: 16px; }
@@ -508,10 +508,30 @@
         padding: 10px 8px;
       }
 
-      .pedido-header { padding: 4px 10px; }
-      .total-bar { padding: 4px 10px; }
-      .input-row { padding: 4px 10px; gap: 6px; }
-      .botones-wrap { padding: 4px 10px; }
+      .pedido-header { padding: 4px 8px; }
+      .pedido-footer { padding: 6px 8px; }
+      .total-row { margin-bottom: 4px; }
+      #total { font-size: 26px; }
+      #btnDeshacer { font-size: 11px; padding: 3px 0; margin-bottom: 4px; }
+
+      .inputs-row {
+        flex-direction: column;
+        gap: 4px;
+        margin-bottom: 4px;
+      }
+
+      .inputs-row input,
+      .inputs-row textarea {
+        font-size: 14px;
+        padding: 6px 8px;
+      }
+
+      .options-row { margin-bottom: 4px; }
+      .options-row label { font-size: 12px; }
+
+      .btn-enviar { font-size: 15px; min-height: 40px; }
+      .btn-cancelar { font-size: 13px; min-height: 36px; }
+      .btn-tarjeta { font-size: 13px; min-height: 36px; }
     }
 
     /* ===== CELULAR (solo phones, no iPad) ===== */
