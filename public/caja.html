@@ -2480,9 +2480,7 @@ function cobrarTarjeta() {
 function cancelarPagoTarjeta() {
   if (_tarjetaPolling) { clearInterval(_tarjetaPolling); _tarjetaPolling = null; }
   if (_tarjetaIntentId) {
-    fetch("/cobrar-terminal/" + _tarjetaIntentId, { method: "DELETE" })
-      .then(r => r.json())
-      .then(d => { if (!d.ok) alert("Cancela el cobro directamente en la terminal"); });
+    fetch("/cobrar-terminal/" + _tarjetaIntentId, { method: "DELETE" });
     _tarjetaIntentId = null;
   }
   const btn = document.getElementById("btnTarjeta");
