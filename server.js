@@ -11,9 +11,11 @@ const io = new Server(server);
 app.use(express.json());
 app.use(express.static(__dirname + "/public"));
 
-// Mercado Pago
-const mpClient = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN || "" });
+// Mercado Pago - Online (cliente.html checkout)
+const mpClient = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN_ONLINE || process.env.MERCADOPAGO_ACCESS_TOKEN || "" });
 const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
+// Mercado Pago - Presencial (terminal Point Smart)
+const MP_TOKEN_PRESENCIAL = process.env.MERCADOPAGO_ACCESS_TOKEN_PRESENCIAL || process.env.MERCADOPAGO_ACCESS_TOKEN || "";
 
 // Cupones de descuento
 const CUPONES = { "TESTCABA100": 100, "CABANA10": 10 };
@@ -331,29 +333,28 @@ app.put("/pedido/:id", async (req, res) => {
 });
 
 // Mercado Pago Point: cobrar con terminal
-const MP_DEVICE_ID = process.env.MP_DEVICE_ID || "DSPREAD_D20__12098604524071803694";
+const MP_DEVICE_ID = process.env.MP_DEVICE_ID || "NEWLAND_N950__N950NCCB05293066";
 
 let lastPaymentIntentId = null;
 
 app.post("/cobrar-terminal", async (req, res) => {
   const { amount, reference } = req.body;
   if (!amount || amount < 500) return res.status(400).json({ error: "Monto mínimo $5" });
-  const token = process.env.MERCADOPAGO_ACCESS_TOKEN;
-  if (!token) return res.status(500).json({ error: "Mercado Pago no configurado" });
+  if (!MP_TOKEN_PRESENCIAL) return res.status(500).json({ error: "Mercado Pago presencial no configurado" });
   try {
     // Cancelar intent anterior si existe
     if (lastPaymentIntentId) {
       try {
         await fetch(`https://api.mercadopago.com/point/integration-api/devices/${MP_DEVICE_ID}/payment-intents/${lastPaymentIntentId}`, {
           method: "DELETE",
-          headers: { "Authorization": "Bearer " + token }
+          headers: { "Authorization": "Bearer " + MP_TOKEN_PRESENCIAL }
         });
       } catch (e) {}
       lastPaymentIntentId = null;
     }
     const resp = await fetch(`https://api.mercadopago.com/point/integration-api/devices/${MP_DEVICE_ID}/payment-intents`, {
       method: "POST",
-      headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" },
+      headers: { "Authorization": "Bearer " + MP_TOKEN_PRESENCIAL, "Content-Type": "application/json" },
       body: JSON.stringify({ amount, additional_info: { external_reference: reference || "", print_on_terminal: true } })
     });
     const data = await resp.json();
@@ -366,11 +367,10 @@ app.post("/cobrar-terminal", async (req, res) => {
 });
 
 app.get("/cobrar-terminal/:intentId", async (req, res) => {
-  const token = process.env.MERCADOPAGO_ACCESS_TOKEN;
-  if (!token) return res.status(500).json({ error: "No configurado" });
+  if (!MP_TOKEN_PRESENCIAL) return res.status(500).json({ error: "No configurado" });
   try {
     const resp = await fetch(`https://api.mercadopago.com/point/integration-api/payment-intents/${req.params.intentId}`, {
-      headers: { "Authorization": "Bearer " + token }
+      headers: { "Authorization": "Bearer " + MP_TOKEN_PRESENCIAL }
     });
     const data = await resp.json();
     res.json(data);
@@ -380,12 +380,11 @@ app.get("/cobrar-terminal/:intentId", async (req, res) => {
 });
 
 app.delete("/cobrar-terminal/:intentId", async (req, res) => {
-  const token = process.env.MERCADOPAGO_ACCESS_TOKEN;
-  if (!token) return res.status(500).json({ error: "No configurado" });
+  if (!MP_TOKEN_PRESENCIAL) return res.status(500).json({ error: "No configurado" });
   try {
     await fetch(`https://api.mercadopago.com/point/integration-api/devices/${MP_DEVICE_ID}/payment-intents/${req.params.intentId}`, {
       method: "DELETE",
-      headers: { "Authorization": "Bearer " + token }
+      headers: { "Authorization": "Bearer " + MP_TOKEN_PRESENCIAL }
     });
     lastPaymentIntentId = null;
     res.json({ ok: true });
