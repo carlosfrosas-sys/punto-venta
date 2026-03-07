@@ -812,21 +812,17 @@ const menu = {
   },
 
   "Quesadillas": {
-    subcategorias: {
-      "Quesadilla": {
-        precio: 28,
-        proteinas: [
-          "Tinga",
-          "Pollo",
-          "Chicharron",
-          "Picadillo",
-          "Queso",
-          "Choriqueso",
-          "Champinones con Queso",
-          { nombre: "Bistec", precio: 33 }
-        ]
-      }
-    }
+    precio: 28,
+    proteinas: [
+      "Tinga",
+      "Pollo",
+      "Chicharron",
+      "Picadillo",
+      "Queso",
+      "Choriqueso",
+      "Champinones con Queso",
+      { nombre: "Bistec", precio: 33 }
+    ]
   },
 
   "Sandwiches": {
@@ -906,20 +902,16 @@ const menu = {
   },
 
   "Sopes": {
-    subcategorias: {
-      "Sopes": {
-        sencillo: 50,
-        precio: 55,
-        proteinas: [
-          "Chorizo",
-          "Pollo",
-          "Pastor",
-          "Bistec",
-          { nombre: "Campechanos", precio: 60 },
-          { nombre: "Arrachera", precio: 60 }
-        ]
-      }
-    }
+    sencillo: 50,
+    precio: 55,
+    proteinas: [
+      "Chorizo",
+      "Pollo",
+      "Pastor",
+      "Bistec",
+      { nombre: "Campechanos", precio: 60 },
+      { nombre: "Arrachera", precio: 60 }
+    ]
   },
 
   "Tacos": {
@@ -962,16 +954,12 @@ const menu = {
   },
 
   "Tostadas": {
-    subcategorias: {
-      "Tostadas": {
-        precio: 28,
-        proteinas: [
-          "Tinga de Pollo",
-          "Picadillo",
-          "Pollo"
-        ]
-      }
-    }
+    precio: 28,
+    proteinas: [
+      "Tinga de Pollo",
+      "Picadillo",
+      "Pollo"
+    ]
   }
 
 };
@@ -1017,6 +1005,12 @@ function mostrarOpciones(categoria) {
       btn.onclick = () => mostrarSubcategoria(categoria, sub);
       cont.appendChild(btn);
     }
+    return;
+  }
+
+  // SOPES - multi-seleccion max 4
+  if (categoria === "Sopes" && datos.proteinas) {
+    mostrarMultiSopes(datos, 4);
     return;
   }
 
@@ -1090,6 +1084,10 @@ function mostrarOpciones(categoria) {
             }
           } else if (categoria === "Bagels") {
             mostrarNotas("Bagel de " + p.nombre, p.precio, notasBagels);
+          } else if (categoria === "Quesadillas") {
+            mostrarNotas("Quesadilla de " + p.nombre, p.precio, notasAntojitos);
+          } else if (categoria === "Tostadas") {
+            mostrarNotas("Tostada de " + p.nombre, p.precio, notasAntojitos);
           } else {
             agregarProductoConNota(categoria + " de " + p.nombre, p.precio);
           }
@@ -1108,6 +1106,10 @@ function mostrarOpciones(categoria) {
             mostrarNotas(nombreEnch, datos.precio, notasEnchiladas);
           } else if (categoria === "Burritos") {
             mostrarNotas("Burritos de " + p, datos.precio, notasBurritos);
+          } else if (categoria === "Quesadillas") {
+            mostrarNotas("Quesadilla de " + p, datos.precio, notasAntojitos);
+          } else if (categoria === "Tostadas") {
+            mostrarNotas("Tostada de " + p, datos.precio, notasAntojitos);
           } else {
             agregarProductoConNota(categoria + " de " + p, datos.precio);
           }
