@@ -296,9 +296,9 @@
 
     #btnDeshacer {
       display: none;
-      width: 100%;
-      padding: 4px 0;
-      margin-bottom: 6px;
+      width: auto;
+      padding: 4px 20px;
+      margin: 0 auto 6px;
       background: transparent;
       border: 1px solid #d4c8bc;
       border-radius: 6px;
@@ -2066,7 +2066,6 @@ function mostrarAcompanamientoSolo(nombre, precio, opciones) {
     btn.innerText = opcion;
     btn.onclick = () => {
       agregarProducto(nombre + " con " + opcion, precio);
-      cont.innerHTML = "";
     };
     cont.appendChild(btn);
   });
