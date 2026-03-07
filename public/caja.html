@@ -449,6 +449,38 @@
       cursor: not-allowed;
     }
 
+    #btnVolver {
+      display: none;
+      background: none;
+      border: none;
+      color: #6b5b4f;
+      font-size: 16px;
+      font-weight: 600;
+      padding: 6px 12px 6px 0;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    /* ===== TABLET PEQUEÑA (8.7" portrait ~800px) ===== */
+    @media (max-width: 850px) and (min-width: 601px) {
+      .panel-left { width: 65%; }
+      .panel-right { width: 35%; }
+
+      #categorias {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      #categorias button {
+        font-size: 16px;
+        min-height: 46px;
+      }
+
+      #proteinas button {
+        font-size: 17px;
+        min-height: 46px;
+      }
+    }
+
     /* ===== CELULAR (solo phones, no iPad) ===== */
     @media (max-width: 600px) {
       body {
@@ -576,6 +608,7 @@ function hacerLogin() {
       <h1>Caja</h1>
     </div>
     <div class="categorias-wrap">
+      <button id="btnVolver" onclick="volverACategorias()">&#8592; Categorías</button>
       <div class="section-title">Platillos</div>
       <div id="categorias"></div>
     </div>
@@ -1000,6 +1033,13 @@ const menu = {
   }
 
 };
+function volverACategorias() {
+  document.getElementById("categorias").style.display = "grid";
+  document.getElementById("btnVolver").style.display = "none";
+  document.getElementById("proteinas").innerHTML = "";
+  document.querySelector(".section-title").innerText = "Platillos";
+}
+
 function cargarCategorias() {
   const cont = document.getElementById("categorias");
 
@@ -1023,11 +1063,16 @@ function mostrarOpciones(categoria) {
     return;
   }
 
-  // 🫓 DIRECTO (Gringa, Norteña)
+  // 🫓 DIRECTO (Gringa, Norteña) — no ocultar categorías
   if (datos.directo && !datos.subcategorias) {
     agregarProductoSinNota(categoria, datos.precio);
     return;
   }
+
+  // Ocultar categorías, mostrar flecha atrás
+  document.getElementById("categorias").style.display = "none";
+  document.getElementById("btnVolver").style.display = "block";
+  document.querySelector(".section-title").innerText = categoria;
 
   // 🥤 LICUADOS (manejo especial mejorado)
 if (categoria === "Licuados") {
