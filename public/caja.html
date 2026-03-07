@@ -393,7 +393,7 @@
     }
 
     .btn-enviar {
-      width: 100%;
+      flex: 1;
       background: #6b5b4f;
       color: #fff;
       font-size: 18px;
@@ -408,8 +408,22 @@
       background: #5a4a3f;
     }
 
-    .btn-cancelar {
+    .btn-tarjeta {
       flex: 1;
+      background: #2563eb;
+      color: #fff;
+      font-size: 18px;
+      font-weight: 600;
+      min-height: 52px;
+      border-radius: 12px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn-cancelar {
+      width: 100%;
       background: transparent;
       color: #e05252;
       font-size: 15px;
@@ -424,20 +438,6 @@
     .btn-cancelar:hover {
       background: #e05252;
       color: #fff;
-    }
-
-    .btn-tarjeta {
-      flex: 1;
-      background: #2563eb;
-      color: #fff;
-      font-size: 15px;
-      font-weight: 600;
-      min-height: 44px;
-      border-radius: 12px;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      border: none;
-      cursor: pointer;
     }
 
     .btn-tarjeta:hover {
@@ -694,9 +694,9 @@ function hacerLogin() {
         </label>
       </div>
       <div class="buttons-row">
-        <button class="btn-enviar" onclick="enviarPedido()">Enviar</button>
-        <button class="btn-cancelar" onclick="cancelarPedido()">Cancelar</button>
+        <button class="btn-enviar" onclick="enviarPedido()">Efectivo</button>
         <button class="btn-tarjeta" id="btnTarjeta" onclick="cobrarTarjeta()">Tarjeta</button>
+        <button class="btn-cancelar" onclick="cancelarPedido()">Cancelar</button>
       </div>
     </div>
   </div>
