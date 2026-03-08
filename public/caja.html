@@ -1756,6 +1756,9 @@ function mostrarMultiItems(prefijo, items, max) {
     btn.innerText = item.nombre;
     btn.style.background = "#e5e7eb";
     btn.style.color = "#111827";
+    btn.style.fontSize = "15px";
+    btn.style.minHeight = "38px";
+    btn.style.padding = "6px 8px";
     btn.onclick = () => {
       const idx = seleccionados.findIndex(s => s.nombre === item.nombre);
       if (idx >= 0) {
@@ -1930,6 +1933,9 @@ function mostrarIngredientesTortaMulti() {
     btn.innerText = nombre;
     btn.style.background = "#e5e7eb";
     btn.style.color = "#111827";
+    btn.style.fontSize = "15px";
+    btn.style.minHeight = "38px";
+    btn.style.padding = "6px 8px";
     btn.onclick = () => {
       const idx = seleccionados.findIndex(s => s.nombre === nombre);
       if (idx >= 0) {
