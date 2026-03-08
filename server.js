@@ -355,7 +355,7 @@ app.post("/cobrar-terminal", async (req, res) => {
     const resp = await fetch(`https://api.mercadopago.com/point/integration-api/devices/${MP_DEVICE_ID}/payment-intents`, {
       method: "POST",
       headers: { "Authorization": "Bearer " + MP_TOKEN_PRESENCIAL, "Content-Type": "application/json" },
-      body: JSON.stringify({ amount, payment: { type: "credit_card" }, additional_info: { external_reference: reference || "", print_on_terminal: true } })
+      body: JSON.stringify({ amount, payment_type: "credit_card", additional_info: { external_reference: reference || "", print_on_terminal: true } })
     });
     const data = await resp.json();
     if (!resp.ok) return res.status(resp.status).json(data);
