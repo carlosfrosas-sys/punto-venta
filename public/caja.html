@@ -666,7 +666,7 @@ function hacerLogin() {
         <span>$<span id="total">0</span></span>
       </div>
       <div class="inputs-row">
-        <input type="text" id="cliente" placeholder="Cliente" onkeydown="if(event.key==='Enter')enviarPedido()">
+        <input type="text" id="cliente" placeholder="Cliente" autocomplete="off" autocorrect="off" autocapitalize="words" onkeydown="if(event.key==='Enter')enviarPedido()">
         <textarea id="notaPedido" placeholder="Nota (opcional)" rows="1" onkeydown="if(event.key==='Enter'){event.preventDefault();enviarPedido()}"></textarea>
       </div>
       <div class="buttons-row">
