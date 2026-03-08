@@ -294,24 +294,6 @@
       margin-bottom: 8px;
     }
 
-    #btnDeshacer {
-      display: none;
-      width: auto;
-      padding: 4px 20px;
-      margin: 0 auto 6px;
-      background: transparent;
-      border: 1px solid #d4c8bc;
-      border-radius: 6px;
-      color: #a09080;
-      font-size: 12px;
-      font-weight: 500;
-      cursor: pointer;
-      letter-spacing: 1px;
-    }
-
-    #btnDeshacer:active {
-      background: #f5f0eb;
-    }
 
     .total-label {
       font-size: 14px;
@@ -512,7 +494,6 @@
       .pedido-footer { padding: 6px 8px; }
       .total-row { margin-bottom: 4px; }
       #total { font-size: 26px; }
-      #btnDeshacer { font-size: 11px; padding: 3px 0; margin-bottom: 4px; }
 
       .inputs-row {
         flex-direction: column;
@@ -679,7 +660,6 @@ function hacerLogin() {
       <ul id="lista"></ul>
     </div>
     <div class="pedido-footer">
-      <button id="btnDeshacer" onclick="deshacerUltimo()">Deshacer</button>
       <div class="total-row">
         <span class="total-label">Total</span>
         <span>$<span id="total">0</span></span>
@@ -2417,16 +2397,8 @@ function renderizarLista() {
   });
 
   document.getElementById("total").innerText = total;
-  document.getElementById("btnDeshacer").style.display = productos.length > 0 ? "block" : "none";
 }
 
-function deshacerUltimo() {
-  if (productos.length === 0) return;
-  const ultimo = productos.pop();
-  total -= ultimo.precio;
-  _prevProductCount = productos.length;
-  renderizarLista();
-}
 
 function cambiarCantidad(index, delta) {
   const prod = productos[index];
