@@ -332,44 +332,56 @@ app.put("/pedido/:id", async (req, res) => {
   }
 });
 
-// Mercado Pago Point: cobrar con terminal
+// Mercado Pago Point: cobrar con terminal (API v1/orders)
 const MP_DEVICE_ID = process.env.MP_DEVICE_ID || "NEWLAND_N950__N950NCCB05293066";
 
-let lastPaymentIntentId = null;
+let lastOrderId = null;
 
 app.post("/cobrar-terminal", async (req, res) => {
   const { amount, reference } = req.body;
-  if (!amount || amount < 500) return res.status(400).json({ error: "Monto mínimo $5" });
+  if (!amount || amount < 5) return res.status(400).json({ error: "Monto mínimo $5" });
   if (!MP_TOKEN_PRESENCIAL) return res.status(500).json({ error: "Mercado Pago presencial no configurado" });
   try {
-    // Cancelar intent anterior si existe
-    if (lastPaymentIntentId) {
+    // Cancelar orden anterior si existe
+    if (lastOrderId) {
       try {
-        await fetch(`https://api.mercadopago.com/point/integration-api/devices/${MP_DEVICE_ID}/payment-intents/${lastPaymentIntentId}`, {
-          method: "DELETE",
-          headers: { "Authorization": "Bearer " + MP_TOKEN_PRESENCIAL }
+        await fetch(`https://api.mercadopago.com/v1/orders/${lastOrderId}/cancel`, {
+          method: "POST",
+          headers: { "Authorization": "Bearer " + MP_TOKEN_PRESENCIAL, "X-Idempotency-Key": "cancel-" + lastOrderId + "-" + Date.now() }
         });
       } catch (e) {}
-      lastPaymentIntentId = null;
+      lastOrderId = null;
     }
-    const resp = await fetch(`https://api.mercadopago.com/point/integration-api/devices/${MP_DEVICE_ID}/payment-intents`, {
+    const resp = await fetch("https://api.mercadopago.com/v1/orders", {
       method: "POST",
-      headers: { "Authorization": "Bearer " + MP_TOKEN_PRESENCIAL, "Content-Type": "application/json" },
-      body: JSON.stringify({ amount, additional_info: { external_reference: reference || "", print_on_terminal: true } })
+      headers: {
+        "Authorization": "Bearer " + MP_TOKEN_PRESENCIAL,
+        "Content-Type": "application/json",
+        "X-Idempotency-Key": (reference || "caja") + "-" + Date.now()
+      },
+      body: JSON.stringify({
+        type: "point",
+        external_reference: reference || "caja-" + Date.now(),
+        transactions: { payments: [{ amount: amount.toFixed(2) }] },
+        config: {
+          point: { terminal_id: MP_DEVICE_ID, print_on_terminal: "no_ticket" },
+          payment_method: { default_type: "credit_card" }
+        }
+      })
     });
     const data = await resp.json();
     if (!resp.ok) return res.status(resp.status).json(data);
-    lastPaymentIntentId = data.id;
+    lastOrderId = data.id;
     res.json(data);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-app.get("/cobrar-terminal/:intentId", async (req, res) => {
+app.get("/cobrar-terminal/:orderId", async (req, res) => {
   if (!MP_TOKEN_PRESENCIAL) return res.status(500).json({ error: "No configurado" });
   try {
-    const resp = await fetch(`https://api.mercadopago.com/point/integration-api/payment-intents/${req.params.intentId}`, {
+    const resp = await fetch(`https://api.mercadopago.com/v1/orders/${req.params.orderId}`, {
       headers: { "Authorization": "Bearer " + MP_TOKEN_PRESENCIAL }
     });
     const data = await resp.json();
@@ -379,15 +391,15 @@ app.get("/cobrar-terminal/:intentId", async (req, res) => {
   }
 });
 
-app.delete("/cobrar-terminal/:intentId", async (req, res) => {
+app.delete("/cobrar-terminal/:orderId", async (req, res) => {
   if (!MP_TOKEN_PRESENCIAL) return res.status(500).json({ error: "No configurado" });
   try {
-    const resp = await fetch(`https://api.mercadopago.com/point/integration-api/devices/${MP_DEVICE_ID}/payment-intents/${req.params.intentId}`, {
-      method: "DELETE",
-      headers: { "Authorization": "Bearer " + MP_TOKEN_PRESENCIAL }
+    const resp = await fetch(`https://api.mercadopago.com/v1/orders/${req.params.orderId}/cancel`, {
+      method: "POST",
+      headers: { "Authorization": "Bearer " + MP_TOKEN_PRESENCIAL, "X-Idempotency-Key": "cancel-" + req.params.orderId + "-" + Date.now() }
     });
     if (!resp.ok) return res.status(resp.status).json(await resp.json());
-    lastPaymentIntentId = null;
+    lastOrderId = null;
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ error: e.message });

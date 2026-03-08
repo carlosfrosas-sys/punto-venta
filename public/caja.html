@@ -2484,7 +2484,7 @@ function cobrarTarjeta() {
   fetch("/cobrar-terminal", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ amount: Math.round(total * 100), reference: ref })
+    body: JSON.stringify({ amount: total, reference: ref })
   })
   .then(r => r.json().then(d => ({ ok: r.ok, data: d })))
   .then(({ ok, data }) => {
@@ -2499,7 +2499,7 @@ function cobrarTarjeta() {
       fetch("/cobrar-terminal/" + _tarjetaIntentId)
         .then(r => r.json())
         .then(d => {
-          if (d.state === "FINISHED" || d.state === "PROCESSED") {
+          if (d.status === "paid") {
             clearInterval(_tarjetaPolling);
             _tarjetaPolling = null;
             _tarjetaIntentId = null;
@@ -2518,11 +2518,11 @@ function cobrarTarjeta() {
             btnEnviar.disabled = false;
             btnCancelar.innerText = "Cancelar";
             btnCancelar.onclick = cancelarPedido;
-          } else if (d.state === "CANCELED" || d.state === "ERROR" || d.state === "ABANDONED") {
+          } else if (d.status === "canceled" || d.status === "failed" || d.status === "expired") {
             clearInterval(_tarjetaPolling);
             _tarjetaPolling = null;
             _tarjetaIntentId = null;
-            alert("Pago no completado: " + d.state);
+            alert("Pago no completado: " + d.status);
             btn.disabled = false;
             btn.innerText = "Tarjeta";
             btnEnviar.disabled = false;
