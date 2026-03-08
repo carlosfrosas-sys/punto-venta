@@ -983,53 +983,68 @@ function hacerLogin() {
         }
 
         let html = '';
+        const dias = data.porDia || [{ fecha: "Hoy", productos: data.productos, categorias: data.categorias }];
+        const TOP = 5;
 
-        // Category bar chart
-        if (data.categorias && data.categorias.length > 0) {
-          const maxCant = Math.max(...data.categorias.map(c => c.cantidad));
-          html += '<div style="margin-bottom:24px;">';
-          html += '<div class="chart-title">Por Categoria</div>';
-          data.categorias.forEach(c => {
-            const pct = Math.round((c.cantidad / maxCant) * 100);
-            html += '<div class="bar-row">';
-            html += '<span class="bar-label">' + c.nombre + '</span>';
-            html += '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%"></div></div>';
-            html += '<span class="bar-value">' + c.cantidad + ' &middot; $' + c.total + '</span>';
-            html += '</div>';
-          });
+        dias.forEach((dia, idx) => {
+          const [d, m] = (dia.fecha || "").split("/");
+          const dateObj = d && m ? new Date(parseInt(dia.fecha.split("/")[2]), parseInt(m) - 1, parseInt(d)) : null;
+          const diaSemana = dateObj ? DIAS_SEMANA[dateObj.getDay()] : "";
+          const tituloFecha = dateObj ? diaSemana + " " + d + " de " + MESES[parseInt(m) - 1] : dia.fecha;
+          const totalDia = dia.productos.reduce((a, p) => a + p.total, 0);
+          const totalCant = dia.productos.reduce((a, p) => a + p.cantidad, 0);
+
+          html += '<div style="margin-bottom:16px;background:#f8f8f8;border-radius:12px;padding:16px;">';
+          html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;cursor:pointer;" onclick="toggleProductosDia(\'prodDia' + idx + '\')">';
+          html += '<div style="font-size:15px;font-weight:600;color:#1a1a1a;">' + tituloFecha + '</div>';
+          html += '<div style="font-size:13px;color:#999;">' + totalCant + ' productos &middot; <span style="color:#22c55e;font-weight:700;">$' + totalDia + '</span></div>';
           html += '</div>';
-        }
 
-        // By day
-        if (data.porDia && data.porDia.length > 1) {
-          data.porDia.forEach(dia => {
-            html += '<div style="margin-bottom:20px;background:#f8f8f8;border-radius:12px;padding:16px;">';
-            html += '<div style="font-size:15px;font-weight:600;color:#1a1a1a;margin-bottom:10px;">' + dia.fecha + '</div>';
-
-            html += '<table class="tabla-productos" style="margin-bottom:10px;"><thead><tr><th>Categoria</th><th style="text-align:center">Cant.</th><th style="text-align:right">Total</th></tr></thead><tbody>';
-            dia.categorias.forEach(c => {
-              html += '<tr><td class="col-nombre">' + c.nombre + '</td><td class="col-cant">' + c.cantidad + '</td><td class="col-total">$' + c.total + '</td></tr>';
-            });
-            html += '</tbody></table>';
-
-            html += '<table class="tabla-productos"><thead><tr><th>#</th><th>Producto</th><th style="text-align:center">Cant.</th><th style="text-align:right">Total</th></tr></thead><tbody>';
-            dia.productos.forEach((p, i) => {
-              html += '<tr><td class="col-rank">' + (i + 1) + '</td><td class="col-nombre">' + p.nombre + '</td><td class="col-cant">' + p.cantidad + '</td><td class="col-total">$' + p.total + '</td></tr>';
-            });
-            html += '</tbody></table></div>';
-          });
-        } else {
-          html += '<div style="margin-bottom:20px;">';
-          html += '<div class="chart-title">Productos</div>';
+          // Top products (always visible)
           html += '<table class="tabla-productos"><thead><tr><th>#</th><th>Producto</th><th style="text-align:center">Cant.</th><th style="text-align:right">Total</th></tr></thead><tbody>';
-          data.productos.forEach((p, i) => {
+          dia.productos.slice(0, TOP).forEach((p, i) => {
             html += '<tr><td class="col-rank">' + (i + 1) + '</td><td class="col-nombre">' + p.nombre + '</td><td class="col-cant">' + p.cantidad + '</td><td class="col-total">$' + p.total + '</td></tr>';
           });
-          html += '</tbody></table></div>';
-        }
+          html += '</tbody></table>';
+
+          // Full list (hidden by default)
+          if (dia.productos.length > TOP) {
+            html += '<div id="prodDia' + idx + '" style="display:none;margin-top:10px;">';
+
+            // Categories
+            if (dia.categorias && dia.categorias.length > 0) {
+              html += '<table class="tabla-productos" style="margin-bottom:10px;"><thead><tr><th>Categoria</th><th style="text-align:center">Cant.</th><th style="text-align:right">Total</th></tr></thead><tbody>';
+              dia.categorias.forEach(c => {
+                html += '<tr><td class="col-nombre">' + c.nombre + '</td><td class="col-cant">' + c.cantidad + '</td><td class="col-total">$' + c.total + '</td></tr>';
+              });
+              html += '</tbody></table>';
+            }
+
+            // Rest of products
+            html += '<table class="tabla-productos"><thead><tr><th>#</th><th>Producto</th><th style="text-align:center">Cant.</th><th style="text-align:right">Total</th></tr></thead><tbody>';
+            dia.productos.slice(TOP).forEach((p, i) => {
+              html += '<tr><td class="col-rank">' + (TOP + i + 1) + '</td><td class="col-nombre">' + p.nombre + '</td><td class="col-cant">' + p.cantidad + '</td><td class="col-total">$' + p.total + '</td></tr>';
+            });
+            html += '</tbody></table>';
+            html += '</div>';
+            html += '<div style="text-align:center;margin-top:8px;">';
+            html += '<button onclick="toggleProductosDia(\'prodDia' + idx + '\', this)" style="border:none;background:transparent;color:#3b82f6;font-size:13px;cursor:pointer;font-family:inherit;font-weight:500;">Ver todos (' + dia.productos.length + ')</button>';
+            html += '</div>';
+          }
+
+          html += '</div>';
+        });
 
         contenedor.innerHTML = html;
       });
+  }
+
+  function toggleProductosDia(id, btn) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const visible = el.style.display !== "none";
+    el.style.display = visible ? "none" : "block";
+    if (btn) btn.innerText = visible ? "Ver todos (" + el.querySelectorAll("tr").length + ")" : "Ocultar";
   }
 
   function mostrarPedido(pedido) {
