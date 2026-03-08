@@ -184,11 +184,29 @@
       padding: 8px 14px;
       border-bottom: 1px solid #e8e4df;
       flex-shrink: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
     .pedido-header .section-title {
       padding: 0;
       margin-bottom: 0;
+    }
+
+    .pedido-header .para-llevar-label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: #999;
+      cursor: pointer;
+    }
+
+    .pedido-header .para-llevar-label input {
+      width: 15px;
+      height: 15px;
+      cursor: pointer;
     }
 
     .lista-wrap {
@@ -341,31 +359,11 @@
 
     .inputs-row textarea {
       resize: none;
-      min-height: 38px;
-      max-height: 38px;
+      min-height: 32px;
+      max-height: 32px;
+      flex: 0.6;
     }
 
-    .options-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 4px;
-    }
-
-    .options-row label {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 14px;
-      color: #999;
-      cursor: pointer;
-    }
-
-    .options-row input[type="checkbox"] {
-      width: 18px;
-      height: 18px;
-      cursor: pointer;
-    }
 
     .buttons-row {
       display: flex;
@@ -407,13 +405,14 @@
       width: 100%;
       background: transparent;
       color: #e05252;
-      font-size: 15px;
+      font-size: 13px;
       font-weight: 600;
-      min-height: 44px;
-      border-radius: 12px;
+      min-height: 32px;
+      border-radius: 8px;
       letter-spacing: 1px;
       text-transform: uppercase;
-      border: 2px solid #e05252;
+      border: 1.5px solid #e05252;
+      padding: 2px 8px;
     }
 
     .btn-cancelar:hover {
@@ -654,6 +653,9 @@ function hacerLogin() {
   <div class="panel-right">
     <div class="pedido-header">
       <div class="section-title">Pedido</div>
+      <label class="para-llevar-label">
+        <input type="checkbox" id="paraLlevar"> Para llevar
+      </label>
     </div>
     <div class="lista-wrap">
       <ul id="lista"></ul>
@@ -666,11 +668,6 @@ function hacerLogin() {
       <div class="inputs-row">
         <input type="text" id="cliente" placeholder="Cliente" onkeydown="if(event.key==='Enter')enviarPedido()">
         <textarea id="notaPedido" placeholder="Nota (opcional)" rows="1" onkeydown="if(event.key==='Enter'){event.preventDefault();enviarPedido()}"></textarea>
-      </div>
-      <div class="options-row">
-        <label>
-          <input type="checkbox" id="paraLlevar"> Para llevar
-        </label>
       </div>
       <div class="buttons-row">
         <button class="btn-enviar" onclick="enviarPedido()">Efectivo</button>
