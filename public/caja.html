@@ -2445,7 +2445,8 @@ function enviarPedido() {
       productos,
       total,
       nota,
-      paraLlevar: document.getElementById("paraLlevar").checked
+      paraLlevar: document.getElementById("paraLlevar").checked,
+      metodoPago: "efectivo"
     })
   });
 
@@ -2478,7 +2479,7 @@ function cobrarTarjeta() {
   btn.innerText = "Enviando...";
   btnEnviar.disabled = true;
 
-  const pedidoData = { cliente: nombreCliente, productos: [...productos], total, nota: document.getElementById("notaPedido").value.trim(), paraLlevar: document.getElementById("paraLlevar").checked };
+  const pedidoData = { cliente: nombreCliente, productos: [...productos], total, nota: document.getElementById("notaPedido").value.trim(), paraLlevar: document.getElementById("paraLlevar").checked, metodoPago: "tarjeta" };
   const ref = "caja-" + Date.now();
 
   fetch("/cobrar-terminal", {

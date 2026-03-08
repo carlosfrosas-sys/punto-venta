@@ -303,6 +303,7 @@ app.post("/pedido", async (req, res) => {
     total: req.body.total,
     nota: req.body.nota || "",
     paraLlevar: req.body.paraLlevar || false,
+    metodoPago: req.body.metodoPago || "efectivo",
     estado: "pendiente",
     fecha: fechaHoy(),
     horaEnvio: new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" })
@@ -483,7 +484,11 @@ app.get("/ventas/fecha/:fecha", (req, res) => {
   });
   const porHora = Object.values(horas).sort((a, b) => a.hora.localeCompare(b.hora));
 
-  res.json({ pedidos: entregados, total, categorias, porHora });
+  // Por método de pago
+  const totalEfectivo = entregados.filter(p => p.metodoPago !== "tarjeta").reduce((acc, p) => acc + p.total, 0);
+  const totalTarjeta = entregados.filter(p => p.metodoPago === "tarjeta").reduce((acc, p) => acc + p.total, 0);
+
+  res.json({ pedidos: entregados, total, categorias, porHora, totalEfectivo, totalTarjeta });
 });
 
 app.get("/total", (req, res) => {
@@ -719,7 +724,9 @@ app.get("/ventas/semanal", async (req, res) => {
     porDia[p.fecha].total += p.total;
   });
 
-  res.json({ pedidos: entregados, total, porDia });
+  const totalEfectivo = entregados.filter(p => p.metodoPago !== "tarjeta").reduce((acc, p) => acc + p.total, 0);
+  const totalTarjeta = entregados.filter(p => p.metodoPago === "tarjeta").reduce((acc, p) => acc + p.total, 0);
+  res.json({ pedidos: entregados, total, porDia, totalEfectivo, totalTarjeta });
 });
 
 app.get("/ventas/mensual", async (req, res) => {
@@ -756,7 +763,9 @@ app.get("/ventas/mensual", async (req, res) => {
     porDia[p.fecha].total += p.total;
   });
 
-  res.json({ pedidos: entregados, total, porDia });
+  const totalEfectivo = entregados.filter(p => p.metodoPago !== "tarjeta").reduce((acc, p) => acc + p.total, 0);
+  const totalTarjeta = entregados.filter(p => p.metodoPago === "tarjeta").reduce((acc, p) => acc + p.total, 0);
+  res.json({ pedidos: entregados, total, porDia, totalEfectivo, totalTarjeta });
 });
 
 app.get("/ventas/exportar/:tipo", (req, res) => {

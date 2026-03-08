@@ -350,6 +350,37 @@
       color: #fbbf24;
     }
 
+    .resumen-pagos {
+      background: #1a1a1a;
+      border-radius: 8px;
+      padding: 14px 20px;
+      margin-bottom: 15px;
+      border-left: 4px solid #60a5fa;
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .resumen-pagos h3 {
+      color: #888;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 0;
+      margin-right: 10px;
+    }
+
+    .pago-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 15px;
+    }
+
+    .pago-label { color: #aaa; }
+    .pago-efectivo { color: #4ade80; font-weight: 700; }
+    .pago-tarjeta { color: #60a5fa; font-weight: 700; }
+
     .resumen-cats {
       background: #1a1a1a;
       border-radius: 8px;
@@ -589,6 +620,16 @@ function hacerLogin() {
       }
     }
 
+    function mostrarResumenPagos(totalEfectivo, totalTarjeta) {
+      if (!totalEfectivo && !totalTarjeta) return;
+      const html = `<div class="resumen-pagos">
+        <h3>Pagos</h3>
+        <div class="pago-item"><span class="pago-label">Efectivo:</span> <span class="pago-efectivo">$${totalEfectivo || 0}</span></div>
+        <div class="pago-item"><span class="pago-label">Tarjeta:</span> <span class="pago-tarjeta">$${totalTarjeta || 0}</span></div>
+      </div>`;
+      document.getElementById("resumenDia").insertAdjacentHTML("afterbegin", html);
+    }
+
     function actualizarTotal(total, cantidad) {
       document.getElementById("totalDia").innerText = total;
       document.getElementById("contador").innerText = cantidad + " pedido" + (cantidad !== 1 ? "s" : "") + " entregado" + (cantidad !== 1 ? "s" : "");
@@ -606,6 +647,7 @@ function hacerLogin() {
           </div>
           <div style="text-align:right;">
             <div class="pedido-total">$${pedido.total}</div>
+            ${pedido.metodoPago === "tarjeta" ? `<span style="color:#60a5fa;font-size:11px;text-transform:uppercase;letter-spacing:1px;">Tarjeta</span>` : ""}
             ${pedido.horaEntrega ? `<div class="hora">${pedido.horaEntrega}</div>` : ""}
             <button class="btn-eliminar" onclick="eliminarPedido(${pedido.id})">Eliminar</button>
           </div>
@@ -704,6 +746,7 @@ function hacerLogin() {
 
             data.pedidos.forEach(mostrarPedido);
           }
+          mostrarResumenPagos(data.totalEfectivo, data.totalTarjeta);
           actualizarTotal(data.total, data.pedidos.length);
         });
     }
@@ -748,6 +791,7 @@ function hacerLogin() {
         .then(res => res.json())
         .then(data => {
           actualizarTotal(data.total, data.pedidos.length);
+          mostrarResumenPagos(data.totalEfectivo, data.totalTarjeta);
           if (data.porDia) mostrarDesglose(data.porDia);
           if (data.pedidos.length === 0) {
             contenedor.innerHTML = '<div class="sin-datos">No hay ventas esta semana</div>';
@@ -766,6 +810,7 @@ function hacerLogin() {
         .then(res => res.json())
         .then(data => {
           actualizarTotal(data.total, data.pedidos.length);
+          mostrarResumenPagos(data.totalEfectivo, data.totalTarjeta);
           if (data.porDia) mostrarDesglose(data.porDia);
           if (data.pedidos.length === 0) {
             contenedor.innerHTML = '<div class="sin-datos">No hay ventas este mes</div>';
