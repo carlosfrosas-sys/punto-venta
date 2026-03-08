@@ -1460,13 +1460,31 @@ function mostrarTamañosAgua(sabores, conChia) {
   }
 }
 
-function mostrarSaboresLicuado() {
+function mostrarSaboresLicuado(esLitro) {
   const cont = document.getElementById("proteinas");
   const seleccionados = [];
   const extraPrecio = 5;
-  const precioBase = menu["Licuados"].precio;
+  const precioBase = esLitro ? 55 : menu["Licuados"].precio;
+  const prefijo = esLitro ? "Licuado Litro de " : "Licuado de ";
 
   cont.innerHTML = "";
+
+  if (!esLitro) {
+    const btnLitro = document.createElement("button");
+    btnLitro.innerText = "Litro $55";
+    btnLitro.style.background = "#f59e0b";
+    btnLitro.style.color = "white";
+    btnLitro.style.fontWeight = "700";
+    btnLitro.style.marginBottom = "10px";
+    btnLitro.style.width = "100%";
+    btnLitro.onclick = () => mostrarSaboresLicuado(true);
+    cont.appendChild(btnLitro);
+  } else {
+    const titulo = document.createElement("h3");
+    titulo.innerText = "Licuado Litro $55";
+    titulo.style.marginBottom = "8px";
+    cont.appendChild(titulo);
+  }
 
   menu["Licuados"].sabores.forEach(sabor => {
     const btn = document.createElement("button");
@@ -1500,7 +1518,7 @@ function mostrarSaboresLicuado() {
     const extras = seleccionados.slice(1);
     const precioExtras = extras.reduce((acc, s) => acc + (s === "Avena" ? 4 : extraPrecio), 0);
     const precioTotal = precioBase + precioExtras;
-    const nombreBase = "Licuado de " + seleccionados[0];
+    const nombreBase = prefijo + seleccionados[0];
     const conExtras = seleccionados.length > 1 ? " con " + seleccionados.slice(1).join(", ") : "";
     const nombreFinal = nombreBase + conExtras;
     productos.push({ nombre: nombreFinal, precio: precioTotal, precioBase: precioTotal, cantidad: 1, nota: "" });
