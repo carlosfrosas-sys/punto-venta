@@ -4,212 +4,248 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="manifest" href="/manifest-ventas.json">
   <link rel="apple-touch-icon" href="/icon-ventas.png">
-  <meta name="theme-color" content="#111">
+  <meta name="theme-color" content="#ffffff">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Ventas">
   <title>Ventas</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      background: #111;
-      color: #f5f5f5;
+      background: #fff;
+      color: #1a1a1a;
       font-family: 'Segoe UI', Arial, sans-serif;
+      overflow: hidden;
+      height: 100vh;
+    }
+
+    /* Layout */
+    .app-layout {
+      display: flex;
+      height: 100vh;
+    }
+
+    .sidebar {
+      width: 220px;
+      background: #f8f8f8;
+      border-right: 1px solid #e5e5e5;
+      overflow-y: auto;
+      padding: 16px;
+      flex-shrink: 0;
+    }
+
+    .sidebar-title {
+      font-size: 18px;
+      font-weight: 300;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: #aaa;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #e5e5e5;
+    }
+
+    .main-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+    }
+
+    /* Header */
+    .content-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .content-title {
+      font-size: 22px;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .content-subtitle {
+      font-size: 13px;
+      color: #999;
+      margin-top: 2px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .header-actions button {
+      padding: 8px 16px;
+      font-size: 13px;
+      border: 1px solid #e5e5e5;
+      background: #fff;
+      color: #666;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    .header-actions button:hover {
+      border-color: #3b82f6;
+      color: #3b82f6;
+    }
+
+    /* Metric cards */
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .metric-card {
+      background: #f8f8f8;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .metric-value {
+      font-size: 28px;
+      font-weight: 700;
+    }
+
+    .metric-label {
+      font-size: 11px;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 4px;
+    }
+
+    .metric-total .metric-value { color: #1a1a1a; }
+    .metric-efectivo .metric-value { color: #22c55e; }
+    .metric-tarjeta .metric-value { color: #3b82f6; }
+    .metric-pedidos .metric-value { color: #f59e0b; }
+
+    /* Charts */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    .chart-card {
+      background: #f8f8f8;
+      border-radius: 12px;
       padding: 20px;
     }
 
-    h1 {
-      text-align: center;
-      font-size: 24px;
-      font-weight: 300;
-      letter-spacing: 6px;
-      text-transform: uppercase;
-      color: #888;
-      margin-bottom: 25px;
-      border-bottom: 1px solid #333;
-      padding-bottom: 15px;
-    }
-
-    /* Tabs de periodo */
-    .tabs {
-      display: flex;
-      gap: 8px;
-      justify-content: center;
-      margin-bottom: 20px;
-    }
-
-    .tabs button {
-      padding: 10px 24px;
-      font-size: 15px;
-      border-radius: 20px;
-      border: 1.5px solid #333;
-      background: #1a1a1a;
-      color: #888;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      font-weight: 500;
-    }
-
-    .tabs button:hover {
-      border-color: #fbbf24;
-      color: #fbbf24;
-    }
-
-    .tabs button.activo {
-      background: #fbbf24;
-      color: #111;
-      border-color: #fbbf24;
-      font-weight: 700;
-    }
-
-    .fechas {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 20px;
-      justify-content: center;
-    }
-
-    .fechas button {
-      padding: 8px 16px;
-      font-size: 14px;
-      border-radius: 20px;
-      border: 1.5px solid #333;
-      background: #1a1a1a;
-      color: #888;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      font-weight: 500;
-    }
-
-    .fechas button:hover {
-      border-color: #fbbf24;
-      color: #fbbf24;
-    }
-
-    .fechas button.activo {
-      background: #fbbf24;
-      color: #111;
-      border-color: #fbbf24;
-      font-weight: 700;
-    }
-
-    .total-dia {
-      background: #1a1a1a;
-      border-radius: 8px;
-      padding: 20px 25px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 15px;
-      border-left: 4px solid #fbbf24;
-    }
-
-    .total-dia .label {
-      font-size: 14px;
-      text-transform: uppercase;
-      letter-spacing: 3px;
-      color: #888;
-    }
-
-    .total-dia .cantidad {
-      font-size: 32px;
-      font-weight: 700;
-      color: #fbbf24;
-    }
-
-    /* Botones exportar */
-    .acciones {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-      margin-bottom: 20px;
-    }
-
-    .acciones button {
-      padding: 10px 20px;
-      font-size: 14px;
-      border-radius: 10px;
-      border: 1.5px solid #333;
-      background: #1a1a1a;
-      color: #888;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      font-weight: 500;
-    }
-
-    .acciones button:hover {
-      border-color: #22c55e;
-      color: #22c55e;
-    }
-
-    .contador {
-      text-align: center;
-      color: #555;
+    .chart-title {
       font-size: 13px;
+      font-weight: 600;
+      color: #999;
+      text-transform: uppercase;
       letter-spacing: 1px;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
 
-    /* Desglose por día */
-    .desglose {
-      margin-bottom: 20px;
-    }
-
-    .desglose-dia {
-      background: #1a1a1a;
-      border-radius: 8px;
-      padding: 12px 20px;
+    /* Horizontal bar chart */
+    .bar-row {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-bottom: 6px;
-      border-left: 3px solid #555;
+      margin-bottom: 8px;
     }
 
-    .desglose-dia .dia-fecha {
-      font-size: 14px;
-      color: #aaa;
-      font-weight: 500;
-    }
-
-    .desglose-dia .dia-total {
-      font-size: 16px;
-      font-weight: 700;
-      color: #fbbf24;
-    }
-
-    .desglose-dia .dia-count {
+    .bar-label {
+      width: 100px;
       font-size: 12px;
       color: #666;
-      margin-left: 10px;
-    }
-
-    #pedidos {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 20px;
-    }
-
-    .pedido-prods {
-      font-size: 13px;
-      color: #888;
-      white-space: nowrap;
+      text-transform: uppercase;
+      flex-shrink: 0;
       overflow: hidden;
       text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .bar-track {
+      flex: 1;
+      height: 24px;
+      background: #eee;
+      border-radius: 6px;
+      overflow: hidden;
+      margin: 0 10px;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: #3b82f6;
+      border-radius: 6px;
+      transition: width 0.5s ease;
+      min-width: 2px;
+    }
+
+    .bar-value {
+      font-size: 12px;
+      color: #666;
+      width: 80px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    /* Vertical bar chart (hours) */
+    .hour-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+      height: 120px;
+      padding-top: 10px;
+    }
+
+    .hour-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100%;
+      justify-content: flex-end;
+    }
+
+    .hour-bar {
+      width: 100%;
+      background: #f59e0b;
+      border-radius: 4px 4px 0 0;
+      transition: height 0.5s ease;
+      min-height: 2px;
+      position: relative;
+    }
+
+    .hour-bar-count {
+      position: absolute;
+      top: -16px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      color: #999;
+      white-space: nowrap;
+    }
+
+    .hour-label {
+      font-size: 10px;
+      color: #999;
+      margin-top: 4px;
+    }
+
+    /* Pedidos */
+    #pedidos {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
 
     .pedido {
-      background: #1a1a1a;
-      border-left: 4px solid #22c55e;
+      background: #f8f8f8;
       border-radius: 8px;
       padding: 10px 14px;
-      width: 100%;
-      max-width: 700px;
     }
 
     .pedido-header {
@@ -219,279 +255,240 @@
     }
 
     .cliente {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 700;
-      color: #22c55e;
+      color: #1a1a1a;
       text-transform: uppercase;
-      letter-spacing: 1px;
+    }
+
+    .pedido-prods {
+      font-size: 12px;
+      color: #999;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .pedido-total {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 700;
-      color: #fbbf24;
-    }
-
-    .hora {
-      font-size: 13px;
-      color: #666;
-      margin-top: 2px;
-    }
-
-    .nota-general {
-      font-size: 14px;
-      color: #fbbf24;
-      font-weight: 600;
-      margin-bottom: 10px;
-      padding: 6px 10px;
-      background: #2a2200;
-      border-radius: 6px;
-      border-left: 3px solid #fbbf24;
-    }
-
-    .productos {
-      list-style: none;
-    }
-
-    .productos li {
-      font-size: 18px;
-      font-weight: 500;
-      padding: 6px 0;
-      border-bottom: 1px solid #222;
-      text-transform: uppercase;
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-    }
-
-    .productos li:last-child {
-      border-bottom: none;
-    }
-
-    .precio {
-      font-size: 14px;
-      color: #888;
-      font-weight: 400;
-    }
-
-    .nota {
-      display: block;
-      font-size: 14px;
-      color: #f87171;
-      font-weight: 600;
-      margin-top: 2px;
+      color: #22c55e;
     }
 
     .btn-eliminar {
       background: transparent;
       border: none;
-      color: #555;
+      color: #ccc;
       padding: 4px;
-      font-size: 16px;
+      font-size: 14px;
       cursor: pointer;
-      transition: all 0.2s ease;
-      min-height: auto;
+      transition: color 0.2s;
     }
 
     .btn-eliminar:hover {
       color: #ef4444;
     }
 
+    .badge-tarjeta {
+      color: #3b82f6;
+      font-size: 10px;
+      font-weight: 600;
+      margin-left: 6px;
+    }
+
     .sin-datos {
       text-align: center;
-      color: #555;
-      font-size: 16px;
+      color: #ccc;
+      font-size: 15px;
       margin-top: 40px;
+    }
+
+    /* Productos tab */
+    .tab-productos {
+      display: inline-flex;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    .tab-productos button {
+      padding: 6px 14px;
+      font-size: 13px;
+      border: 1px solid #e5e5e5;
+      background: #fff;
+      color: #666;
+      border-radius: 20px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .tab-productos button.activo {
+      background: #3b82f6;
+      color: #fff;
+      border-color: #3b82f6;
     }
 
     .tabla-productos {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 10px;
     }
 
     .tabla-productos th {
       text-align: left;
-      padding: 10px 12px;
-      font-size: 13px;
-      color: #888;
+      padding: 8px 10px;
+      font-size: 11px;
+      color: #999;
       text-transform: uppercase;
       letter-spacing: 1px;
-      border-bottom: 1px solid #333;
+      border-bottom: 1px solid #eee;
     }
 
     .tabla-productos td {
-      padding: 10px 12px;
-      font-size: 16px;
-      border-bottom: 1px solid #222;
-    }
-
-    .tabla-productos tr:first-child td {
-      color: #fbbf24;
-      font-weight: 700;
-    }
-
-    .tabla-productos .col-rank {
-      color: #555;
-      width: 40px;
-    }
-
-    .tabla-productos .col-nombre {
-      text-transform: uppercase;
-    }
-
-    .tabla-productos .col-cant {
-      text-align: center;
-      font-weight: 700;
-      color: #22c55e;
-    }
-
-    .tabla-productos .col-total {
-      text-align: right;
-      color: #fbbf24;
-    }
-
-    .resumen-pagos {
-      background: #1a1a1a;
-      border-radius: 8px;
-      padding: 14px 20px;
-      margin-bottom: 15px;
-      border-left: 4px solid #60a5fa;
-      display: flex;
-      gap: 20px;
-      align-items: center;
-    }
-
-    .resumen-pagos h3 {
-      color: #888;
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      margin-bottom: 0;
-      margin-right: 10px;
-    }
-
-    .pago-item {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 15px;
-    }
-
-    .pago-label { color: #aaa; }
-    .pago-efectivo { color: #4ade80; font-weight: 700; }
-    .pago-tarjeta { color: #60a5fa; font-weight: 700; }
-
-    .resumen-cats {
-      background: #1a1a1a;
-      border-radius: 8px;
-      padding: 14px 20px;
-      margin-bottom: 15px;
-      border-left: 4px solid #22c55e;
-    }
-
-    .resumen-cats h3 {
-      color: #888;
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      margin-bottom: 10px;
-    }
-
-    .cat-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 4px 0;
-      border-bottom: 1px solid #222;
+      padding: 8px 10px;
       font-size: 14px;
+      border-bottom: 1px solid #f5f5f5;
     }
 
-    .cat-row:last-child { border-bottom: none; }
-    .cat-nombre { color: #ccc; text-transform: uppercase; }
-    .cat-cant { color: #22c55e; font-weight: 700; margin: 0 12px; }
-    .cat-total { color: #fbbf24; font-weight: 600; }
+    .tabla-productos .col-rank { color: #ccc; width: 30px; }
+    .tabla-productos .col-nombre { text-transform: uppercase; }
+    .tabla-productos .col-cant { text-align: center; font-weight: 700; color: #22c55e; }
+    .tabla-productos .col-total { text-align: right; color: #1a1a1a; font-weight: 600; }
 
-    .hora-pico {
-      background: #1a1a1a;
-      border-radius: 8px;
-      padding: 14px 20px;
-      margin-bottom: 15px;
-      border-left: 4px solid #8b5cf6;
+    /* Tree navigation */
+    .tree-node { cursor: pointer; user-select: none; }
+
+    .tree-toggle {
+      display: inline-block;
+      width: 16px;
+      font-size: 10px;
+      color: #999;
     }
 
-    .hora-pico h3 {
-      color: #888;
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      margin-bottom: 10px;
+    .tree-year {
+      font-weight: 700;
+      font-size: 15px;
+      color: #1a1a1a;
+      padding: 8px 0;
     }
 
-    .hora-row {
-      display: flex;
-      align-items: center;
-      margin-bottom: 6px;
-      font-size: 13px;
+    .tree-month {
+      font-weight: 600;
+      font-size: 14px;
+      color: #444;
+      padding: 6px 0 6px 8px;
     }
 
-    .hora-label {
-      width: 50px;
-      color: #aaa;
-      flex-shrink: 0;
-    }
-
-    .hora-bar-wrap {
-      flex: 1;
-      height: 20px;
-      background: #222;
-      border-radius: 4px;
-      overflow: hidden;
-      margin: 0 10px;
-    }
-
-    .hora-bar {
-      height: 100%;
-      background: #8b5cf6;
-      border-radius: 4px;
-      transition: width 0.3s;
-    }
-
-    .hora-info {
-      width: 100px;
-      text-align: right;
-      color: #888;
-      flex-shrink: 0;
+    .tree-week {
       font-size: 12px;
+      color: #999;
+      padding: 4px 0 4px 16px;
+      font-weight: 600;
+    }
+
+    .tree-day {
+      font-size: 13px;
+      color: #666;
+      padding: 4px 8px 4px 28px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .tree-day:hover { background: #eee; }
+
+    .tree-day.activo {
+      background: #3b82f6;
+      color: #fff;
+    }
+
+    .tree-children { overflow: hidden; }
+    .tree-children.collapsed { display: none; }
+
+    /* Quick nav */
+    .quick-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e5e5e5;
+    }
+
+    .quick-nav button {
+      text-align: left;
+      padding: 8px 10px;
+      font-size: 13px;
+      border: none;
+      background: transparent;
+      color: #666;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+
+    .quick-nav button:hover { background: #eee; }
+
+    .quick-nav button.activo {
+      background: #3b82f6;
+      color: #fff;
+    }
+
+    /* Hamburger */
+    .hamburger {
+      display: none;
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      z-index: 200;
+      background: #f8f8f8;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      width: 40px;
+      height: 40px;
+      font-size: 20px;
+      cursor: pointer;
+      align-items: center;
+      justify-content: center;
+      color: #666;
+    }
+
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.3);
+      z-index: 99;
     }
 
     @media (max-width: 768px) {
-      .pedido {
-        width: 100%;
+      .hamburger { display: flex; }
+      .sidebar {
+        position: fixed;
+        left: -260px;
+        top: 0;
+        height: 100vh;
+        width: 260px;
+        z-index: 100;
+        transition: left 0.3s ease;
       }
-
-      .total-dia .cantidad {
-        font-size: 26px;
-      }
-
-      .productos li {
-        font-size: 16px;
-        flex-direction: column;
-      }
-
-      .acciones {
-        flex-direction: column;
-        align-items: stretch;
-      }
+      .sidebar.open { left: 0; }
+      .sidebar-overlay.open { display: block; }
+      .main-content { padding: 60px 16px 16px; }
+      .metrics { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .charts-row { grid-template-columns: 1fr; }
+      .metric-value { font-size: 22px; }
+      .content-header { flex-direction: column; gap: 10px; align-items: flex-start; }
     }
   </style>
 </head>
 <body>
 
-<div id="loginOverlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:#111;z-index:9999;display:flex;align-items:center;justify-content:center;">
+<div id="loginOverlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:#fff;z-index:9999;display:flex;align-items:center;justify-content:center;">
   <div style="text-align:center;width:280px;">
-    <h2 style="font-size:20px;font-weight:300;letter-spacing:4px;text-transform:uppercase;color:#888;margin-bottom:24px;">Iniciar Sesión</h2>
-    <input type="text" id="loginUsuario" placeholder="Usuario" style="width:100%;padding:12px;font-size:16px;border:1.5px solid #333;border-radius:8px;margin-bottom:10px;outline:none;font-family:inherit;background:#1a1a1a;color:#f5f5f5;">
-    <input type="password" id="loginPassword" placeholder="Contraseña" style="width:100%;padding:12px;font-size:16px;border:1.5px solid #333;border-radius:8px;margin-bottom:10px;outline:none;font-family:inherit;background:#1a1a1a;color:#f5f5f5;" onkeydown="if(event.key==='Enter')hacerLogin()">
+    <h2 style="font-size:20px;font-weight:300;letter-spacing:4px;text-transform:uppercase;color:#1a1a1a;margin-bottom:24px;">Iniciar Sesion</h2>
+    <input type="text" id="loginUsuario" placeholder="Usuario" style="width:100%;padding:12px;font-size:16px;border:1.5px solid #e5e5e5;border-radius:8px;margin-bottom:10px;outline:none;font-family:inherit;background:#f8f8f8;color:#1a1a1a;">
+    <input type="password" id="loginPassword" placeholder="Contrasena" style="width:100%;padding:12px;font-size:16px;border:1.5px solid #e5e5e5;border-radius:8px;margin-bottom:10px;outline:none;font-family:inherit;background:#f8f8f8;color:#1a1a1a;" onkeydown="if(event.key==='Enter')hacerLogin()">
     <div id="loginError" style="color:#ef4444;font-size:14px;margin-bottom:10px;display:none;"></div>
     <label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:14px;color:#888;cursor:pointer;justify-content:center;">
       <input type="checkbox" id="loginRecordar" checked style="width:18px;height:18px;cursor:pointer;"> Recordarme
@@ -538,400 +535,584 @@ function hacerLogin() {
 })();
 </script>
 
-  <h1>Ventas</h1>
+<button class="hamburger" id="hamburger" onclick="toggleSidebar()">&#9776;</button>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
-  <!-- Tabs periodo -->
-  <div class="tabs" id="tabs">
-    <button class="activo" onclick="cambiarTab('dia')">Dia</button>
-    <button onclick="cambiarTab('semana')">Semana</button>
-    <button onclick="cambiarTab('mes')">Mes</button>
-    <button onclick="cambiarTab('productos')">Productos</button>
+<div class="app-layout">
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-title">Ventas</div>
+    <div class="quick-nav">
+      <button class="activo" onclick="navHoy(this)">Hoy</button>
+      <button onclick="navSemana(this)">Esta Semana</button>
+      <button onclick="navMes(this)">Este Mes</button>
+      <button onclick="navProductos(this)">Productos</button>
+    </div>
+    <div id="arbolFechas"></div>
   </div>
 
-  <!-- Fechas (solo visible en tab dia) -->
-  <div class="fechas" id="fechas"></div>
+  <div class="main-content">
+    <div class="content-header">
+      <div>
+        <div class="content-title" id="contentTitle">Hoy</div>
+        <div class="content-subtitle" id="contentSubtitle"></div>
+      </div>
+      <div class="header-actions" id="headerActions">
+        <button onclick="exportarExcel()">Exportar</button>
+        <button onclick="enviarCorreo()">Correo</button>
+      </div>
+    </div>
 
-  <div class="total-dia">
-    <span class="label" id="totalLabel">Total del dia</span>
-    <span class="cantidad">$<span id="totalDia">0</span></span>
+    <div class="metrics" id="metrics">
+      <div class="metric-card metric-total">
+        <div class="metric-value" id="metricTotal">$0</div>
+        <div class="metric-label">Total</div>
+      </div>
+      <div class="metric-card metric-efectivo">
+        <div class="metric-value" id="metricEfectivo">$0</div>
+        <div class="metric-label">Efectivo</div>
+      </div>
+      <div class="metric-card metric-tarjeta">
+        <div class="metric-value" id="metricTarjeta">$0</div>
+        <div class="metric-label">Tarjeta</div>
+      </div>
+      <div class="metric-card metric-pedidos">
+        <div class="metric-value" id="metricPedidos">0</div>
+        <div class="metric-label">Pedidos</div>
+      </div>
+    </div>
+
+    <div class="charts-row" id="chartsRow">
+      <div class="chart-card" id="chartCategorias"></div>
+      <div class="chart-card" id="chartHoras"></div>
+    </div>
+
+    <div id="desglose"></div>
+    <div id="contenidoExtra"></div>
+    <div id="pedidos"></div>
   </div>
+</div>
 
-  <div class="acciones">
-    <button onclick="exportarExcel()">Exportar Excel</button>
-    <button onclick="enviarCorreo()">Enviar por correo</button>
-  </div>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+  const contenedor = document.getElementById("pedidos");
+  let fechaActual = "";
+  let tabActual = "dia";
+  let todasLasFechas = [];
 
-  <div class="contador" id="contador">0 pedidos entregados</div>
+  const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  const DIAS_SEMANA = ["Dom","Lun","Mar","Mie","Jue","Vie","Sab"];
 
-  <div id="desglose" class="desglose"></div>
+  function toggleSidebar() {
+    document.getElementById("sidebar").classList.toggle("open");
+    document.getElementById("sidebarOverlay").classList.toggle("open");
+  }
 
-  <div id="resumenDia"></div>
-  <div id="pedidos"></div>
+  function setActiveNav(btn) {
+    document.querySelectorAll(".quick-nav button").forEach(b => b.classList.remove("activo"));
+    document.querySelectorAll(".tree-day").forEach(d => d.classList.remove("activo"));
+    if (btn) btn.classList.add("activo");
+    if (window.innerWidth <= 768) {
+      document.getElementById("sidebar").classList.remove("open");
+      document.getElementById("sidebarOverlay").classList.remove("open");
+    }
+  }
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
-    const contenedor = document.getElementById("pedidos");
-    const contFechas = document.getElementById("fechas");
-    const contDesglose = document.getElementById("desglose");
-    let fechaActual = "";
-    let tabActual = "dia";
+  function navHoy(btn) {
+    setActiveNav(btn);
+    tabActual = "dia";
+    const hoy = fechaHoyStr();
+    if (todasLasFechas.includes(hoy)) {
+      cargarFecha(hoy);
+    } else if (todasLasFechas.length > 0) {
+      cargarFecha(todasLasFechas[todasLasFechas.length - 1]);
+    } else {
+      setTitulo("Sin ventas", "");
+      actualizarMetricas(0, 0, 0, 0);
+      mostrarGraficas(false);
+      contenedor.innerHTML = '<div class="sin-datos">No hay ventas registradas</div>';
+    }
+  }
 
-    function cambiarTab(tab) {
-      tabActual = tab;
+  function navSemana(btn) {
+    setActiveNav(btn);
+    tabActual = "semana";
+    cargarSemanal();
+  }
 
-      // Marcar tab activo
-      document.querySelectorAll(".tabs button").forEach((btn, i) => {
-        const tabs = ["dia", "semana", "mes", "productos"];
-        btn.classList.toggle("activo", tabs[i] === tab);
+  function navMes(btn) {
+    setActiveNav(btn);
+    tabActual = "mes";
+    cargarMensual();
+  }
+
+  function navProductos(btn) {
+    setActiveNav(btn);
+    tabActual = "productos";
+    cargarProductos();
+  }
+
+  function seleccionarDia(fecha, el) {
+    document.querySelectorAll(".quick-nav button").forEach(b => b.classList.remove("activo"));
+    document.querySelectorAll(".tree-day").forEach(d => d.classList.remove("activo"));
+    if (el) el.classList.add("activo");
+    tabActual = "dia";
+    cargarFecha(fecha);
+    if (window.innerWidth <= 768) {
+      document.getElementById("sidebar").classList.remove("open");
+      document.getElementById("sidebarOverlay").classList.remove("open");
+    }
+  }
+
+  function fechaHoyStr() {
+    return new Date().toLocaleDateString("es-MX", { timeZone: "America/Mexico_City", day: "2-digit", month: "2-digit", year: "numeric" });
+  }
+
+  // Build date tree
+  function construirArbolFechas(fechas) {
+    const arbol = {};
+
+    fechas.forEach(f => {
+      const [d, m, y] = f.split("/");
+      const dia = parseInt(d);
+      const mes = parseInt(m) - 1;
+      const anio = y;
+      const semana = Math.ceil(dia / 7);
+      const date = new Date(parseInt(y), mes, dia);
+      const diaSemana = DIAS_SEMANA[date.getDay()];
+
+      if (!arbol[anio]) arbol[anio] = {};
+      if (!arbol[anio][mes]) arbol[anio][mes] = {};
+      if (!arbol[anio][mes][semana]) arbol[anio][mes][semana] = [];
+      arbol[anio][mes][semana].push({ fecha: f, dia, diaSemana });
+    });
+
+    let html = "";
+    const anios = Object.keys(arbol).sort((a, b) => b - a);
+
+    anios.forEach((anio, ai) => {
+      const expandidoAnio = ai === 0;
+      html += '<div class="tree-node tree-year" onclick="toggleTree(this)">';
+      html += '<span class="tree-toggle">' + (expandidoAnio ? "&#9660;" : "&#9654;") + '</span> ' + anio;
+      html += '</div>';
+      html += '<div class="tree-children' + (expandidoAnio ? '' : ' collapsed') + '">';
+
+      const meses = Object.keys(arbol[anio]).sort((a, b) => b - a);
+      meses.forEach((mes, mi) => {
+        const expandidoMes = ai === 0 && mi === 0;
+        html += '<div class="tree-node tree-month" onclick="toggleTree(this)">';
+        html += '<span class="tree-toggle">' + (expandidoMes ? "&#9660;" : "&#9654;") + '</span> ' + MESES[mes];
+        html += '</div>';
+        html += '<div class="tree-children' + (expandidoMes ? '' : ' collapsed') + '">';
+
+        const semanas = Object.keys(arbol[anio][mes]).sort((a, b) => b - a);
+        semanas.forEach((sem, si) => {
+          const expandidoSem = ai === 0 && mi === 0 && si === 0;
+          html += '<div class="tree-node tree-week" onclick="toggleTree(this)">';
+          html += '<span class="tree-toggle">' + (expandidoSem ? "&#9660;" : "&#9654;") + '</span> Semana ' + sem;
+          html += '</div>';
+          html += '<div class="tree-children' + (expandidoSem ? '' : ' collapsed') + '">';
+
+          const dias = arbol[anio][mes][sem].sort((a, b) => a.dia - b.dia);
+          dias.forEach(d => {
+            html += '<div class="tree-day" onclick="seleccionarDia(\'' + d.fecha + '\', this)">' + d.diaSemana + ' ' + d.dia + '</div>';
+          });
+
+          html += '</div>';
+        });
+
+        html += '</div>';
       });
 
-      // Mostrar/ocultar secciones según tab
-      const totalDiaDiv = document.querySelector(".total-dia");
-      const accionesDiv = document.querySelector(".acciones");
-      const contadorDiv = document.getElementById("contador");
+      html += '</div>';
+    });
 
-      if (tab === "productos") {
-        contFechas.style.display = "none";
-        totalDiaDiv.style.display = "none";
-        accionesDiv.style.display = "none";
-        contadorDiv.style.display = "none";
-        contDesglose.innerHTML = "";
-        document.getElementById("resumenDia").innerHTML = "";
-        cargarProductos();
-      } else {
-        totalDiaDiv.style.display = "flex";
-        accionesDiv.style.display = "flex";
-        contadorDiv.style.display = "block";
+    document.getElementById("arbolFechas").innerHTML = html;
+  }
 
-        if (tab === "dia") {
-          document.getElementById("totalLabel").innerText = "Total del dia";
-          contFechas.style.display = "flex";
-          contDesglose.innerHTML = "";
-          cargarFechas();
-        } else if (tab === "semana") {
-          document.getElementById("totalLabel").innerText = "Total semanal";
-          contFechas.style.display = "none";
-          cargarSemanal();
-        } else if (tab === "mes") {
-          document.getElementById("totalLabel").innerText = "Total mensual";
-          contFechas.style.display = "none";
-          cargarMensual();
+  function toggleTree(el) {
+    const children = el.nextElementSibling;
+    if (!children || !children.classList.contains("tree-children")) return;
+    const toggle = el.querySelector(".tree-toggle");
+    children.classList.toggle("collapsed");
+    if (toggle) toggle.innerHTML = children.classList.contains("collapsed") ? "&#9654;" : "&#9660;";
+  }
+
+  function actualizarMetricas(total, totalEfectivo, totalTarjeta, numPedidos) {
+    document.getElementById("metricTotal").innerText = "$" + (total || 0).toLocaleString();
+    document.getElementById("metricEfectivo").innerText = "$" + (totalEfectivo || 0).toLocaleString();
+    document.getElementById("metricTarjeta").innerText = "$" + (totalTarjeta || 0).toLocaleString();
+    document.getElementById("metricPedidos").innerText = numPedidos || 0;
+  }
+
+  function renderBarChart(categorias, containerId) {
+    const container = document.getElementById(containerId);
+    if (!categorias || categorias.length === 0) {
+      container.innerHTML = '<div class="chart-title">Categorias</div><div style="color:#ccc;font-size:13px;">Sin datos</div>';
+      return;
+    }
+    const maxCant = Math.max(...categorias.map(c => c.cantidad));
+    let html = '<div class="chart-title">Ventas por Categoria</div>';
+    categorias.forEach(c => {
+      const pct = Math.round((c.cantidad / maxCant) * 100);
+      html += '<div class="bar-row">';
+      html += '<span class="bar-label">' + c.nombre + '</span>';
+      html += '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%"></div></div>';
+      html += '<span class="bar-value">' + c.cantidad + ' &middot; $' + c.total + '</span>';
+      html += '</div>';
+    });
+    container.innerHTML = html;
+  }
+
+  function renderHourChart(porHora, containerId) {
+    const container = document.getElementById(containerId);
+    if (!porHora || porHora.length === 0) {
+      container.innerHTML = '<div class="chart-title">Hora Pico</div><div style="color:#ccc;font-size:13px;">Sin datos</div>';
+      return;
+    }
+    const maxPed = Math.max(...porHora.map(h => h.pedidos));
+    let html = '<div class="chart-title">Ventas por Hora</div><div class="hour-chart">';
+    porHora.forEach(h => {
+      const height = Math.max(2, Math.round((h.pedidos / maxPed) * 100));
+      html += '<div class="hour-col">';
+      html += '<div class="hour-bar" style="height:' + height + '%">';
+      html += '<span class="hour-bar-count">' + h.pedidos + '</span>';
+      html += '</div>';
+      html += '<span class="hour-label">' + h.hora.replace(":00", "") + '</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+    container.innerHTML = html;
+  }
+
+  function renderDayBarChart(porDia, containerId, color) {
+    const container = document.getElementById(containerId);
+    if (!porDia) { container.innerHTML = ''; return; }
+
+    const fechas = Object.keys(porDia).sort((a, b) => {
+      const [da, ma, ya] = a.split("/");
+      const [db, mb, yb] = b.split("/");
+      return new Date(yb, mb-1, db) - new Date(ya, ma-1, da);
+    });
+
+    if (fechas.length === 0) { container.innerHTML = ''; return; }
+
+    const maxTotal = Math.max(...fechas.map(f => porDia[f].total));
+    let html = '<div class="chart-title">Por Dia</div>';
+    fechas.forEach(f => {
+      const info = porDia[f];
+      const pct = maxTotal > 0 ? Math.round((info.total / maxTotal) * 100) : 0;
+      const [d, m] = f.split("/");
+      const dateObj = new Date(parseInt(f.split("/")[2]), parseInt(m) - 1, parseInt(d));
+      const diaSemana = DIAS_SEMANA[dateObj.getDay()];
+      html += '<div class="bar-row" style="cursor:pointer" onclick="seleccionarDia(\'' + f + '\')">';
+      html += '<span class="bar-label">' + diaSemana + ' ' + d + '</span>';
+      html += '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%;background:' + color + '"></div></div>';
+      html += '<span class="bar-value">' + info.pedidos.length + 'p &middot; $' + info.total + '</span>';
+      html += '</div>';
+    });
+    container.innerHTML = html;
+  }
+
+  function mostrarGraficas(show) {
+    document.getElementById("chartsRow").style.display = show ? "grid" : "none";
+  }
+
+  function mostrarMetricas(show) {
+    document.getElementById("metrics").style.display = show ? "grid" : "none";
+  }
+
+  function mostrarAcciones(show) {
+    document.getElementById("headerActions").style.display = show ? "flex" : "none";
+  }
+
+  function setTitulo(titulo, subtitulo) {
+    document.getElementById("contentTitle").innerText = titulo;
+    document.getElementById("contentSubtitle").innerText = subtitulo || "";
+  }
+
+  function limpiarContenido() {
+    contenedor.innerHTML = "";
+    document.getElementById("desglose").innerHTML = "";
+    document.getElementById("contenidoExtra").innerHTML = "";
+  }
+
+  // Load specific date
+  function cargarFecha(fecha) {
+    fechaActual = fecha;
+    limpiarContenido();
+    mostrarGraficas(true);
+    mostrarMetricas(true);
+    mostrarAcciones(true);
+
+    const [d, m, y] = fecha.split("/");
+    const dateObj = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+    const diaSemana = DIAS_SEMANA[dateObj.getDay()];
+    setTitulo(diaSemana + " " + d + " de " + MESES[parseInt(m) - 1], y);
+
+    fetch("/ventas/fecha/" + encodeURIComponent(fecha))
+      .then(res => res.json())
+      .then(data => {
+        actualizarMetricas(data.total, data.totalEfectivo, data.totalTarjeta, data.pedidos.length);
+        renderBarChart(data.categorias, "chartCategorias");
+        renderHourChart(data.porHora, "chartHoras");
+
+        if (data.pedidos.length === 0) {
+          contenedor.innerHTML = '<div class="sin-datos">No hay ventas en esta fecha</div>';
+        } else {
+          data.pedidos.forEach(mostrarPedido);
         }
-      }
-    }
-
-    function mostrarResumenPagos(totalEfectivo, totalTarjeta) {
-      if (!totalEfectivo && !totalTarjeta) return;
-      const html = `<div class="resumen-pagos">
-        <h3>Pagos</h3>
-        <div class="pago-item"><span class="pago-label">Efectivo:</span> <span class="pago-efectivo">$${totalEfectivo || 0}</span></div>
-        <div class="pago-item"><span class="pago-label">Tarjeta:</span> <span class="pago-tarjeta">$${totalTarjeta || 0}</span></div>
-      </div>`;
-      document.getElementById("resumenDia").insertAdjacentHTML("afterbegin", html);
-    }
-
-    function actualizarTotal(total, cantidad) {
-      document.getElementById("totalDia").innerText = total;
-      document.getElementById("contador").innerText = cantidad + " pedido" + (cantidad !== 1 ? "s" : "") + " entregado" + (cantidad !== 1 ? "s" : "");
-    }
-
-    function mostrarPedido(pedido) {
-      const div = document.createElement("div");
-      div.className = "pedido";
-      const prods = pedido.productos.map(p => (p.cantidad > 1 ? p.cantidad + "x " : "") + p.nombre).join(", ");
-
-      div.innerHTML = `
-        <div class="pedido-header">
-          <div style="flex:1;min-width:0;">
-            <span class="cliente">${pedido.cliente}</span>
-            ${pedido.metodoPago === "tarjeta" ? `<span style="color:#60a5fa;font-size:10px;margin-left:6px;">TARJETA</span>` : ""}
-            <div class="pedido-prods">${prods}</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
-            <span class="pedido-total">$${pedido.total}</span>
-            <button class="btn-eliminar" onclick="eliminarPedido(${pedido.id})">✕</button>
-          </div>
-        </div>
-      `;
-
-      contenedor.prepend(div);
-    }
-
-    function eliminarPedido(id) {
-      const pass = prompt("Ingresa la contraseña para eliminar:");
-      if (!pass) return;
-
-      fetch("/pedido/" + id, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: pass })
-      })
-        .then(res => {
-          if (!res.ok) alert("Contraseña incorrecta");
-        });
-    }
-
-    function mostrarDesglose(porDia) {
-      contDesglose.innerHTML = "";
-      const fechas = Object.keys(porDia).sort((a, b) => {
-        const [da, ma, ya] = a.split("/");
-        const [db, mb, yb] = b.split("/");
-        return new Date(yb, mb-1, db) - new Date(ya, ma-1, da);
       });
+  }
 
-      fechas.forEach(fecha => {
-        const info = porDia[fecha];
-        const div = document.createElement("div");
-        div.className = "desglose-dia";
-        div.innerHTML = `
-          <span class="dia-fecha">${fecha}</span>
-          <span>
-            <span class="dia-total">$${info.total}</span>
-            <span class="dia-count">${info.pedidos.length} pedido${info.pedidos.length !== 1 ? "s" : ""}</span>
-          </span>
-        `;
-        contDesglose.appendChild(div);
-      });
-    }
+  // Init: load dates and show today
+  function cargarFechasYMostrar() {
+    fetch("/ventas/fechas")
+      .then(res => res.json())
+      .then(fechas => {
+        todasLasFechas = fechas;
+        construirArbolFechas(fechas);
 
-    function cargarFecha(fecha) {
-      fechaActual = fecha;
-      contenedor.innerHTML = "";
-      contDesglose.innerHTML = "";
-      document.getElementById("resumenDia").innerHTML = "";
-
-      // Marcar boton activo
-      document.querySelectorAll(".fechas button").forEach(btn => {
-        btn.classList.toggle("activo", btn.dataset.fecha === fecha);
-      });
-
-      fetch("/ventas/fecha/" + encodeURIComponent(fecha))
-        .then(res => res.json())
-        .then(data => {
-          if (data.pedidos.length === 0) {
-            contenedor.innerHTML = '<div class="sin-datos">No hay ventas en esta fecha</div>';
+        if (fechas.length > 0) {
+          const hoy = fechaHoyStr();
+          if (fechas.includes(hoy)) {
+            cargarFecha(hoy);
           } else {
-            // Categorías
-            if (data.categorias && data.categorias.length > 0) {
-              let html = '<div class="resumen-cats"><h3>Por Categoría</h3>';
-              data.categorias.forEach(c => {
-                html += '<div class="cat-row"><span class="cat-nombre">' + c.nombre + '</span><span><span class="cat-cant">' + c.cantidad + '</span><span class="cat-total">$' + c.total + '</span></span></div>';
-              });
-              html += '</div>';
-              document.getElementById("resumenDia").innerHTML += html;
-            }
-
-            // Hora pico
-            if (data.porHora && data.porHora.length > 0) {
-              const maxPedidos = Math.max(...data.porHora.map(h => h.pedidos));
-              let html = '<div class="hora-pico"><h3>Hora Pico</h3>';
-              data.porHora.forEach(h => {
-                const pct = Math.round((h.pedidos / maxPedidos) * 100);
-                html += '<div class="hora-row"><span class="hora-label">' + h.hora + '</span><div class="hora-bar-wrap"><div class="hora-bar" style="width:' + pct + '%"></div></div><span class="hora-info">' + h.pedidos + ' pedidos · $' + h.total + '</span></div>';
-              });
-              html += '</div>';
-              document.getElementById("resumenDia").innerHTML += html;
-            }
-
-            data.pedidos.forEach(mostrarPedido);
+            cargarFecha(fechas[fechas.length - 1]);
           }
-          mostrarResumenPagos(data.totalEfectivo, data.totalTarjeta);
-          actualizarTotal(data.total, data.pedidos.length);
-        });
-    }
-
-    function cargarFechas() {
-      fetch("/ventas/fechas")
-        .then(res => res.json())
-        .then(fechas => {
-          contFechas.innerHTML = "";
-
-          if (fechas.length === 0) {
-            fetch("/pedidos")
-              .then(res => res.json())
-              .then(pedidos => {
-                const entregados = pedidos.filter(p => p.estado === "Entregado");
-                entregados.forEach(mostrarPedido);
-                const total = entregados.reduce((acc, p) => acc + p.total, 0);
-                actualizarTotal(total, entregados.length);
-              });
-            return;
-          }
-
-          fechas.forEach(fecha => {
-            const btn = document.createElement("button");
-            btn.innerText = fecha;
-            btn.dataset.fecha = fecha;
-            btn.onclick = () => cargarFecha(fecha);
-            contFechas.appendChild(btn);
-          });
-
-          // Cargar la fecha mas reciente por defecto
-          cargarFecha(fechas[fechas.length - 1]);
-        });
-    }
-
-    function cargarSemanal() {
-      contenedor.innerHTML = "";
-      contDesglose.innerHTML = "";
-      document.getElementById("resumenDia").innerHTML = "";
-
-      fetch("/ventas/semanal")
-        .then(res => res.json())
-        .then(data => {
-          actualizarTotal(data.total, data.pedidos.length);
-          mostrarResumenPagos(data.totalEfectivo, data.totalTarjeta);
-          if (data.porDia) mostrarDesglose(data.porDia);
-          if (data.pedidos.length === 0) {
-            contenedor.innerHTML = '<div class="sin-datos">No hay ventas esta semana</div>';
-          } else {
-            data.pedidos.forEach(mostrarPedido);
-          }
-        });
-    }
-
-    function cargarMensual() {
-      contenedor.innerHTML = "";
-      contDesglose.innerHTML = "";
-      document.getElementById("resumenDia").innerHTML = "";
-
-      fetch("/ventas/mensual")
-        .then(res => res.json())
-        .then(data => {
-          actualizarTotal(data.total, data.pedidos.length);
-          mostrarResumenPagos(data.totalEfectivo, data.totalTarjeta);
-          if (data.porDia) mostrarDesglose(data.porDia);
-          if (data.pedidos.length === 0) {
-            contenedor.innerHTML = '<div class="sin-datos">No hay ventas este mes</div>';
-          } else {
-            data.pedidos.forEach(mostrarPedido);
-          }
-        });
-    }
-
-    let periodoProductos = "dia";
-
-    function cargarProductos() {
-      contenedor.innerHTML = "";
-      contDesglose.innerHTML = "";
-
-      // Selector de periodo para productos
-      const hoy = new Date().toLocaleDateString("es-MX", { timeZone: "America/Mexico_City", year: "numeric", month: "2-digit", day: "2-digit" });
-
-      const selectorDiv = document.createElement("div");
-      selectorDiv.className = "fechas";
-      selectorDiv.style.display = "flex";
-      ["dia", "semana", "mes"].forEach(p => {
-        const btn = document.createElement("button");
-        btn.innerText = p === "dia" ? "Hoy" : p === "semana" ? "Semana" : "Mes";
-        if (p === periodoProductos) btn.classList.add("activo");
-        btn.onclick = () => {
-          periodoProductos = p;
-          cargarProductos();
-        };
-        selectorDiv.appendChild(btn);
+        } else {
+          setTitulo("Sin ventas", "");
+          actualizarMetricas(0, 0, 0, 0);
+          mostrarGraficas(false);
+          contenedor.innerHTML = '<div class="sin-datos">No hay ventas registradas</div>';
+        }
       });
-      contDesglose.appendChild(selectorDiv);
+  }
 
-      let url = "/ventas/productos-vendidos?periodo=" + periodoProductos;
-      if (periodoProductos === "dia") url += "&fecha=" + encodeURIComponent(hoy);
+  // Semanal
+  function cargarSemanal() {
+    limpiarContenido();
+    mostrarGraficas(true);
+    mostrarMetricas(true);
+    mostrarAcciones(true);
+    setTitulo("Esta Semana", "Ultimos 7 dias");
 
-      fetch(url)
-        .then(res => res.json())
-        .then(data => {
-          if (data.productos.length === 0) {
-            contenedor.innerHTML = '<div class="sin-datos">No hay productos vendidos</div>';
-            return;
-          }
+    fetch("/ventas/semanal")
+      .then(res => res.json())
+      .then(data => {
+        actualizarMetricas(data.total, data.totalEfectivo, data.totalTarjeta, data.pedidos.length);
 
-          let html = '';
+        renderDayBarChart(data.porDia, "chartCategorias", "#22c55e");
 
-          // Categorías resumen
-          html += '<div style="margin-bottom:20px;"><h3 style="color:#888;font-size:13px;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;">Por Categoría</h3>';
-          html += '<table class="tabla-productos"><thead><tr><th>Categoría</th><th style="text-align:center">Cant.</th><th style="text-align:right">Total</th></tr></thead><tbody>';
+        document.getElementById("chartHoras").innerHTML =
+          '<div class="chart-title">Resumen</div>' +
+          '<div style="text-align:center;padding:20px;">' +
+          '<div style="font-size:28px;font-weight:700;color:#f59e0b;">' + data.pedidos.length + '</div>' +
+          '<div style="font-size:12px;color:#ccc;">pedidos esta semana</div>' +
+          '</div>';
+
+        if (data.pedidos.length === 0) {
+          contenedor.innerHTML = '<div class="sin-datos">No hay ventas esta semana</div>';
+        } else {
+          data.pedidos.forEach(mostrarPedido);
+        }
+      });
+  }
+
+  // Mensual
+  function cargarMensual() {
+    limpiarContenido();
+    mostrarGraficas(true);
+    mostrarMetricas(true);
+    mostrarAcciones(true);
+
+    const ahora = new Date();
+    setTitulo(MESES[ahora.getMonth()] + " " + ahora.getFullYear(), "Mes actual");
+
+    fetch("/ventas/mensual")
+      .then(res => res.json())
+      .then(data => {
+        actualizarMetricas(data.total, data.totalEfectivo, data.totalTarjeta, data.pedidos.length);
+
+        renderDayBarChart(data.porDia, "chartCategorias", "#f59e0b");
+
+        document.getElementById("chartHoras").innerHTML =
+          '<div class="chart-title">Resumen</div>' +
+          '<div style="text-align:center;padding:20px;">' +
+          '<div style="font-size:28px;font-weight:700;color:#f59e0b;">' + data.pedidos.length + '</div>' +
+          '<div style="font-size:12px;color:#ccc;">pedidos este mes</div>' +
+          '</div>';
+
+        if (data.pedidos.length === 0) {
+          contenedor.innerHTML = '<div class="sin-datos">No hay ventas este mes</div>';
+        } else {
+          data.pedidos.forEach(mostrarPedido);
+        }
+      });
+  }
+
+  // Productos
+  let periodoProductos = "dia";
+
+  function cargarProductos() {
+    limpiarContenido();
+    mostrarGraficas(false);
+    mostrarMetricas(false);
+    mostrarAcciones(false);
+    setTitulo("Productos Vendidos", "");
+
+    const hoy = new Date().toLocaleDateString("es-MX", { timeZone: "America/Mexico_City", year: "numeric", month: "2-digit", day: "2-digit" });
+
+    let selectorHtml = '<div class="tab-productos">';
+    ["dia", "semana", "mes"].forEach(p => {
+      const label = p === "dia" ? "Hoy" : p === "semana" ? "Semana" : "Mes";
+      selectorHtml += '<button class="' + (p === periodoProductos ? "activo" : "") + '" onclick="periodoProductos=\'' + p + '\';cargarProductos()">' + label + '</button>';
+    });
+    selectorHtml += '</div>';
+    document.getElementById("contenidoExtra").innerHTML = selectorHtml;
+
+    let url = "/ventas/productos-vendidos?periodo=" + periodoProductos;
+    if (periodoProductos === "dia") url += "&fecha=" + encodeURIComponent(hoy);
+
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        if (data.productos.length === 0) {
+          contenedor.innerHTML = '<div class="sin-datos">No hay productos vendidos</div>';
+          return;
+        }
+
+        let html = '';
+
+        // Category bar chart
+        if (data.categorias && data.categorias.length > 0) {
+          const maxCant = Math.max(...data.categorias.map(c => c.cantidad));
+          html += '<div style="margin-bottom:24px;">';
+          html += '<div class="chart-title">Por Categoria</div>';
           data.categorias.forEach(c => {
-            html += `<tr><td class="col-nombre">${c.nombre}</td><td class="col-cant">${c.cantidad}</td><td class="col-total">$${c.total}</td></tr>`;
+            const pct = Math.round((c.cantidad / maxCant) * 100);
+            html += '<div class="bar-row">';
+            html += '<span class="bar-label">' + c.nombre + '</span>';
+            html += '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%"></div></div>';
+            html += '<span class="bar-value">' + c.cantidad + ' &middot; $' + c.total + '</span>';
+            html += '</div>';
           });
-          html += '</tbody></table></div>';
+          html += '</div>';
+        }
 
-          // Por día (solo si semana/mes con múltiples días)
-          if (data.porDia && data.porDia.length > 1) {
-            data.porDia.forEach(dia => {
-              html += `<div style="margin-bottom:20px;border:1px solid #333;border-radius:10px;padding:14px;">`;
-              html += `<h3 style="color:#fbbf24;font-size:15px;margin-bottom:10px;">${dia.fecha}</h3>`;
+        // By day
+        if (data.porDia && data.porDia.length > 1) {
+          data.porDia.forEach(dia => {
+            html += '<div style="margin-bottom:20px;background:#f8f8f8;border-radius:12px;padding:16px;">';
+            html += '<div style="font-size:15px;font-weight:600;color:#1a1a1a;margin-bottom:10px;">' + dia.fecha + '</div>';
 
-              // Categorías del día
-              html += '<table class="tabla-productos" style="margin-bottom:10px;"><thead><tr><th>Categoría</th><th style="text-align:center">Cant.</th><th style="text-align:right">Total</th></tr></thead><tbody>';
-              dia.categorias.forEach(c => {
-                html += `<tr><td class="col-nombre">${c.nombre}</td><td class="col-cant">${c.cantidad}</td><td class="col-total">$${c.total}</td></tr>`;
-              });
-              html += '</tbody></table>';
-
-              // Productos del día
-              html += '<table class="tabla-productos"><thead><tr><th>#</th><th>Producto</th><th style="text-align:center">Cant.</th><th style="text-align:right">Total</th></tr></thead><tbody>';
-              dia.productos.forEach((p, i) => {
-                html += `<tr><td class="col-rank">${i + 1}</td><td class="col-nombre">${p.nombre}</td><td class="col-cant">${p.cantidad}</td><td class="col-total">$${p.total}</td></tr>`;
-              });
-              html += '</tbody></table></div>';
+            html += '<table class="tabla-productos" style="margin-bottom:10px;"><thead><tr><th>Categoria</th><th style="text-align:center">Cant.</th><th style="text-align:right">Total</th></tr></thead><tbody>';
+            dia.categorias.forEach(c => {
+              html += '<tr><td class="col-nombre">' + c.nombre + '</td><td class="col-cant">' + c.cantidad + '</td><td class="col-total">$' + c.total + '</td></tr>';
             });
-          } else {
-            // Un solo día: solo tabla de productos
-            html += '<div style="margin-bottom:20px;"><h3 style="color:#888;font-size:13px;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;">Productos</h3>';
+            html += '</tbody></table>';
+
             html += '<table class="tabla-productos"><thead><tr><th>#</th><th>Producto</th><th style="text-align:center">Cant.</th><th style="text-align:right">Total</th></tr></thead><tbody>';
-            data.productos.forEach((p, i) => {
-              html += `<tr><td class="col-rank">${i + 1}</td><td class="col-nombre">${p.nombre}</td><td class="col-cant">${p.cantidad}</td><td class="col-total">$${p.total}</td></tr>`;
+            dia.productos.forEach((p, i) => {
+              html += '<tr><td class="col-rank">' + (i + 1) + '</td><td class="col-nombre">' + p.nombre + '</td><td class="col-cant">' + p.cantidad + '</td><td class="col-total">$' + p.total + '</td></tr>';
             });
             html += '</tbody></table></div>';
-          }
+          });
+        } else {
+          html += '<div style="margin-bottom:20px;">';
+          html += '<div class="chart-title">Productos</div>';
+          html += '<table class="tabla-productos"><thead><tr><th>#</th><th>Producto</th><th style="text-align:center">Cant.</th><th style="text-align:right">Total</th></tr></thead><tbody>';
+          data.productos.forEach((p, i) => {
+            html += '<tr><td class="col-rank">' + (i + 1) + '</td><td class="col-nombre">' + p.nombre + '</td><td class="col-cant">' + p.cantidad + '</td><td class="col-total">$' + p.total + '</td></tr>';
+          });
+          html += '</tbody></table></div>';
+        }
 
-          contenedor.innerHTML = html;
-        });
+        contenedor.innerHTML = html;
+      });
+  }
+
+  function mostrarPedido(pedido) {
+    const div = document.createElement("div");
+    div.className = "pedido";
+    const prods = pedido.productos.map(p => (p.cantidad > 1 ? p.cantidad + "x " : "") + p.nombre).join(", ");
+
+    div.innerHTML =
+      '<div class="pedido-header">' +
+        '<div style="flex:1;min-width:0;">' +
+          '<span class="cliente">' + pedido.cliente + '</span>' +
+          (pedido.metodoPago === "tarjeta" ? '<span class="badge-tarjeta">TARJETA</span>' : '') +
+          '<div class="pedido-prods">' + prods + '</div>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">' +
+          '<span class="pedido-total">$' + pedido.total + '</span>' +
+          '<button class="btn-eliminar" onclick="eliminarPedido(' + pedido.id + ')">&#10005;</button>' +
+        '</div>' +
+      '</div>';
+
+    contenedor.prepend(div);
+  }
+
+  function eliminarPedido(id) {
+    const pass = prompt("Ingresa la contrasena para eliminar:");
+    if (!pass) return;
+
+    fetch("/pedido/" + id, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: pass })
+    })
+      .then(res => {
+        if (!res.ok) alert("Contrasena incorrecta");
+      });
+  }
+
+  function exportarExcel() {
+    let url;
+    if (tabActual === "dia") {
+      if (!fechaActual) return;
+      url = "/ventas/exportar/dia?fecha=" + encodeURIComponent(fechaActual);
+    } else if (tabActual === "semana") {
+      url = "/ventas/exportar/semana";
+    } else {
+      url = "/ventas/exportar/mes";
+    }
+    window.open(url, "_blank");
+  }
+
+  function enviarCorreo() {
+    let url;
+    if (tabActual === "dia") {
+      if (!fechaActual) return;
+      url = window.location.origin + "/ventas/exportar/dia?fecha=" + encodeURIComponent(fechaActual);
+    } else if (tabActual === "semana") {
+      url = window.location.origin + "/ventas/exportar/semana";
+    } else {
+      url = window.location.origin + "/ventas/exportar/mes";
     }
 
-    function exportarExcel() {
-      let url;
-      if (tabActual === "dia") {
-        if (!fechaActual) return;
-        url = "/ventas/exportar/dia?fecha=" + encodeURIComponent(fechaActual);
-      } else if (tabActual === "semana") {
-        url = "/ventas/exportar/semana";
-      } else {
-        url = "/ventas/exportar/mes";
-      }
-      window.open(url, "_blank");
-    }
+    const totalTxt = document.getElementById("metricTotal").innerText;
+    const asunto = encodeURIComponent("Ventas - " + tabActual + " - " + totalTxt);
+    const cuerpo = encodeURIComponent("Descarga el reporte de ventas aqui:\n" + url);
+    window.open("mailto:?subject=" + asunto + "&body=" + cuerpo);
+  }
 
-    function enviarCorreo() {
-      let url;
-      if (tabActual === "dia") {
-        if (!fechaActual) return;
-        url = window.location.origin + "/ventas/exportar/dia?fecha=" + encodeURIComponent(fechaActual);
-      } else if (tabActual === "semana") {
-        url = window.location.origin + "/ventas/exportar/semana";
-      } else {
-        url = window.location.origin + "/ventas/exportar/mes";
-      }
+  // Init
+  cargarFechasYMostrar();
 
-      const totalTxt = document.getElementById("totalDia").innerText;
-      const asunto = encodeURIComponent("Ventas - " + tabActual + " - $" + totalTxt);
-      const cuerpo = encodeURIComponent("Descarga el reporte de ventas aqui:\n" + url);
-      window.open("mailto:?subject=" + asunto + "&body=" + cuerpo);
-    }
+  // Real-time updates
+  socket.on("pedidoEliminado", () => {
+    if (tabActual === "dia" && fechaActual) cargarFecha(fechaActual);
+    else if (tabActual === "semana") cargarSemanal();
+    else if (tabActual === "mes") cargarMensual();
+    else if (tabActual === "productos") cargarProductos();
+  });
+</script>
 
-    // Iniciar con tab dia
-    cargarFechas();
-
-    // Actualizar en tiempo real
-    socket.on("pedidoEliminado", () => {
-      cambiarTab(tabActual);
-    });
-  </script>
-
-  <script>
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js");
-    }
-  </script>
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js");
+  }
+</script>
 </body>
 </html>

@@ -5,8 +5,8 @@
   "start_url": "/ventas",
   "scope": "/ventas",
   "display": "standalone",
-  "background_color": "#111",
-  "theme_color": "#111",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
   "icons": [
     {
       "src": "icon-ventas.svg",
