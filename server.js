@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const http = require("http");
 const fs = require("fs");
@@ -238,7 +239,27 @@ app.post("/crear-preferencia", async (req, res) => {
   }
 
   if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {
-    return res.status(500).json({ error: "Mercado Pago no configurado" });
+    // Sin Mercado Pago: crear pedido directo
+    try {
+      const pedido = {
+        id: idCounter++,
+        cliente: cliente + " (Tel: " + telefono + ")",
+        productos: prods,
+        total: monto,
+        nota: nota || "",
+        paraLlevar: paraLlevar || false,
+        origen: "cliente",
+        estado: "pendiente",
+        fecha: fechaHoy(),
+        horaEnvio: new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" })
+      };
+      pedidos.push(pedido);
+      await guardarPedido(pedido);
+      io.emit("nuevoPedido", pedido);
+      return res.json({ directo: true });
+    } catch (e) {
+      return res.status(500).json({ error: "Error al crear el pedido" });
+    }
   }
 
   // Calcular monto con descuento parcial
