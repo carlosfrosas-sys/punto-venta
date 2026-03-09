@@ -46,7 +46,7 @@
 
     .pedido {
       background: #1a1a1a;
-      border-left: 6px solid #4ade80;
+      border: 2px solid #4ade80;
       border-radius: 8px;
       padding: 6px 12px;
       width: 100%;
@@ -256,7 +256,7 @@
         if (!hora) return;
         tiempoEl.innerText = tiempoTranscurrido(hora);
         const min = calcularMinutos(hora);
-        el.style.borderLeftColor = colorPrioridad(min);
+        el.style.borderColor = colorPrioridad(min);
       });
     }
 
@@ -338,7 +338,7 @@
       const div = document.createElement("div");
       div.id = "pedido-" + pedido.id;
       div.className = "pedido";
-      div.style.borderLeftColor = colorPrioridad(calcularMinutos(hora));
+      div.style.borderColor = colorPrioridad(calcularMinutos(hora));
 
       div.innerHTML = `
         <div class="pedido-body">
