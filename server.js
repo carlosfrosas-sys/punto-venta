@@ -29,6 +29,9 @@ let idCounter = 1;
 let pedidosEliminados = [];
 let gastos = [];
 let gastoIdCounter = 1;
+let fondosCaja = [];
+let retiros = [];
+let retiroIdCounter = 1;
 
 // Respaldo automático
 const BACKUP_DIR = path.join(__dirname, "backups");
@@ -81,6 +84,15 @@ async function cargarPedidos() {
       gastos = await db.collection("gastos").find().toArray();
       gastos.forEach(g => delete g._id);
       gastoIdCounter = gastos.length > 0 ? Math.max(...gastos.map(g => g.id)) + 1 : 1;
+    } catch(e) {}
+    try {
+      fondosCaja = await db.collection("fondos_caja").find().toArray();
+      fondosCaja.forEach(f => delete f._id);
+    } catch(e) {}
+    try {
+      retiros = await db.collection("retiros").find().toArray();
+      retiros.forEach(r => delete r._id);
+      retiroIdCounter = retiros.length > 0 ? Math.max(...retiros.map(r => r.id)) + 1 : 1;
     } catch(e) {}
     if (pedidos.length > 0) return;
   }
@@ -900,6 +912,64 @@ app.delete("/gasto/:id", async (req, res) => {
   if (db) {
     try { await db.collection("gastos").deleteOne({ id }); } catch(e) {}
   }
+  res.json({ ok: true });
+});
+
+// Fondo de caja
+app.post("/fondo-caja", async (req, res) => {
+  const { monto } = req.body;
+  if (monto === undefined) return res.status(400).json({ error: "Falta monto" });
+  const ahora = fechaMXAhora();
+  const fecha = ahora.toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" });
+  const idx = fondosCaja.findIndex(f => f.fecha === fecha);
+  if (idx >= 0) {
+    fondosCaja[idx].monto = parseFloat(monto);
+    if (db) { try { await db.collection("fondos_caja").updateOne({ fecha }, { $set: { monto: parseFloat(monto) } }); } catch(e) {} }
+  } else {
+    const fondo = { fecha, monto: parseFloat(monto) };
+    fondosCaja.push(fondo);
+    if (db) { try { await db.collection("fondos_caja").insertOne({ ...fondo }); } catch(e) {} }
+  }
+  res.json({ ok: true });
+});
+
+app.get("/fondo-caja/:fecha", (req, res) => {
+  const fondo = fondosCaja.find(f => f.fecha === req.params.fecha);
+  res.json({ monto: fondo ? fondo.monto : 0 });
+});
+
+// Retiros de dinero
+app.post("/retiro", async (req, res) => {
+  const { concepto, monto } = req.body;
+  if (!monto) return res.status(400).json({ error: "Falta monto" });
+  const ahora = fechaMXAhora();
+  const retiro = {
+    id: retiroIdCounter++,
+    concepto: concepto || "Retiro",
+    monto: parseFloat(monto),
+    fecha: ahora.toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" }),
+    hora: ahora.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })
+  };
+  retiros.push(retiro);
+  if (db) { try { await db.collection("retiros").insertOne({ ...retiro }); } catch(e) {} }
+  res.json(retiro);
+});
+
+app.get("/retiros/:fecha", (req, res) => {
+  const del_dia = retiros.filter(r => r.fecha === req.params.fecha);
+  const totalRetiros = del_dia.reduce((acc, r) => acc + r.monto, 0);
+  res.json({ retiros: del_dia, totalRetiros });
+});
+
+app.delete("/retiro/:id", async (req, res) => {
+  if (req.body.password !== PASS_ELIMINAR) {
+    return res.status(401).json({ error: "Contraseña incorrecta" });
+  }
+  const id = parseInt(req.params.id);
+  const idx = retiros.findIndex(r => r.id === id);
+  if (idx === -1) return res.status(404).send("No encontrado");
+  retiros.splice(idx, 1);
+  if (db) { try { await db.collection("retiros").deleteOne({ id }); } catch(e) {} }
   res.json({ ok: true });
 });
 

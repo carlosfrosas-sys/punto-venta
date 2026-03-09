@@ -1294,16 +1294,20 @@ function hacerLogin() {
     Promise.all([
       fetch("/ventas/fecha/" + encodeURIComponent(hoy)).then(r => r.json()),
       fetch("/gastos/" + encodeURIComponent(hoy)).then(r => r.json()),
-      fetch("/ventas/eliminados/" + encodeURIComponent(hoy)).then(r => r.json())
-    ]).then(([ventas, gastosData, eliminados]) => {
+      fetch("/ventas/eliminados/" + encodeURIComponent(hoy)).then(r => r.json()),
+      fetch("/fondo-caja/" + encodeURIComponent(hoy)).then(r => r.json()),
+      fetch("/retiros/" + encodeURIComponent(hoy)).then(r => r.json())
+    ]).then(([ventas, gastosData, eliminados, fondoData, retirosData]) => {
       const totalVentas = ventas.total || 0;
       const totalEfectivo = ventas.totalEfectivo || 0;
       const totalTarjeta = ventas.totalTarjeta || 0;
       const numPedidos = ventas.pedidos ? ventas.pedidos.length : 0;
       const totalGastos = gastosData.totalGastos || 0;
+      const totalRetiros = retirosData.totalRetiros || 0;
+      const fondoCaja = fondoData.monto || 0;
       const utilidad = totalVentas - totalGastos;
-      const promedio = numPedidos > 0 ? Math.round(totalVentas / numPedidos) : 0;
       const estrella = ventas.productoEstrella;
+      const efectivoEnCaja = fondoCaja + totalEfectivo - totalGastos - totalRetiros;
 
       let html = '<div id="corteImprimir">';
 
@@ -1313,6 +1317,14 @@ function hacerLogin() {
       html += '<div style="font-size:13px;color:#999;">' + hoy + '</div>';
       html += '</div>';
 
+      // Fondo de caja
+      html += '<div style="background:#f8f8f8;border-radius:12px;padding:20px;margin-bottom:12px;">';
+      html += '<div style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Fondo de Caja</div>';
+      html += '<div style="display:flex;align-items:center;gap:10px;">';
+      html += '<input type="number" id="fondoCajaInput" value="' + fondoCaja + '" placeholder="$0" style="width:140px;padding:10px;font-size:16px;font-weight:700;border:1px solid #e5e5e5;border-radius:8px;font-family:inherit;outline:none;text-align:center;">';
+      html += '<button onclick="guardarFondo()" style="padding:10px 16px;font-size:13px;font-weight:600;background:#3b82f6;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit;">Guardar</button>';
+      html += '</div></div>';
+
       // Ventas
       html += '<div style="background:#f8f8f8;border-radius:12px;padding:20px;margin-bottom:12px;">';
       html += '<div style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Ventas</div>';
@@ -1320,7 +1332,6 @@ function hacerLogin() {
       html += filaCorte("Efectivo", "$" + totalEfectivo.toLocaleString(), "#22c55e");
       html += filaCorte("Tarjeta", "$" + totalTarjeta.toLocaleString(), "#3b82f6");
       html += filaCorte("Pedidos", numPedidos, "#f59e0b");
-      html += filaCorte("Ticket Promedio", "$" + promedio.toLocaleString(), "#8b5cf6");
       if (estrella) html += filaCorte("Producto Estrella", estrella.nombre + " (" + estrella.cantidad + ")", "#f59e0b");
       html += '</div>';
 
@@ -1337,12 +1348,42 @@ function hacerLogin() {
       }
       html += '</div>';
 
+      // Retiros
+      html += '<div style="background:#f8f8f8;border-radius:12px;padding:20px;margin-bottom:12px;">';
+      html += '<div style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Retiros de Dinero</div>';
+      html += '<div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px;">';
+      html += '<div style="flex:1;min-width:120px;"><input type="text" id="retiroConcepto" placeholder="Concepto (opcional)" style="width:100%;padding:8px;font-size:13px;border:1px solid #e5e5e5;border-radius:8px;font-family:inherit;outline:none;"></div>';
+      html += '<div style="width:100px;"><input type="number" id="retiroMonto" placeholder="$0" style="width:100%;padding:8px;font-size:13px;border:1px solid #e5e5e5;border-radius:8px;font-family:inherit;outline:none;"></div>';
+      html += '<button onclick="agregarRetiro()" style="padding:8px 14px;font-size:13px;font-weight:600;background:#f59e0b;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit;">Retirar</button>';
+      html += '</div>';
+      html += filaCorte("Total Retiros", "-$" + totalRetiros.toLocaleString(), "#f59e0b", true);
+      if (retirosData.retiros && retirosData.retiros.length > 0) {
+        retirosData.retiros.forEach(r => {
+          html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;">';
+          html += '<span style="font-size:13px;color:#666;">' + r.concepto + ' <span style="color:#999;font-size:11px;">' + r.hora + '</span></span>';
+          html += '<div style="display:flex;align-items:center;gap:8px;">';
+          html += '<span style="font-size:14px;font-weight:600;color:#f59e0b;">-$' + r.monto.toLocaleString() + '</span>';
+          html += '<button onclick="eliminarRetiro(' + r.id + ')" style="border:none;background:transparent;color:#ccc;cursor:pointer;font-size:13px;">&#10005;</button>';
+          html += '</div></div>';
+        });
+      }
+      html += '</div>';
+
       // Utilidad
       html += '<div style="background:' + (utilidad >= 0 ? "#f0fdf4" : "#fef2f2") + ';border-radius:12px;padding:20px;margin-bottom:12px;border:2px solid ' + (utilidad >= 0 ? "#22c55e" : "#ef4444") + ';">';
       html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
       html += '<span style="font-size:16px;font-weight:700;">UTILIDAD NETA</span>';
       html += '<span style="font-size:24px;font-weight:800;color:' + (utilidad >= 0 ? "#22c55e" : "#ef4444") + ';">$' + utilidad.toLocaleString() + '</span>';
       html += '</div></div>';
+
+      // Efectivo en caja
+      html += '<div style="background:#eff6ff;border-radius:12px;padding:20px;margin-bottom:12px;border:2px solid #3b82f6;">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+      html += '<span style="font-size:16px;font-weight:700;">EFECTIVO EN CAJA</span>';
+      html += '<span style="font-size:24px;font-weight:800;color:#3b82f6;">$' + efectivoEnCaja.toLocaleString() + '</span>';
+      html += '</div>';
+      html += '<div style="font-size:11px;color:#999;margin-top:6px;">Fondo ($' + fondoCaja + ') + Efectivo ($' + totalEfectivo + ') - Gastos ($' + totalGastos + ') - Retiros ($' + totalRetiros + ')</div>';
+      html += '</div>';
 
       // Eliminados
       if (eliminados.length > 0) {
@@ -1369,6 +1410,39 @@ function hacerLogin() {
       html += '</div>';
 
       contenedor.innerHTML = html;
+    });
+  }
+
+  function guardarFondo() {
+    const monto = document.getElementById("fondoCajaInput").value;
+    fetch("/fondo-caja", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ monto: parseFloat(monto) || 0 })
+    }).then(() => navCorte(document.querySelector('.quick-nav button:nth-child(6)')));
+  }
+
+  function agregarRetiro() {
+    const concepto = document.getElementById("retiroConcepto").value.trim() || "Retiro";
+    const monto = document.getElementById("retiroMonto").value;
+    if (!monto || parseFloat(monto) <= 0) return alert("Ingresa el monto del retiro");
+    fetch("/retiro", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ concepto, monto: parseFloat(monto) })
+    }).then(() => navCorte(document.querySelector('.quick-nav button:nth-child(6)')));
+  }
+
+  function eliminarRetiro(id) {
+    const pass = prompt("Contrasena para eliminar:");
+    if (!pass) return;
+    fetch("/retiro/" + id, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: pass })
+    }).then(res => {
+      if (!res.ok) return alert("Contrasena incorrecta");
+      navCorte(document.querySelector('.quick-nav button:nth-child(6)'));
     });
   }
 
