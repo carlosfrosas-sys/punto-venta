@@ -577,7 +577,6 @@ function hacerLogin() {
       <button onclick="navSemana(this)">Esta Semana</button>
       <button onclick="navMes(this)">Este Mes</button>
       <button onclick="navProductos(this)">Productos</button>
-      <button onclick="navGastos(this)">Gastos</button>
       <button onclick="navCorte(this)">Corte de Caja</button>
       <button onclick="navEliminados(this)">Eliminados</button>
     </div>
@@ -1195,36 +1194,6 @@ function hacerLogin() {
     window.open("mailto:?subject=" + asunto + "&body=" + cuerpo);
   }
 
-  // Gastos
-  function navGastos(btn) {
-    setActiveNav(btn);
-    tabActual = "gastos";
-    limpiarContenido();
-    mostrarGraficas(false);
-    mostrarMetricas(false);
-    mostrarAcciones(false);
-    setTitulo("Gastos", "Proveedores y gastos diarios");
-
-    const hoy = fechaHoyStr();
-
-    let html = '<div style="background:#f8f8f8;border-radius:12px;padding:20px;margin-bottom:16px;">';
-    html += '<div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">';
-    html += '<div style="flex:1;min-width:150px;"><label style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1px;">Concepto</label>';
-    html += '<input type="text" id="gastoConcepto" placeholder="Ej: Tortillas, Gas..." style="width:100%;padding:10px;font-size:14px;border:1px solid #e5e5e5;border-radius:8px;font-family:inherit;outline:none;margin-top:4px;"></div>';
-    html += '<div style="width:120px;"><label style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1px;">Monto</label>';
-    html += '<input type="number" id="gastoMonto" placeholder="$0" style="width:100%;padding:10px;font-size:14px;border:1px solid #e5e5e5;border-radius:8px;font-family:inherit;outline:none;margin-top:4px;"></div>';
-    html += '<button onclick="agregarGasto()" style="padding:10px 20px;font-size:14px;font-weight:600;background:#22c55e;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit;height:42px;">Agregar</button>';
-    html += '</div></div>';
-
-    document.getElementById("contenidoExtra").innerHTML = html;
-
-    fetch("/gastos/" + encodeURIComponent(hoy))
-      .then(res => res.json())
-      .then(data => {
-        renderGastos(data.gastos, data.totalGastos);
-      });
-  }
-
   function agregarGasto() {
     const concepto = document.getElementById("gastoConcepto").value.trim();
     const monto = document.getElementById("gastoMonto").value;
@@ -1236,11 +1205,7 @@ function hacerLogin() {
       body: JSON.stringify({ concepto, monto: parseFloat(monto) })
     })
       .then(res => res.json())
-      .then(() => {
-        document.getElementById("gastoConcepto").value = "";
-        document.getElementById("gastoMonto").value = "";
-        navGastos(document.querySelector('.quick-nav button:nth-child(5)'));
-      });
+      .then(() => navCorte(document.querySelector('.quick-nav button:nth-child(5)')));
   }
 
   function eliminarGasto(id) {
@@ -1252,31 +1217,8 @@ function hacerLogin() {
       body: JSON.stringify({ password: pass })
     }).then(res => {
       if (!res.ok) return alert("Contrasena incorrecta");
-      navGastos(document.querySelector('.quick-nav button:nth-child(5)'));
+      navCorte(document.querySelector('.quick-nav button:nth-child(5)'));
     });
-  }
-
-  function renderGastos(lista, total) {
-    if (!lista || lista.length === 0) {
-      contenedor.innerHTML = '<div class="sin-datos">No hay gastos registrados hoy</div>';
-      return;
-    }
-    let html = '<div style="background:#f8f8f8;border-radius:12px;padding:16px;">';
-    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">';
-    html += '<span style="font-size:13px;color:#999;text-transform:uppercase;letter-spacing:1px;">Gastos del dia</span>';
-    html += '<span style="font-size:18px;font-weight:700;color:#ef4444;">-$' + total.toLocaleString() + '</span>';
-    html += '</div>';
-    lista.forEach(g => {
-      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #eee;">';
-      html += '<div><div style="font-size:14px;font-weight:600;">' + g.concepto + '</div>';
-      html += '<div style="font-size:11px;color:#999;">' + g.hora + '</div></div>';
-      html += '<div style="display:flex;align-items:center;gap:10px;">';
-      html += '<span style="font-size:15px;font-weight:700;color:#ef4444;">-$' + g.monto.toLocaleString() + '</span>';
-      html += '<button onclick="eliminarGasto(' + g.id + ')" style="border:none;background:transparent;color:#ccc;cursor:pointer;font-size:14px;">&#10005;</button>';
-      html += '</div></div>';
-    });
-    html += '</div>';
-    contenedor.innerHTML = html;
   }
 
   // Corte de Caja
@@ -1338,13 +1280,21 @@ function hacerLogin() {
       // Gastos
       html += '<div style="background:#f8f8f8;border-radius:12px;padding:20px;margin-bottom:12px;">';
       html += '<div style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Gastos</div>';
+      html += '<div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px;">';
+      html += '<div style="flex:1;min-width:120px;"><input type="text" id="gastoConcepto" placeholder="Concepto" style="width:100%;padding:8px;font-size:13px;border:1px solid #e5e5e5;border-radius:8px;font-family:inherit;outline:none;"></div>';
+      html += '<div style="width:100px;"><input type="number" id="gastoMonto" placeholder="$0" style="width:100%;padding:8px;font-size:13px;border:1px solid #e5e5e5;border-radius:8px;font-family:inherit;outline:none;"></div>';
+      html += '<button onclick="agregarGasto()" style="padding:8px 14px;font-size:13px;font-weight:600;background:#ef4444;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit;">Agregar</button>';
+      html += '</div>';
       html += filaCorte("Total Gastos", "-$" + totalGastos.toLocaleString(), "#ef4444", true);
       if (gastosData.gastos && gastosData.gastos.length > 0) {
         gastosData.gastos.forEach(g => {
-          html += filaCorte(g.concepto, "-$" + g.monto.toLocaleString(), "#ef4444");
+          html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;">';
+          html += '<span style="font-size:13px;color:#666;">' + g.concepto + ' <span style="color:#999;font-size:11px;">' + g.hora + '</span></span>';
+          html += '<div style="display:flex;align-items:center;gap:8px;">';
+          html += '<span style="font-size:14px;font-weight:600;color:#ef4444;">-$' + g.monto.toLocaleString() + '</span>';
+          html += '<button onclick="eliminarGasto(' + g.id + ')" style="border:none;background:transparent;color:#ccc;cursor:pointer;font-size:13px;">&#10005;</button>';
+          html += '</div></div>';
         });
-      } else {
-        html += '<div style="color:#ccc;font-size:13px;">Sin gastos registrados</div>';
       }
       html += '</div>';
 
@@ -1419,7 +1369,7 @@ function hacerLogin() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ monto: parseFloat(monto) || 0 })
-    }).then(() => navCorte(document.querySelector('.quick-nav button:nth-child(6)')));
+    }).then(() => navCorte(document.querySelector('.quick-nav button:nth-child(5)')));
   }
 
   function agregarRetiro() {
@@ -1430,7 +1380,7 @@ function hacerLogin() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ concepto, monto: parseFloat(monto) })
-    }).then(() => navCorte(document.querySelector('.quick-nav button:nth-child(6)')));
+    }).then(() => navCorte(document.querySelector('.quick-nav button:nth-child(5)')));
   }
 
   function eliminarRetiro(id) {
@@ -1442,7 +1392,7 @@ function hacerLogin() {
       body: JSON.stringify({ password: pass })
     }).then(res => {
       if (!res.ok) return alert("Contrasena incorrecta");
-      navCorte(document.querySelector('.quick-nav button:nth-child(6)'));
+      navCorte(document.querySelector('.quick-nav button:nth-child(5)'));
     });
   }
 
