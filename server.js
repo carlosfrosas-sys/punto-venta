@@ -238,7 +238,7 @@ app.post("/crear-preferencia", async (req, res) => {
     }
   }
 
-  if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {
+  if (!process.env.MERCADOPAGO_ACCESS_TOKEN_ONLINE && !process.env.MERCADOPAGO_ACCESS_TOKEN) {
     // Sin Mercado Pago: crear pedido directo
     try {
       const pedido = {
