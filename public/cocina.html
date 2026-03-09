@@ -218,12 +218,12 @@
     // Intentar activar audio automáticamente al cargar (funciona en Android TV)
     try { getAudioCtx().resume(); } catch(e) {}
 
-    // Calcular tiempo transcurrido
-    function tiempoTranscurrido(horaEnvio) {
-      if (!horaEnvio) return "";
+    // Calcular minutos transcurridos
+    function calcularMinutos(horaEnvio) {
+      if (!horaEnvio) return 0;
       const ahora = new Date();
       const partes = horaEnvio.match(/(\d+):(\d+)/);
-      if (!partes) return "";
+      if (!partes) return 0;
       let h = parseInt(partes[1]);
       const m = parseInt(partes[2]);
       const esPM = /p\.?\s*m\.?/i.test(horaEnvio);
@@ -232,20 +232,35 @@
       if (esAM && h === 12) h = 0;
       const envio = new Date();
       envio.setHours(h, m, 0, 0);
-      const diff = Math.floor((ahora - envio) / 60000);
+      return Math.floor((ahora - envio) / 60000);
+    }
+
+    function tiempoTranscurrido(horaEnvio) {
+      const diff = calcularMinutos(horaEnvio);
       if (diff < 1) return "ahora";
       if (diff < 60) return "hace " + diff + " min";
       return "hace " + Math.floor(diff / 60) + "h " + (diff % 60) + "m";
     }
 
+    function colorPrioridad(min) {
+      if (min >= 12) return "#ef4444";
+      if (min >= 8) return "#fbbf24";
+      return "#4ade80";
+    }
+
     function actualizarTiempos() {
-      document.querySelectorAll(".tiempo").forEach(el => {
-        const hora = el.dataset.hora;
-        if (hora) el.innerText = tiempoTranscurrido(hora);
+      document.querySelectorAll(".pedido").forEach(el => {
+        const tiempoEl = el.querySelector(".tiempo");
+        if (!tiempoEl) return;
+        const hora = tiempoEl.dataset.hora;
+        if (!hora) return;
+        tiempoEl.innerText = tiempoTranscurrido(hora);
+        const min = calcularMinutos(hora);
+        el.style.borderLeftColor = colorPrioridad(min);
       });
     }
 
-    setInterval(actualizarTiempos, 60000);
+    setInterval(actualizarTiempos, 30000);
 
     function cargarPedidos() {
       contenedor.innerHTML = "";
@@ -323,6 +338,7 @@
       const div = document.createElement("div");
       div.id = "pedido-" + pedido.id;
       div.className = "pedido";
+      div.style.borderLeftColor = colorPrioridad(calcularMinutos(hora));
 
       div.innerHTML = `
         <div class="pedido-body">

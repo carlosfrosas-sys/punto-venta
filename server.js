@@ -1,5 +1,7 @@
 const express = require("express");
 const http = require("http");
+const fs = require("fs");
+const path = require("path");
 const { Server } = require("socket.io");
 const { MongoClient } = require("mongodb");
 const { MercadoPagoConfig, Preference, Payment } = require("mercadopago");
@@ -24,6 +26,23 @@ const CUPONES = { "TESTCABA100": 100, "CABANA10": 10 };
 let db;
 let pedidos = [];
 let idCounter = 1;
+let pedidosEliminados = [];
+let gastos = [];
+let gastoIdCounter = 1;
+
+// Respaldo automático
+const BACKUP_DIR = path.join(__dirname, "backups");
+const BACKUP_PATH = path.join(BACKUP_DIR, "pedidos-backup.json");
+const BACKUP_GASTOS_PATH = path.join(BACKUP_DIR, "gastos-backup.json");
+
+function respaldarDatos() {
+  try {
+    if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR);
+    fs.writeFileSync(BACKUP_PATH, JSON.stringify(pedidos, null, 2));
+    fs.writeFileSync(BACKUP_GASTOS_PATH, JSON.stringify(gastos, null, 2));
+  } catch(e) { console.error("Error respaldo:", e.message); }
+}
+setInterval(respaldarDatos, 5 * 60 * 1000);
 
 // Pedidos pendientes (en memoria + MongoDB)
 const pedidosPendientes = new Map();
@@ -51,13 +70,34 @@ async function cargarPedidos() {
       pedidos.forEach(p => delete p._id);
       idCounter = pedidos.length > 0 ? Math.max(...pedidos.map(p => p.id)) + 1 : 1;
       console.log("Pedidos cargados desde MongoDB:", pedidos.length);
-      return;
     } catch (e) {
       console.error("Error cargando pedidos:", e.message);
     }
+    try {
+      pedidosEliminados = await db.collection("pedidos_eliminados").find().toArray();
+      pedidosEliminados.forEach(p => delete p._id);
+    } catch(e) {}
+    try {
+      gastos = await db.collection("gastos").find().toArray();
+      gastos.forEach(g => delete g._id);
+      gastoIdCounter = gastos.length > 0 ? Math.max(...gastos.map(g => g.id)) + 1 : 1;
+    } catch(e) {}
+    if (pedidos.length > 0) return;
   }
-  pedidos = [];
-  idCounter = 1;
+  // Fallback: cargar de backup
+  try {
+    if (fs.existsSync(BACKUP_PATH)) {
+      pedidos = JSON.parse(fs.readFileSync(BACKUP_PATH, "utf8"));
+      idCounter = pedidos.length > 0 ? Math.max(...pedidos.map(p => p.id)) + 1 : 1;
+      console.log("Pedidos cargados desde backup:", pedidos.length);
+    }
+  } catch(e) { console.error("Error cargando backup:", e.message); }
+  try {
+    if (fs.existsSync(BACKUP_GASTOS_PATH)) {
+      gastos = JSON.parse(fs.readFileSync(BACKUP_GASTOS_PATH, "utf8"));
+      gastoIdCounter = gastos.length > 0 ? Math.max(...gastos.map(g => g.id)) + 1 : 1;
+    }
+  } catch(e) {}
 }
 
 async function guardarPedido(pedido) {
@@ -439,6 +479,13 @@ app.delete("/pedido/:id", async (req, res) => {
   const idx = pedidos.findIndex(p => p.id === id);
   if (idx === -1) return res.status(404).send("No encontrado");
 
+  // Guardar en historial de eliminados
+  const eliminado = { ...pedidos[idx], eliminadoEn: new Date().toLocaleString("es-MX", { timeZone: "America/Mexico_City" }) };
+  pedidosEliminados.push(eliminado);
+  if (db) {
+    try { await db.collection("pedidos_eliminados").insertOne({ ...eliminado }); } catch(e) {}
+  }
+
   pedidos.splice(idx, 1);
   if (db) {
     try {
@@ -488,7 +535,24 @@ app.get("/ventas/fecha/:fecha", (req, res) => {
   const totalEfectivo = entregados.filter(p => p.metodoPago !== "tarjeta").reduce((acc, p) => acc + p.total, 0);
   const totalTarjeta = entregados.filter(p => p.metodoPago === "tarjeta").reduce((acc, p) => acc + p.total, 0);
 
-  res.json({ pedidos: entregados, total, categorias, porHora, totalEfectivo, totalTarjeta });
+  // Comparativo: día anterior
+  const [d, m, y] = req.params.fecha.split("/");
+  const dateObj = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+  dateObj.setDate(dateObj.getDate() - 1);
+  const fechaAnt = dateObj.getDate().toString().padStart(2, "0") + "/" + (dateObj.getMonth() + 1).toString().padStart(2, "0") + "/" + dateObj.getFullYear();
+  const totalAnterior = pedidos.filter(p => p.estado === "Entregado" && p.fecha === fechaAnt).reduce((acc, p) => acc + p.total, 0);
+
+  // Producto estrella
+  const prods = {};
+  entregados.forEach(p => p.productos.forEach(pr => {
+    const n = pr.nombre;
+    const c = pr.cantidad || 1;
+    if (!prods[n]) prods[n] = { nombre: n, cantidad: 0 };
+    prods[n].cantidad += c;
+  }));
+  const productoEstrella = Object.values(prods).sort((a, b) => b.cantidad - a.cantidad)[0] || null;
+
+  res.json({ pedidos: entregados, total, categorias, porHora, totalEfectivo, totalTarjeta, totalAnterior, productoEstrella });
 });
 
 app.get("/total", (req, res) => {
@@ -726,7 +790,19 @@ app.get("/ventas/semanal", async (req, res) => {
 
   const totalEfectivo = entregados.filter(p => p.metodoPago !== "tarjeta").reduce((acc, p) => acc + p.total, 0);
   const totalTarjeta = entregados.filter(p => p.metodoPago === "tarjeta").reduce((acc, p) => acc + p.total, 0);
-  res.json({ pedidos: entregados, total, porDia, totalEfectivo, totalTarjeta });
+
+  // Comparativo: semana anterior
+  const hace14dias = new Date(ahora);
+  hace14dias.setDate(hace14dias.getDate() - 13);
+  hace14dias.setHours(0, 0, 0, 0);
+  const entregadosAnt = pedidos.filter(p => {
+    if (p.estado !== "Entregado" || !p.fecha) return false;
+    const f = parseFechaMX(p.fecha);
+    return f >= hace14dias && f < hace7dias;
+  });
+  const totalAnterior = entregadosAnt.reduce((acc, p) => acc + p.total, 0);
+
+  res.json({ pedidos: entregados, total, porDia, totalEfectivo, totalTarjeta, totalAnterior });
 });
 
 app.get("/ventas/mensual", async (req, res) => {
@@ -765,7 +841,66 @@ app.get("/ventas/mensual", async (req, res) => {
 
   const totalEfectivo = entregados.filter(p => p.metodoPago !== "tarjeta").reduce((acc, p) => acc + p.total, 0);
   const totalTarjeta = entregados.filter(p => p.metodoPago === "tarjeta").reduce((acc, p) => acc + p.total, 0);
-  res.json({ pedidos: entregados, total, porDia, totalEfectivo, totalTarjeta });
+
+  // Comparativo: mes anterior
+  let mesAnt = parseInt(mesActual) - 1;
+  let anioAnt = parseInt(anioActual);
+  if (mesAnt === 0) { mesAnt = 12; anioAnt--; }
+  const mesAntStr = mesAnt.toString().padStart(2, "0");
+  const anioAntStr = anioAnt.toString();
+  const entregadosAnt = pedidos.filter(p => {
+    if (p.estado !== "Entregado" || !p.fecha) return false;
+    const partes = p.fecha.split("/");
+    return partes[1] === mesAntStr && partes[2] === anioAntStr;
+  });
+  const totalAnterior = entregadosAnt.reduce((acc, p) => acc + p.total, 0);
+
+  res.json({ pedidos: entregados, total, porDia, totalEfectivo, totalTarjeta, totalAnterior });
+});
+
+// Historial de eliminados
+app.get("/ventas/eliminados/:fecha", (req, res) => {
+  const elim = pedidosEliminados.filter(p => p.fecha === req.params.fecha);
+  res.json(elim);
+});
+
+// Gastos
+app.post("/gasto", async (req, res) => {
+  const { concepto, monto } = req.body;
+  if (!concepto || !monto) return res.status(400).json({ error: "Faltan datos" });
+  const ahora = fechaMXAhora();
+  const gasto = {
+    id: gastoIdCounter++,
+    concepto,
+    monto: parseFloat(monto),
+    fecha: ahora.toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" }),
+    hora: ahora.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })
+  };
+  gastos.push(gasto);
+  if (db) {
+    try { await db.collection("gastos").insertOne({ ...gasto }); } catch(e) {}
+  }
+  res.json(gasto);
+});
+
+app.get("/gastos/:fecha", (req, res) => {
+  const del_dia = gastos.filter(g => g.fecha === req.params.fecha);
+  const totalGastos = del_dia.reduce((acc, g) => acc + g.monto, 0);
+  res.json({ gastos: del_dia, totalGastos });
+});
+
+app.delete("/gasto/:id", async (req, res) => {
+  if (req.body.password !== PASS_ELIMINAR) {
+    return res.status(401).json({ error: "Contraseña incorrecta" });
+  }
+  const id = parseInt(req.params.id);
+  const idx = gastos.findIndex(g => g.id === id);
+  if (idx === -1) return res.status(404).send("No encontrado");
+  gastos.splice(idx, 1);
+  if (db) {
+    try { await db.collection("gastos").deleteOne({ id }); } catch(e) {}
+  }
+  res.json({ ok: true });
 });
 
 app.get("/ventas/exportar/:tipo", (req, res) => {

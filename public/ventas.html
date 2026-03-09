@@ -96,20 +96,20 @@
     /* Metric cards */
     .metrics {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 16px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
       margin-bottom: 24px;
     }
 
     .metric-card {
       background: #f8f8f8;
       border-radius: 12px;
-      padding: 20px;
+      padding: 16px;
       text-align: center;
     }
 
     .metric-value {
-      font-size: 28px;
+      font-size: 24px;
       font-weight: 700;
     }
 
@@ -121,10 +121,32 @@
       margin-top: 4px;
     }
 
+    .metric-compare {
+      font-size: 11px;
+      margin-top: 4px;
+      font-weight: 600;
+    }
+
+    .metric-compare.up { color: #22c55e; }
+    .metric-compare.down { color: #ef4444; }
+    .metric-compare.neutral { color: #999; }
+
+    .metric-estrella {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-top: 2px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     .metric-total .metric-value { color: #1a1a1a; }
     .metric-efectivo .metric-value { color: #22c55e; }
     .metric-tarjeta .metric-value { color: #3b82f6; }
     .metric-pedidos .metric-value { color: #f59e0b; }
+    .metric-promedio .metric-value { color: #8b5cf6; }
+    .metric-star .metric-value { color: #f59e0b; }
 
     /* Charts */
     .charts-row {
@@ -461,6 +483,15 @@
       z-index: 99;
     }
 
+    @media print {
+      body { overflow: visible; height: auto; }
+      .sidebar, .hamburger, .sidebar-overlay, .content-header, .btn-eliminar, #headerActions { display: none !important; }
+      .app-layout { display: block; }
+      .main-content { padding: 0; overflow: visible; }
+      #corteImprimir { break-inside: avoid; }
+      button { display: none !important; }
+    }
+
     @media (max-width: 768px) {
       .hamburger { display: flex; }
       .sidebar {
@@ -546,6 +577,9 @@ function hacerLogin() {
       <button onclick="navSemana(this)">Esta Semana</button>
       <button onclick="navMes(this)">Este Mes</button>
       <button onclick="navProductos(this)">Productos</button>
+      <button onclick="navGastos(this)">Gastos</button>
+      <button onclick="navCorte(this)">Corte de Caja</button>
+      <button onclick="navEliminados(this)">Eliminados</button>
     </div>
     <div id="arbolFechas"></div>
   </div>
@@ -557,6 +591,7 @@ function hacerLogin() {
         <div class="content-subtitle" id="contentSubtitle"></div>
       </div>
       <div class="header-actions" id="headerActions">
+        <input type="text" id="buscadorCliente" placeholder="Buscar cliente..." oninput="filtrarPedidos()" style="padding:8px 12px;font-size:13px;border:1px solid #e5e5e5;border-radius:8px;font-family:inherit;width:150px;outline:none;">
         <button onclick="exportarExcel()">Exportar</button>
         <button onclick="enviarCorreo()">Correo</button>
       </div>
@@ -565,6 +600,7 @@ function hacerLogin() {
     <div class="metrics" id="metrics">
       <div class="metric-card metric-total">
         <div class="metric-value" id="metricTotal">$0</div>
+        <div class="metric-compare" id="metricCompare"></div>
         <div class="metric-label">Total</div>
       </div>
       <div class="metric-card metric-efectivo">
@@ -578,6 +614,15 @@ function hacerLogin() {
       <div class="metric-card metric-pedidos">
         <div class="metric-value" id="metricPedidos">0</div>
         <div class="metric-label">Pedidos</div>
+      </div>
+      <div class="metric-card metric-promedio">
+        <div class="metric-value" id="metricPromedio">$0</div>
+        <div class="metric-label">Promedio</div>
+      </div>
+      <div class="metric-card metric-star">
+        <div class="metric-value">&#9733;</div>
+        <div class="metric-estrella" id="metricEstrella">-</div>
+        <div class="metric-label">Estrella</div>
       </div>
     </div>
 
@@ -738,11 +783,49 @@ function hacerLogin() {
     if (toggle) toggle.innerHTML = children.classList.contains("collapsed") ? "&#9654;" : "&#9660;";
   }
 
-  function actualizarMetricas(total, totalEfectivo, totalTarjeta, numPedidos) {
+  function actualizarMetricas(total, totalEfectivo, totalTarjeta, numPedidos, totalAnterior, productoEstrella) {
     document.getElementById("metricTotal").innerText = "$" + (total || 0).toLocaleString();
     document.getElementById("metricEfectivo").innerText = "$" + (totalEfectivo || 0).toLocaleString();
     document.getElementById("metricTarjeta").innerText = "$" + (totalTarjeta || 0).toLocaleString();
     document.getElementById("metricPedidos").innerText = numPedidos || 0;
+
+    // Ticket promedio
+    const promedio = numPedidos > 0 ? Math.round(total / numPedidos) : 0;
+    document.getElementById("metricPromedio").innerText = "$" + promedio.toLocaleString();
+
+    // Producto estrella
+    document.getElementById("metricEstrella").innerText = productoEstrella ? productoEstrella.nombre + " (" + productoEstrella.cantidad + ")" : "-";
+
+    // Comparativo
+    const compareEl = document.getElementById("metricCompare");
+    if (totalAnterior !== undefined && totalAnterior > 0) {
+      const pct = Math.round(((total - totalAnterior) / totalAnterior) * 100);
+      if (pct > 0) {
+        compareEl.className = "metric-compare up";
+        compareEl.innerHTML = "&#9650; +" + pct + "%";
+      } else if (pct < 0) {
+        compareEl.className = "metric-compare down";
+        compareEl.innerHTML = "&#9660; " + pct + "%";
+      } else {
+        compareEl.className = "metric-compare neutral";
+        compareEl.innerText = "= 0%";
+      }
+    } else if (totalAnterior !== undefined && totalAnterior === 0 && total > 0) {
+      compareEl.className = "metric-compare up";
+      compareEl.innerHTML = "&#9650; nuevo";
+    } else {
+      compareEl.className = "metric-compare neutral";
+      compareEl.innerText = "";
+    }
+  }
+
+  function filtrarPedidos() {
+    const q = document.getElementById("buscadorCliente").value.toLowerCase().trim();
+    document.querySelectorAll("#pedidos .pedido").forEach(div => {
+      const cliente = div.querySelector(".cliente");
+      if (!cliente) return;
+      div.style.display = !q || cliente.innerText.toLowerCase().includes(q) ? "" : "none";
+    });
   }
 
   function renderBarChart(categorias, containerId) {
@@ -853,7 +936,7 @@ function hacerLogin() {
     fetch("/ventas/fecha/" + encodeURIComponent(fecha))
       .then(res => res.json())
       .then(data => {
-        actualizarMetricas(data.total, data.totalEfectivo, data.totalTarjeta, data.pedidos.length);
+        actualizarMetricas(data.total, data.totalEfectivo, data.totalTarjeta, data.pedidos.length, data.totalAnterior, data.productoEstrella);
         renderBarChart(data.categorias, "chartCategorias");
         renderHourChart(data.porHora, "chartHoras");
 
@@ -900,7 +983,7 @@ function hacerLogin() {
     fetch("/ventas/semanal")
       .then(res => res.json())
       .then(data => {
-        actualizarMetricas(data.total, data.totalEfectivo, data.totalTarjeta, data.pedidos.length);
+        actualizarMetricas(data.total, data.totalEfectivo, data.totalTarjeta, data.pedidos.length, data.totalAnterior);
 
         renderDayBarChart(data.porDia, "chartCategorias", "#22c55e");
 
@@ -932,7 +1015,7 @@ function hacerLogin() {
     fetch("/ventas/mensual")
       .then(res => res.json())
       .then(data => {
-        actualizarMetricas(data.total, data.totalEfectivo, data.totalTarjeta, data.pedidos.length);
+        actualizarMetricas(data.total, data.totalEfectivo, data.totalTarjeta, data.pedidos.length, data.totalAnterior);
 
         renderDayBarChart(data.porDia, "chartCategorias", "#f59e0b");
 
@@ -1110,6 +1193,240 @@ function hacerLogin() {
     const asunto = encodeURIComponent("Ventas - " + tabActual + " - " + totalTxt);
     const cuerpo = encodeURIComponent("Descarga el reporte de ventas aqui:\n" + url);
     window.open("mailto:?subject=" + asunto + "&body=" + cuerpo);
+  }
+
+  // Gastos
+  function navGastos(btn) {
+    setActiveNav(btn);
+    tabActual = "gastos";
+    limpiarContenido();
+    mostrarGraficas(false);
+    mostrarMetricas(false);
+    mostrarAcciones(false);
+    setTitulo("Gastos", "Proveedores y gastos diarios");
+
+    const hoy = fechaHoyStr();
+
+    let html = '<div style="background:#f8f8f8;border-radius:12px;padding:20px;margin-bottom:16px;">';
+    html += '<div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">';
+    html += '<div style="flex:1;min-width:150px;"><label style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1px;">Concepto</label>';
+    html += '<input type="text" id="gastoConcepto" placeholder="Ej: Tortillas, Gas..." style="width:100%;padding:10px;font-size:14px;border:1px solid #e5e5e5;border-radius:8px;font-family:inherit;outline:none;margin-top:4px;"></div>';
+    html += '<div style="width:120px;"><label style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1px;">Monto</label>';
+    html += '<input type="number" id="gastoMonto" placeholder="$0" style="width:100%;padding:10px;font-size:14px;border:1px solid #e5e5e5;border-radius:8px;font-family:inherit;outline:none;margin-top:4px;"></div>';
+    html += '<button onclick="agregarGasto()" style="padding:10px 20px;font-size:14px;font-weight:600;background:#22c55e;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit;height:42px;">Agregar</button>';
+    html += '</div></div>';
+
+    document.getElementById("contenidoExtra").innerHTML = html;
+
+    fetch("/gastos/" + encodeURIComponent(hoy))
+      .then(res => res.json())
+      .then(data => {
+        renderGastos(data.gastos, data.totalGastos);
+      });
+  }
+
+  function agregarGasto() {
+    const concepto = document.getElementById("gastoConcepto").value.trim();
+    const monto = document.getElementById("gastoMonto").value;
+    if (!concepto || !monto || parseFloat(monto) <= 0) return alert("Completa concepto y monto");
+
+    fetch("/gasto", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ concepto, monto: parseFloat(monto) })
+    })
+      .then(res => res.json())
+      .then(() => {
+        document.getElementById("gastoConcepto").value = "";
+        document.getElementById("gastoMonto").value = "";
+        navGastos(document.querySelector('.quick-nav button:nth-child(5)'));
+      });
+  }
+
+  function eliminarGasto(id) {
+    const pass = prompt("Contrasena para eliminar:");
+    if (!pass) return;
+    fetch("/gasto/" + id, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: pass })
+    }).then(res => {
+      if (!res.ok) return alert("Contrasena incorrecta");
+      navGastos(document.querySelector('.quick-nav button:nth-child(5)'));
+    });
+  }
+
+  function renderGastos(lista, total) {
+    if (!lista || lista.length === 0) {
+      contenedor.innerHTML = '<div class="sin-datos">No hay gastos registrados hoy</div>';
+      return;
+    }
+    let html = '<div style="background:#f8f8f8;border-radius:12px;padding:16px;">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">';
+    html += '<span style="font-size:13px;color:#999;text-transform:uppercase;letter-spacing:1px;">Gastos del dia</span>';
+    html += '<span style="font-size:18px;font-weight:700;color:#ef4444;">-$' + total.toLocaleString() + '</span>';
+    html += '</div>';
+    lista.forEach(g => {
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #eee;">';
+      html += '<div><div style="font-size:14px;font-weight:600;">' + g.concepto + '</div>';
+      html += '<div style="font-size:11px;color:#999;">' + g.hora + '</div></div>';
+      html += '<div style="display:flex;align-items:center;gap:10px;">';
+      html += '<span style="font-size:15px;font-weight:700;color:#ef4444;">-$' + g.monto.toLocaleString() + '</span>';
+      html += '<button onclick="eliminarGasto(' + g.id + ')" style="border:none;background:transparent;color:#ccc;cursor:pointer;font-size:14px;">&#10005;</button>';
+      html += '</div></div>';
+    });
+    html += '</div>';
+    contenedor.innerHTML = html;
+  }
+
+  // Corte de Caja
+  function navCorte(btn) {
+    setActiveNav(btn);
+    tabActual = "corte";
+    limpiarContenido();
+    mostrarGraficas(false);
+    mostrarMetricas(false);
+    mostrarAcciones(false);
+    setTitulo("Corte de Caja", fechaHoyStr());
+
+    const hoy = fechaHoyStr();
+
+    Promise.all([
+      fetch("/ventas/fecha/" + encodeURIComponent(hoy)).then(r => r.json()),
+      fetch("/gastos/" + encodeURIComponent(hoy)).then(r => r.json()),
+      fetch("/ventas/eliminados/" + encodeURIComponent(hoy)).then(r => r.json())
+    ]).then(([ventas, gastosData, eliminados]) => {
+      const totalVentas = ventas.total || 0;
+      const totalEfectivo = ventas.totalEfectivo || 0;
+      const totalTarjeta = ventas.totalTarjeta || 0;
+      const numPedidos = ventas.pedidos ? ventas.pedidos.length : 0;
+      const totalGastos = gastosData.totalGastos || 0;
+      const utilidad = totalVentas - totalGastos;
+      const promedio = numPedidos > 0 ? Math.round(totalVentas / numPedidos) : 0;
+      const estrella = ventas.productoEstrella;
+
+      let html = '<div id="corteImprimir">';
+
+      // Header
+      html += '<div style="text-align:center;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid #eee;">';
+      html += '<div style="font-size:20px;font-weight:700;">Corte de Caja</div>';
+      html += '<div style="font-size:13px;color:#999;">' + hoy + '</div>';
+      html += '</div>';
+
+      // Ventas
+      html += '<div style="background:#f8f8f8;border-radius:12px;padding:20px;margin-bottom:12px;">';
+      html += '<div style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Ventas</div>';
+      html += filaCorte("Total Ventas", "$" + totalVentas.toLocaleString(), "#22c55e", true);
+      html += filaCorte("Efectivo", "$" + totalEfectivo.toLocaleString(), "#22c55e");
+      html += filaCorte("Tarjeta", "$" + totalTarjeta.toLocaleString(), "#3b82f6");
+      html += filaCorte("Pedidos", numPedidos, "#f59e0b");
+      html += filaCorte("Ticket Promedio", "$" + promedio.toLocaleString(), "#8b5cf6");
+      if (estrella) html += filaCorte("Producto Estrella", estrella.nombre + " (" + estrella.cantidad + ")", "#f59e0b");
+      html += '</div>';
+
+      // Gastos
+      html += '<div style="background:#f8f8f8;border-radius:12px;padding:20px;margin-bottom:12px;">';
+      html += '<div style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Gastos</div>';
+      html += filaCorte("Total Gastos", "-$" + totalGastos.toLocaleString(), "#ef4444", true);
+      if (gastosData.gastos && gastosData.gastos.length > 0) {
+        gastosData.gastos.forEach(g => {
+          html += filaCorte(g.concepto, "-$" + g.monto.toLocaleString(), "#ef4444");
+        });
+      } else {
+        html += '<div style="color:#ccc;font-size:13px;">Sin gastos registrados</div>';
+      }
+      html += '</div>';
+
+      // Utilidad
+      html += '<div style="background:' + (utilidad >= 0 ? "#f0fdf4" : "#fef2f2") + ';border-radius:12px;padding:20px;margin-bottom:12px;border:2px solid ' + (utilidad >= 0 ? "#22c55e" : "#ef4444") + ';">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+      html += '<span style="font-size:16px;font-weight:700;">UTILIDAD NETA</span>';
+      html += '<span style="font-size:24px;font-weight:800;color:' + (utilidad >= 0 ? "#22c55e" : "#ef4444") + ';">$' + utilidad.toLocaleString() + '</span>';
+      html += '</div></div>';
+
+      // Eliminados
+      if (eliminados.length > 0) {
+        const totalElim = eliminados.reduce((a, p) => a + (p.total || 0), 0);
+        html += '<div style="background:#f8f8f8;border-radius:12px;padding:20px;margin-bottom:12px;">';
+        html += '<div style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Pedidos Eliminados (' + eliminados.length + ')</div>';
+        eliminados.forEach(p => {
+          const prods = p.productos ? p.productos.map(pr => pr.nombre).join(", ") : "";
+          html += '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee;font-size:13px;">';
+          html += '<div><span style="font-weight:600;">' + (p.cliente || "Sin nombre") + '</span> <span style="color:#999;">' + prods + '</span></div>';
+          html += '<span style="color:#ef4444;font-weight:600;">$' + (p.total || 0) + '</span>';
+          html += '</div>';
+        });
+        html += '<div style="display:flex;justify-content:space-between;margin-top:8px;font-weight:700;font-size:14px;">';
+        html += '<span>Total Eliminado</span><span style="color:#ef4444;">$' + totalElim.toLocaleString() + '</span></div>';
+        html += '</div>';
+      }
+
+      html += '</div>';
+
+      // Print button
+      html += '<div style="text-align:center;margin-top:16px;">';
+      html += '<button onclick="imprimirCorte()" style="padding:12px 32px;font-size:14px;font-weight:600;background:#1a1a1a;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit;">Imprimir Corte</button>';
+      html += '</div>';
+
+      contenedor.innerHTML = html;
+    });
+  }
+
+  function filaCorte(label, valor, color, bold) {
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;' + (bold ? 'border-bottom:1px solid #eee;margin-bottom:4px;' : '') + '">' +
+      '<span style="font-size:14px;color:#666;' + (bold ? 'font-weight:700;color:#1a1a1a;' : '') + '">' + label + '</span>' +
+      '<span style="font-size:' + (bold ? '18' : '14') + 'px;font-weight:' + (bold ? '800' : '600') + ';color:' + color + ';">' + valor + '</span>' +
+      '</div>';
+  }
+
+  function imprimirCorte() {
+    window.print();
+  }
+
+  // Eliminados
+  function navEliminados(btn) {
+    setActiveNav(btn);
+    tabActual = "eliminados";
+    limpiarContenido();
+    mostrarGraficas(false);
+    mostrarMetricas(false);
+    mostrarAcciones(false);
+
+    const hoy = fechaHoyStr();
+    setTitulo("Eliminados", hoy);
+
+    fetch("/ventas/eliminados/" + encodeURIComponent(hoy))
+      .then(res => res.json())
+      .then(eliminados => {
+        if (eliminados.length === 0) {
+          contenedor.innerHTML = '<div class="sin-datos">No hay pedidos eliminados hoy</div>';
+          return;
+        }
+
+        const totalElim = eliminados.reduce((a, p) => a + (p.total || 0), 0);
+
+        let html = '<div style="background:#f8f8f8;border-radius:12px;padding:16px;margin-bottom:12px;">';
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+        html += '<span style="font-size:13px;color:#999;">' + eliminados.length + ' pedidos eliminados</span>';
+        html += '<span style="font-size:18px;font-weight:700;color:#ef4444;">$' + totalElim.toLocaleString() + '</span>';
+        html += '</div></div>';
+
+        eliminados.forEach(p => {
+          const prods = p.productos ? p.productos.map(pr => (pr.cantidad > 1 ? pr.cantidad + "x " : "") + pr.nombre).join(", ") : "";
+          let card = '<div style="background:#f8f8f8;border-radius:8px;padding:12px 14px;margin-bottom:6px;border-left:4px solid #ef4444;">';
+          card += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+          card += '<div style="flex:1;min-width:0;">';
+          card += '<span style="font-size:14px;font-weight:700;text-transform:uppercase;">' + (p.cliente || "Sin nombre") + '</span>';
+          if (p.metodoPago === "tarjeta") card += '<span class="badge-tarjeta">TARJETA</span>';
+          card += '<div style="font-size:12px;color:#999;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + prods + '</div>';
+          card += '</div>';
+          card += '<div style="text-align:right;flex-shrink:0;margin-left:10px;">';
+          card += '<div style="font-size:15px;font-weight:700;color:#ef4444;">$' + (p.total || 0) + '</div>';
+          card += '<div style="font-size:10px;color:#999;">' + (p.eliminadoEn || "") + '</div>';
+          card += '</div></div></div>';
+          contenedor.innerHTML += card;
+        });
+      });
   }
 
   // Init
