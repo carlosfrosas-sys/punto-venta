@@ -1052,20 +1052,20 @@ const menu = {
 
   "OTROS..": {
     items: [
-      { nombre: "Otro $5", precio: 5 },
-      { nombre: "Otro $7", precio: 7 },
-      { nombre: "Otro $8", precio: 8 },
-      { nombre: "Otro $10", precio: 10 },
-      { nombre: "Otro $12", precio: 12 },
-      { nombre: "Otro $13", precio: 13 },
-      { nombre: "Otro $15", precio: 15 },
-      { nombre: "Otro $18", precio: 18 },
-      { nombre: "Otro $20", precio: 20 },
-      { nombre: "Otro $22", precio: 22 },
-      { nombre: "Otro $24", precio: 24 },
-      { nombre: "Otro $25", precio: 25 },
-      { nombre: "Otro $28", precio: 28 },
-      { nombre: "Otro $30", precio: 30 }
+      { nombre: "$5", precio: 5 },
+      { nombre: "$7", precio: 7 },
+      { nombre: "$8", precio: 8 },
+      { nombre: "$10", precio: 10 },
+      { nombre: "$12", precio: 12 },
+      { nombre: "$13", precio: 13 },
+      { nombre: "$15", precio: 15 },
+      { nombre: "$18", precio: 18 },
+      { nombre: "$20", precio: 20 },
+      { nombre: "$22", precio: 22 },
+      { nombre: "$24", precio: 24 },
+      { nombre: "$25", precio: 25 },
+      { nombre: "$28", precio: 28 },
+      { nombre: "$30", precio: 30 }
     ]
   }
 
@@ -1291,6 +1291,8 @@ if (categoria === "Licuados") {
           mostrarOpcionesEnsalada(item.nombre, item.precio);
         } else if (categoria === "Ensaladas") {
           agregarProductoSinNota("Ensalada de " + item.nombre, item.precio);
+        } else if (categoria === "OTROS..") {
+          agregarProductoSinNota("Otro", item.precio);
         } else {
           agregarProducto(item.nombre, item.precio);
         }
