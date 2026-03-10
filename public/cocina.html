@@ -320,7 +320,7 @@
     const bebidasCocina = ["Agua ", "Licuado de ", "Café ", "Capuccino", "Espumoso", "Té", "Yakult", "Panzoncita", "Peñafielita", "Boing", "Del Valle", "Refresco de Sabor", "Fuze Tea", "Lechita", "Jumex", "Coca", "Volt", "Electrolit", "Gatorade", "Monster", "Redbull", "Agua Caliente"];
 
     function esBebida(nombre) {
-      return bebidasCocina.some(b => nombre.startsWith(b));
+      return bebidasCocina.some(b => nombre.startsWith(b)) || nombre.startsWith("Otro");
     }
 
     function mostrarPedido(pedido) {

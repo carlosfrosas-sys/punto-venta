@@ -2387,7 +2387,6 @@ function agregarProducto(nombre, precio) {
     productos.push({ nombre, precio, precioBase: precio, cantidad: 1, nota });
     total += precio;
     renderizarLista();
-    cont.innerHTML = "";
   }
 
   btnAgregar.onclick = hacerAgregar;
@@ -2540,7 +2539,8 @@ function cobrarTarjeta() {
       fetch("/cobrar-terminal/" + _tarjetaIntentId)
         .then(r => r.json())
         .then(d => {
-          if (d.status === "paid") {
+          const payStatus = d.transactions && d.transactions.payments && d.transactions.payments[0] ? d.transactions.payments[0].status : null;
+          if (d.status === "paid" || d.status === "processed" || d.status === "closed" || payStatus === "approved" || payStatus === "paid") {
             clearInterval(_tarjetaPolling);
             _tarjetaPolling = null;
             _tarjetaIntentId = null;
@@ -2559,7 +2559,7 @@ function cobrarTarjeta() {
             btnEnviar.disabled = false;
             btnCancelar.innerText = "Cancelar";
             btnCancelar.onclick = cancelarPedido;
-          } else if (d.status === "canceled" || d.status === "failed" || d.status === "expired") {
+          } else if (d.status === "canceled" || d.status === "failed" || d.status === "expired" || payStatus === "rejected" || payStatus === "cancelled") {
             clearInterval(_tarjetaPolling);
             _tarjetaPolling = null;
             _tarjetaIntentId = null;
