@@ -994,6 +994,60 @@ app.delete("/retiro/:id", async (req, res) => {
   res.json({ ok: true });
 });
 
+// Exportar corte de caja como CSV (Excel)
+app.get("/corte/exportar/:fecha", (req, res) => {
+  const fecha = req.params.fecha;
+  const entregados = pedidos.filter(p => p.estado === "Entregado" && p.fecha === fecha);
+  const totalVentas = entregados.reduce((a, p) => a + p.total, 0);
+  const totalEfectivo = entregados.filter(p => p.metodoPago !== "tarjeta").reduce((a, p) => a + p.total, 0);
+  const totalTarjeta = entregados.filter(p => p.metodoPago === "tarjeta").reduce((a, p) => a + p.total, 0);
+  const gastosDelDia = gastos.filter(g => g.fecha === fecha);
+  const totalGastos = gastosDelDia.reduce((a, g) => a + g.monto, 0);
+  const retirosDelDia = retiros.filter(r => r.fecha === fecha);
+  const totalRetiros = retirosDelDia.reduce((a, r) => a + r.monto, 0);
+  const fondo = fondosCaja.find(f => f.fecha === fecha);
+  const fondoCaja = fondo ? fondo.monto : 0;
+  const utilidad = totalVentas - totalGastos;
+  const efectivoEnCaja = fondoCaja + totalEfectivo - totalGastos - totalRetiros;
+  const eliminados = pedidosEliminados.filter(p => p.fecha === fecha);
+  const totalElim = eliminados.reduce((a, p) => a + (p.total || 0), 0);
+
+  let csv = "\uFEFF";
+  csv += "CORTE DE CAJA - " + fecha + "\r\n\r\n";
+  csv += "CONCEPTO,MONTO\r\n";
+  csv += "Fondo de Caja,$" + fondoCaja + "\r\n\r\n";
+  csv += "VENTAS\r\n";
+  csv += "Total Ventas,$" + totalVentas + "\r\n";
+  csv += "Efectivo,$" + totalEfectivo + "\r\n";
+  csv += "Tarjeta,$" + totalTarjeta + "\r\n";
+  csv += "Pedidos," + entregados.length + "\r\n\r\n";
+  csv += "GASTOS\r\n";
+  if (gastosDelDia.length > 0) {
+    gastosDelDia.forEach(g => { csv += g.concepto + ",-$" + g.monto + "\r\n"; });
+  }
+  csv += "Total Gastos,-$" + totalGastos + "\r\n\r\n";
+  csv += "RETIROS\r\n";
+  if (retirosDelDia.length > 0) {
+    retirosDelDia.forEach(r => { csv += r.concepto + ",-$" + r.monto + "\r\n"; });
+  }
+  csv += "Total Retiros,-$" + totalRetiros + "\r\n\r\n";
+  csv += "RESUMEN\r\n";
+  csv += "Utilidad Neta,$" + utilidad + "\r\n";
+  csv += "Efectivo en Caja,$" + efectivoEnCaja + "\r\n\r\n";
+  if (eliminados.length > 0) {
+    csv += "PEDIDOS ELIMINADOS\r\n";
+    eliminados.forEach(p => {
+      const prods = p.productos ? p.productos.map(pr => pr.nombre).join(" + ") : "";
+      csv += (p.cliente || "Sin nombre") + "," + prods + ",$" + (p.total || 0) + "\r\n";
+    });
+    csv += "Total Eliminado,,$" + totalElim + "\r\n";
+  }
+
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", "attachment; filename=corte-" + fecha.replace(/\//g, "-") + ".csv");
+  res.send(csv);
+});
+
 app.get("/ventas/exportar/:tipo", (req, res) => {
   const tipo = req.params.tipo;
   let entregados = [];

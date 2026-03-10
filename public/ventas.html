@@ -1434,30 +1434,7 @@ function hacerLogin() {
   }
 
   function descargarCorte() {
-    const el = document.getElementById("corteImprimir");
-    if (!el) return;
-    let texto = "CORTE DE CAJA - " + corteFecha + "\n";
-    texto += "=".repeat(40) + "\n\n";
-    el.querySelectorAll("div[style*='border-radius:12px']").forEach(section => {
-      const titulo = section.querySelector("div[style*='text-transform:uppercase']");
-      if (titulo) texto += titulo.innerText + "\n" + "-".repeat(30) + "\n";
-      section.querySelectorAll("div[style*='justify-content:space-between']").forEach(row => {
-        const spans = row.querySelectorAll("span");
-        if (spans.length >= 2) {
-          const label = spans[0].innerText.trim();
-          const valor = spans[spans.length - 1].innerText.trim();
-          if (label && valor) texto += label + ": " + valor + "\n";
-        }
-      });
-      texto += "\n";
-    });
-    const blob = new Blob([texto], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "corte-" + corteFecha.replace(/\//g, "-") + ".txt";
-    a.click();
-    URL.revokeObjectURL(url);
+    window.open("/corte/exportar/" + encodeURIComponent(corteFecha), "_blank");
   }
 
   // Eliminados
