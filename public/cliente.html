@@ -1492,6 +1492,7 @@ function mostrarMultiTacos(items, max) {
     cont.appendChild(btn);
   });
 
+  let conPapas = false;
   const btnPapas = document.createElement("button");
   btnPapas.innerText = "+ Papas $18";
   btnPapas.style.background = "#f59e0b";
@@ -1499,7 +1500,9 @@ function mostrarMultiTacos(items, max) {
   btnPapas.style.width = "100%";
   btnPapas.style.marginTop = "10px";
   btnPapas.onclick = () => {
-    agregarProductoSinNota("Papas a la Francesa", 18);
+    conPapas = !conPapas;
+    btnPapas.innerText = conPapas ? "✓ Con Papas +$18" : "+ Papas $18";
+    btnPapas.style.background = conPapas ? "#16a34a" : "#f59e0b";
   };
   cont.appendChild(btnPapas);
 
@@ -1512,7 +1515,8 @@ function mostrarMultiTacos(items, max) {
   btnSig.style.width = "100%";
   btnSig.onclick = () => {
     if (seleccionados.length === 0) { alert("Elige al menos uno"); return; }
-    const precioFinal = Math.max(...seleccionados.map(s => s.precio));
+    let precioFinal = Math.max(...seleccionados.map(s => s.precio));
+    if (conPapas) precioFinal += 18;
     const tieneDorados = seleccionados.some(s => s.nombre === "Tacos Dorados");
     let nombreFinal;
     if (seleccionados.length === 1) {
@@ -1521,6 +1525,7 @@ function mostrarMultiTacos(items, max) {
       const nombres = seleccionados.map(s => s.nombre);
       nombreFinal = "Tacos de " + nombres.join(" y ");
     }
+    if (conPapas) nombreFinal += " con Papas";
     let notas;
     const tieneAlambre = seleccionados.some(s => s.nombre === "Alambre");
     if (tieneDorados) {
@@ -1634,6 +1639,7 @@ function mostrarMultiItems(prefijo, items, max) {
     cont.appendChild(btn);
   });
 
+  let conPapas2 = false;
   const btnPapas = document.createElement("button");
   btnPapas.innerText = "+ Papas $18";
   btnPapas.style.background = "#f59e0b";
@@ -1641,7 +1647,9 @@ function mostrarMultiItems(prefijo, items, max) {
   btnPapas.style.width = "100%";
   btnPapas.style.marginTop = "10px";
   btnPapas.onclick = () => {
-    agregarProductoSinNota("Papas a la Francesa", 18);
+    conPapas2 = !conPapas2;
+    btnPapas.innerText = conPapas2 ? "✓ Con Papas +$18" : "+ Papas $18";
+    btnPapas.style.background = conPapas2 ? "#16a34a" : "#f59e0b";
   };
   cont.appendChild(btnPapas);
 
@@ -1654,8 +1662,9 @@ function mostrarMultiItems(prefijo, items, max) {
   btnAgregar.style.width = "100%";
   btnAgregar.onclick = () => {
     if (seleccionados.length === 0) { alert("Elige al menos uno"); return; }
-    const precioFinal = Math.max(...seleccionados.map(s => s.precio));
-    const nombreFinal = prefijo + seleccionados.map(s => s.nombre).join(" y ");
+    let precioFinal = Math.max(...seleccionados.map(s => s.precio));
+    let nombreFinal = prefijo + seleccionados.map(s => s.nombre).join(" y ");
+    if (conPapas2) { precioFinal += 18; nombreFinal += " con Papas"; }
     productos.push({ nombre: nombreFinal, precio: precioFinal, precioBase: precioFinal, cantidad: 1, nota: "" });
     total += precioFinal;
     renderizarLista();
@@ -1725,6 +1734,7 @@ function mostrarMultiProteina(categoria, datos, max, notas) {
     cont.appendChild(btn);
   });
 
+  let conPapas3 = false;
   const btnPapas = document.createElement("button");
   btnPapas.innerText = "+ Papas $18";
   btnPapas.style.background = "#f59e0b";
@@ -1732,7 +1742,9 @@ function mostrarMultiProteina(categoria, datos, max, notas) {
   btnPapas.style.width = "100%";
   btnPapas.style.marginTop = "10px";
   btnPapas.onclick = () => {
-    agregarProductoSinNota("Papas a la Francesa", 18);
+    conPapas3 = !conPapas3;
+    btnPapas.innerText = conPapas3 ? "✓ Con Papas +$18" : "+ Papas $18";
+    btnPapas.style.background = conPapas3 ? "#16a34a" : "#f59e0b";
   };
   cont.appendChild(btnPapas);
 
@@ -1745,13 +1757,14 @@ function mostrarMultiProteina(categoria, datos, max, notas) {
   btnSig.style.width = "100%";
   btnSig.onclick = () => {
     if (seleccionados.length === 0) { alert("Elige al menos una proteina"); return; }
-    const precioFinal = Math.max(...seleccionados.map(s => s.precio));
+    let precioFinal = Math.max(...seleccionados.map(s => s.precio));
     let nombreFinal;
     if (seleccionados.length === 1) {
       nombreFinal = prefijo + seleccionados[0].nombre;
     } else {
       nombreFinal = prefijo + seleccionados.map(s => s.nombre).join(" y ");
     }
+    if (conPapas3) { precioFinal += 18; nombreFinal += " con Papas"; }
     mostrarNotas(nombreFinal, precioFinal, notas);
   };
   cont.appendChild(btnSig);
