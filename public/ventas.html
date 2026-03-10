@@ -1267,7 +1267,7 @@ function hacerLogin() {
       const totalGastos = gastosData.totalGastos || 0;
       const totalRetiros = retirosData.totalRetiros || 0;
       const fondoCaja = fondoData.monto || 0;
-      const utilidad = totalVentasFinal - totalGastos;
+      const utilidad = totalVentasFinal - totalGastos + totalRetiros;
       const estrella = ventas.productoEstrella;
       const efectivoEnCaja = fondoCaja + totalEfectivo - totalGastos - totalRetiros;
 
@@ -1374,21 +1374,28 @@ function hacerLogin() {
       }
       html += '</div>';
 
-      // Utilidad
-      html += '<div style="background:' + (utilidad >= 0 ? "#f0fdf4" : "#fef2f2") + ';border-radius:12px;padding:20px;margin-bottom:12px;border:2px solid ' + (utilidad >= 0 ? "#22c55e" : "#ef4444") + ';">';
+      // Utilidad neta (amarillo)
+      html += '<div style="background:#fffbeb;border-radius:12px;padding:20px;margin-bottom:12px;border:2px solid #f59e0b;">';
       html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
       html += '<span style="font-size:16px;font-weight:700;">UTILIDAD NETA</span>';
-      html += '<span style="font-size:24px;font-weight:800;color:' + (utilidad >= 0 ? "#22c55e" : "#ef4444") + ';">$' + utilidad.toLocaleString() + '</span>';
+      html += '<span style="font-size:24px;font-weight:800;color:#f59e0b;">$' + utilidad.toLocaleString() + '</span>';
       html += '</div></div>';
 
-      // Efectivo en caja
-      html += '<div style="background:#eff6ff;border-radius:12px;padding:20px;margin-bottom:12px;border:2px solid #3b82f6;">';
+      // Efectivo en caja (verde)
+      html += '<div style="background:#f0fdf4;border-radius:12px;padding:20px;margin-bottom:12px;border:2px solid #22c55e;">';
       html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
       html += '<span style="font-size:16px;font-weight:700;">EFECTIVO EN CAJA</span>';
-      html += '<span style="font-size:24px;font-weight:800;color:#3b82f6;">$' + efectivoEnCaja.toLocaleString() + '</span>';
+      html += '<span style="font-size:24px;font-weight:800;color:#22c55e;">$' + efectivoEnCaja.toLocaleString() + '</span>';
       html += '</div>';
       html += '<div style="font-size:11px;color:#999;margin-top:6px;">Fondo ($' + fondoCaja + ') + Efectivo ($' + totalEfectivo + ') - Gastos ($' + totalGastos + ') - Retiros ($' + totalRetiros + ')</div>';
       html += '</div>';
+
+      // Ventas con tarjeta (azul)
+      html += '<div style="background:#eff6ff;border-radius:12px;padding:20px;margin-bottom:12px;border:2px solid #3b82f6;">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+      html += '<span style="font-size:16px;font-weight:700;">VENTAS CON TARJETA</span>';
+      html += '<span style="font-size:24px;font-weight:800;color:#3b82f6;">$' + totalTarjetaFinal.toLocaleString() + '</span>';
+      html += '</div></div>';
 
       // Eliminados
       if (eliminados.length > 0) {

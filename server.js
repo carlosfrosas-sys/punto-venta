@@ -1052,7 +1052,7 @@ app.get("/corte/exportar/:fecha", (req, res) => {
   const totalRetiros = retirosDelDia.reduce((a, r) => a + r.monto, 0);
   const fondo = fondosCaja.find(f => f.fecha === fecha);
   const fondoCaja = fondo ? fondo.monto : 0;
-  const utilidad = totalVentasFinal - totalGastos;
+  const utilidad = totalVentasFinal - totalGastos + totalRetiros;
   const efectivoEnCaja = fondoCaja + totalEfectivo - totalGastos - totalRetiros;
   const eliminados = pedidosEliminados.filter(p => p.fecha === fecha);
   const totalElim = eliminados.reduce((a, p) => a + (p.total || 0), 0);
