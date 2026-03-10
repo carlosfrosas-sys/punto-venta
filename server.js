@@ -33,6 +33,8 @@ let gastoIdCounter = 1;
 let fondosCaja = [];
 let retiros = [];
 let retiroIdCounter = 1;
+let ventasTarjeta = [];
+let ventaTarjetaIdCounter = 1;
 
 // Respaldo automático
 const BACKUP_DIR = path.join(__dirname, "backups");
@@ -94,6 +96,11 @@ async function cargarPedidos() {
       retiros = await db.collection("retiros").find().toArray();
       retiros.forEach(r => delete r._id);
       retiroIdCounter = retiros.length > 0 ? Math.max(...retiros.map(r => r.id)) + 1 : 1;
+    } catch(e) {}
+    try {
+      ventasTarjeta = await db.collection("ventas_tarjeta").find().toArray();
+      ventasTarjeta.forEach(v => delete v._id);
+      ventaTarjetaIdCounter = ventasTarjeta.length > 0 ? Math.max(...ventasTarjeta.map(v => v.id)) + 1 : 1;
     } catch(e) {}
     if (pedidos.length > 0) return;
   }
@@ -994,6 +1001,41 @@ app.delete("/retiro/:id", async (req, res) => {
   res.json({ ok: true });
 });
 
+// Ventas tarjeta manuales
+app.post("/venta-tarjeta", async (req, res) => {
+  const { concepto, monto } = req.body;
+  if (!monto) return res.status(400).json({ error: "Falta monto" });
+  const ahora = fechaMXAhora();
+  const venta = {
+    id: ventaTarjetaIdCounter++,
+    concepto: concepto || "Tarjeta",
+    monto: parseFloat(monto),
+    fecha: ahora.toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" }),
+    hora: ahora.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })
+  };
+  ventasTarjeta.push(venta);
+  if (db) { try { await db.collection("ventas_tarjeta").insertOne({ ...venta }); } catch(e) {} }
+  res.json(venta);
+});
+
+app.get("/ventas-tarjeta/:fecha", (req, res) => {
+  const del_dia = ventasTarjeta.filter(v => v.fecha === req.params.fecha);
+  const totalVentasTarjeta = del_dia.reduce((acc, v) => acc + v.monto, 0);
+  res.json({ ventas: del_dia, totalVentasTarjeta });
+});
+
+app.delete("/venta-tarjeta/:id", async (req, res) => {
+  if (req.body.password !== PASS_ELIMINAR) {
+    return res.status(401).json({ error: "Contraseña incorrecta" });
+  }
+  const id = parseInt(req.params.id);
+  const idx = ventasTarjeta.findIndex(v => v.id === id);
+  if (idx === -1) return res.status(404).send("No encontrado");
+  ventasTarjeta.splice(idx, 1);
+  if (db) { try { await db.collection("ventas_tarjeta").deleteOne({ id }); } catch(e) {} }
+  res.json({ ok: true });
+});
+
 // Exportar corte de caja como CSV (Excel)
 app.get("/corte/exportar/:fecha", (req, res) => {
   const fecha = req.params.fecha;
@@ -1001,13 +1043,16 @@ app.get("/corte/exportar/:fecha", (req, res) => {
   const totalVentas = entregados.reduce((a, p) => a + p.total, 0);
   const totalEfectivo = entregados.filter(p => p.metodoPago !== "tarjeta").reduce((a, p) => a + p.total, 0);
   const totalTarjeta = entregados.filter(p => p.metodoPago === "tarjeta").reduce((a, p) => a + p.total, 0);
+  const vtManual = ventasTarjeta.filter(v => v.fecha === fecha);
+  const totalTarjetaManual = vtManual.reduce((a, v) => a + v.monto, 0);
+  const totalVentasFinal = totalVentas + totalTarjetaManual;
   const gastosDelDia = gastos.filter(g => g.fecha === fecha);
   const totalGastos = gastosDelDia.reduce((a, g) => a + g.monto, 0);
   const retirosDelDia = retiros.filter(r => r.fecha === fecha);
   const totalRetiros = retirosDelDia.reduce((a, r) => a + r.monto, 0);
   const fondo = fondosCaja.find(f => f.fecha === fecha);
   const fondoCaja = fondo ? fondo.monto : 0;
-  const utilidad = totalVentas - totalGastos;
+  const utilidad = totalVentasFinal - totalGastos;
   const efectivoEnCaja = fondoCaja + totalEfectivo - totalGastos - totalRetiros;
   const eliminados = pedidosEliminados.filter(p => p.fecha === fecha);
   const totalElim = eliminados.reduce((a, p) => a + (p.total || 0), 0);
@@ -1017,9 +1062,11 @@ app.get("/corte/exportar/:fecha", (req, res) => {
   csv += "CONCEPTO,MONTO\r\n";
   csv += "Fondo de Caja,$" + fondoCaja + "\r\n\r\n";
   csv += "VENTAS\r\n";
-  csv += "Total Ventas,$" + totalVentas + "\r\n";
+  csv += "Total Ventas,$" + totalVentasFinal + "\r\n";
   csv += "Efectivo,$" + totalEfectivo + "\r\n";
-  csv += "Tarjeta,$" + totalTarjeta + "\r\n";
+  csv += "Tarjeta (sistema),$" + totalTarjeta + "\r\n";
+  csv += "Tarjeta (manual),$" + totalTarjetaManual + "\r\n";
+  csv += "Total Tarjeta,$" + (totalTarjeta + totalTarjetaManual) + "\r\n";
   csv += "Pedidos," + entregados.length + "\r\n\r\n";
   csv += "GASTOS\r\n";
   if (gastosDelDia.length > 0) {
@@ -1033,6 +1080,7 @@ app.get("/corte/exportar/:fecha", (req, res) => {
   csv += "Total Retiros,-$" + totalRetiros + "\r\n\r\n";
   csv += "RESUMEN\r\n";
   csv += "Utilidad Neta,$" + utilidad + "\r\n";
+  csv += "Efectivo en Caja,$" + efectivoEnCaja + "\r\n";
   csv += "Efectivo en Caja,$" + efectivoEnCaja + "\r\n\r\n";
   if (eliminados.length > 0) {
     csv += "PEDIDOS ELIMINADOS\r\n";

@@ -1254,16 +1254,20 @@ function hacerLogin() {
       fetch("/gastos/" + encodeURIComponent(corteFecha)).then(r => r.json()),
       fetch("/ventas/eliminados/" + encodeURIComponent(corteFecha)).then(r => r.json()),
       fetch("/fondo-caja/" + encodeURIComponent(corteFecha)).then(r => r.json()),
-      fetch("/retiros/" + encodeURIComponent(corteFecha)).then(r => r.json())
-    ]).then(([ventas, gastosData, eliminados, fondoData, retirosData]) => {
+      fetch("/retiros/" + encodeURIComponent(corteFecha)).then(r => r.json()),
+      fetch("/ventas-tarjeta/" + encodeURIComponent(corteFecha)).then(r => r.json())
+    ]).then(([ventas, gastosData, eliminados, fondoData, retirosData, tarjetaData]) => {
       const totalVentas = ventas.total || 0;
       const totalEfectivo = ventas.totalEfectivo || 0;
       const totalTarjeta = ventas.totalTarjeta || 0;
+      const totalTarjetaManual = tarjetaData.totalVentasTarjeta || 0;
+      const totalTarjetaFinal = totalTarjeta + totalTarjetaManual;
+      const totalVentasFinal = totalVentas + totalTarjetaManual;
       const numPedidos = ventas.pedidos ? ventas.pedidos.length : 0;
       const totalGastos = gastosData.totalGastos || 0;
       const totalRetiros = retirosData.totalRetiros || 0;
       const fondoCaja = fondoData.monto || 0;
-      const utilidad = totalVentas - totalGastos;
+      const utilidad = totalVentasFinal - totalGastos;
       const estrella = ventas.productoEstrella;
       const efectivoEnCaja = fondoCaja + totalEfectivo - totalGastos - totalRetiros;
 
@@ -1291,11 +1295,37 @@ function hacerLogin() {
       // Ventas
       html += '<div style="background:#f8f8f8;border-radius:12px;padding:20px;margin-bottom:12px;">';
       html += '<div style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Ventas</div>';
-      html += filaCorte("Total Ventas", "$" + totalVentas.toLocaleString(), "#22c55e", true);
+      html += filaCorte("Total Ventas", "$" + totalVentasFinal.toLocaleString(), "#22c55e", true);
       html += filaCorte("Efectivo", "$" + totalEfectivo.toLocaleString(), "#22c55e");
-      html += filaCorte("Tarjeta", "$" + totalTarjeta.toLocaleString(), "#3b82f6");
+      html += filaCorte("Tarjeta (sistema)", "$" + totalTarjeta.toLocaleString(), "#3b82f6");
+      if (totalTarjetaManual > 0) html += filaCorte("Tarjeta (manual)", "$" + totalTarjetaManual.toLocaleString(), "#3b82f6");
+      html += filaCorte("Total Tarjeta", "$" + totalTarjetaFinal.toLocaleString(), "#3b82f6", true);
       html += filaCorte("Pedidos", numPedidos, "#f59e0b");
       if (estrella) html += filaCorte("Producto Estrella", estrella.nombre + " (" + estrella.cantidad + ")", "#f59e0b");
+      html += '</div>';
+
+      // Ventas tarjeta manual
+      html += '<div style="background:#f8f8f8;border-radius:12px;padding:20px;margin-bottom:12px;">';
+      html += '<div style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Ventas con Tarjeta</div>';
+      if (esHoy) {
+        html += '<div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px;">';
+        html += '<div style="flex:1;min-width:120px;"><input type="text" id="tarjetaConcepto" placeholder="Concepto (opcional)" style="width:100%;padding:8px;font-size:13px;border:1px solid #e5e5e5;border-radius:8px;font-family:inherit;outline:none;"></div>';
+        html += '<div style="width:100px;"><input type="number" id="tarjetaMonto" placeholder="$0" style="width:100%;padding:8px;font-size:13px;border:1px solid #e5e5e5;border-radius:8px;font-family:inherit;outline:none;"></div>';
+        html += '<button onclick="agregarVentaTarjeta()" style="padding:8px 14px;font-size:13px;font-weight:600;background:#3b82f6;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit;">Agregar</button>';
+        html += '</div>';
+      }
+      if (tarjetaData.ventas && tarjetaData.ventas.length > 0) {
+        tarjetaData.ventas.forEach(v => {
+          html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;">';
+          html += '<span style="font-size:13px;color:#666;">' + v.concepto + ' <span style="color:#999;font-size:11px;">' + v.hora + '</span></span>';
+          html += '<div style="display:flex;align-items:center;gap:8px;">';
+          html += '<span style="font-size:14px;font-weight:600;color:#3b82f6;">$' + v.monto.toLocaleString() + '</span>';
+          html += '<button onclick="eliminarVentaTarjeta(' + v.id + ')" style="border:none;background:transparent;color:#ccc;cursor:pointer;font-size:13px;">&#10005;</button>';
+          html += '</div></div>';
+        });
+      } else if (!esHoy) {
+        html += '<div style="color:#ccc;font-size:13px;">Sin ventas manuales</div>';
+      }
       html += '</div>';
 
       // Gastos
@@ -1419,6 +1449,30 @@ function hacerLogin() {
     }).then(res => {
       if (!res.ok) return alert("Contrasena incorrecta");
       navCorte(document.querySelector('.quick-nav button:nth-child(5)'));
+    });
+  }
+
+  function agregarVentaTarjeta() {
+    const concepto = document.getElementById("tarjetaConcepto").value.trim() || "Tarjeta";
+    const monto = document.getElementById("tarjetaMonto").value;
+    if (!monto || parseFloat(monto) <= 0) return alert("Ingresa el monto");
+    fetch("/venta-tarjeta", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ concepto, monto: parseFloat(monto) })
+    }).then(() => navCorte(null, corteFecha));
+  }
+
+  function eliminarVentaTarjeta(id) {
+    const pass = prompt("Contrasena para eliminar:");
+    if (!pass) return;
+    fetch("/venta-tarjeta/" + id, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: pass })
+    }).then(res => {
+      if (!res.ok) return alert("Contrasena incorrecta");
+      navCorte(null, corteFecha);
     });
   }
 
