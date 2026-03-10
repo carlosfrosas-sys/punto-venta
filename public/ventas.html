@@ -1222,23 +1222,39 @@ function hacerLogin() {
   }
 
   // Corte de Caja
-  function navCorte(btn) {
-    setActiveNav(btn);
+  let corteFecha = "";
+
+  function navCorte(btn, fecha) {
+    if (btn) setActiveNav(btn);
     tabActual = "corte";
     limpiarContenido();
     mostrarGraficas(false);
     mostrarMetricas(false);
     mostrarAcciones(false);
-    setTitulo("Corte de Caja", fechaHoyStr());
 
     const hoy = fechaHoyStr();
+    corteFecha = fecha || hoy;
+    const esHoy = corteFecha === hoy;
+    setTitulo("Corte de Caja", corteFecha);
+
+    // Selector de fecha
+    let selectorHtml = '<div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap;">';
+    todasLasFechas.slice().reverse().forEach(f => {
+      const [d, m] = f.split("/");
+      const dateObj = new Date(parseInt(f.split("/")[2]), parseInt(m) - 1, parseInt(d));
+      const diaSemana = DIAS_SEMANA[dateObj.getDay()];
+      const activo = f === corteFecha;
+      selectorHtml += '<button onclick="navCorte(null,\'' + f + '\')" style="padding:6px 12px;font-size:12px;border:1px solid ' + (activo ? '#3b82f6' : '#e5e5e5') + ';background:' + (activo ? '#3b82f6' : '#fff') + ';color:' + (activo ? '#fff' : '#666') + ';border-radius:20px;cursor:pointer;font-family:inherit;">' + diaSemana + ' ' + d + '/' + m + '</button>';
+    });
+    selectorHtml += '</div>';
+    document.getElementById("contenidoExtra").innerHTML = selectorHtml;
 
     Promise.all([
-      fetch("/ventas/fecha/" + encodeURIComponent(hoy)).then(r => r.json()),
-      fetch("/gastos/" + encodeURIComponent(hoy)).then(r => r.json()),
-      fetch("/ventas/eliminados/" + encodeURIComponent(hoy)).then(r => r.json()),
-      fetch("/fondo-caja/" + encodeURIComponent(hoy)).then(r => r.json()),
-      fetch("/retiros/" + encodeURIComponent(hoy)).then(r => r.json())
+      fetch("/ventas/fecha/" + encodeURIComponent(corteFecha)).then(r => r.json()),
+      fetch("/gastos/" + encodeURIComponent(corteFecha)).then(r => r.json()),
+      fetch("/ventas/eliminados/" + encodeURIComponent(corteFecha)).then(r => r.json()),
+      fetch("/fondo-caja/" + encodeURIComponent(corteFecha)).then(r => r.json()),
+      fetch("/retiros/" + encodeURIComponent(corteFecha)).then(r => r.json())
     ]).then(([ventas, gastosData, eliminados, fondoData, retirosData]) => {
       const totalVentas = ventas.total || 0;
       const totalEfectivo = ventas.totalEfectivo || 0;
@@ -1256,16 +1272,21 @@ function hacerLogin() {
       // Header
       html += '<div style="text-align:center;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid #eee;">';
       html += '<div style="font-size:20px;font-weight:700;">Corte de Caja</div>';
-      html += '<div style="font-size:13px;color:#999;">' + hoy + '</div>';
+      html += '<div style="font-size:13px;color:#999;">' + corteFecha + '</div>';
       html += '</div>';
 
       // Fondo de caja
       html += '<div style="background:#f8f8f8;border-radius:12px;padding:20px;margin-bottom:12px;">';
       html += '<div style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Fondo de Caja</div>';
-      html += '<div style="display:flex;align-items:center;gap:10px;">';
-      html += '<input type="number" id="fondoCajaInput" value="' + fondoCaja + '" placeholder="$0" style="width:140px;padding:10px;font-size:16px;font-weight:700;border:1px solid #e5e5e5;border-radius:8px;font-family:inherit;outline:none;text-align:center;">';
-      html += '<button onclick="guardarFondo()" style="padding:10px 16px;font-size:13px;font-weight:600;background:#3b82f6;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit;">Guardar</button>';
-      html += '</div></div>';
+      if (esHoy) {
+        html += '<div style="display:flex;align-items:center;gap:10px;">';
+        html += '<input type="number" id="fondoCajaInput" value="' + fondoCaja + '" placeholder="$0" style="width:140px;padding:10px;font-size:16px;font-weight:700;border:1px solid #e5e5e5;border-radius:8px;font-family:inherit;outline:none;text-align:center;">';
+        html += '<button onclick="guardarFondo()" style="padding:10px 16px;font-size:13px;font-weight:600;background:#3b82f6;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit;">Guardar</button>';
+        html += '</div>';
+      } else {
+        html += '<div style="font-size:18px;font-weight:700;">$' + fondoCaja.toLocaleString() + '</div>';
+      }
+      html += '</div>';
 
       // Ventas
       html += '<div style="background:#f8f8f8;border-radius:12px;padding:20px;margin-bottom:12px;">';
@@ -1280,11 +1301,13 @@ function hacerLogin() {
       // Gastos
       html += '<div style="background:#f8f8f8;border-radius:12px;padding:20px;margin-bottom:12px;">';
       html += '<div style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Gastos</div>';
-      html += '<div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px;">';
-      html += '<div style="flex:1;min-width:120px;"><input type="text" id="gastoConcepto" placeholder="Concepto" style="width:100%;padding:8px;font-size:13px;border:1px solid #e5e5e5;border-radius:8px;font-family:inherit;outline:none;"></div>';
-      html += '<div style="width:100px;"><input type="number" id="gastoMonto" placeholder="$0" style="width:100%;padding:8px;font-size:13px;border:1px solid #e5e5e5;border-radius:8px;font-family:inherit;outline:none;"></div>';
-      html += '<button onclick="agregarGasto()" style="padding:8px 14px;font-size:13px;font-weight:600;background:#ef4444;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit;">Agregar</button>';
-      html += '</div>';
+      if (esHoy) {
+        html += '<div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px;">';
+        html += '<div style="flex:1;min-width:120px;"><input type="text" id="gastoConcepto" placeholder="Concepto" style="width:100%;padding:8px;font-size:13px;border:1px solid #e5e5e5;border-radius:8px;font-family:inherit;outline:none;"></div>';
+        html += '<div style="width:100px;"><input type="number" id="gastoMonto" placeholder="$0" style="width:100%;padding:8px;font-size:13px;border:1px solid #e5e5e5;border-radius:8px;font-family:inherit;outline:none;"></div>';
+        html += '<button onclick="agregarGasto()" style="padding:8px 14px;font-size:13px;font-weight:600;background:#ef4444;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit;">Agregar</button>';
+        html += '</div>';
+      }
       html += filaCorte("Total Gastos", "-$" + totalGastos.toLocaleString(), "#ef4444", true);
       if (gastosData.gastos && gastosData.gastos.length > 0) {
         gastosData.gastos.forEach(g => {
@@ -1301,11 +1324,13 @@ function hacerLogin() {
       // Retiros
       html += '<div style="background:#f8f8f8;border-radius:12px;padding:20px;margin-bottom:12px;">';
       html += '<div style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Retiros de Dinero</div>';
-      html += '<div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px;">';
-      html += '<div style="flex:1;min-width:120px;"><input type="text" id="retiroConcepto" placeholder="Concepto (opcional)" style="width:100%;padding:8px;font-size:13px;border:1px solid #e5e5e5;border-radius:8px;font-family:inherit;outline:none;"></div>';
-      html += '<div style="width:100px;"><input type="number" id="retiroMonto" placeholder="$0" style="width:100%;padding:8px;font-size:13px;border:1px solid #e5e5e5;border-radius:8px;font-family:inherit;outline:none;"></div>';
-      html += '<button onclick="agregarRetiro()" style="padding:8px 14px;font-size:13px;font-weight:600;background:#f59e0b;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit;">Retirar</button>';
-      html += '</div>';
+      if (esHoy) {
+        html += '<div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px;">';
+        html += '<div style="flex:1;min-width:120px;"><input type="text" id="retiroConcepto" placeholder="Concepto (opcional)" style="width:100%;padding:8px;font-size:13px;border:1px solid #e5e5e5;border-radius:8px;font-family:inherit;outline:none;"></div>';
+        html += '<div style="width:100px;"><input type="number" id="retiroMonto" placeholder="$0" style="width:100%;padding:8px;font-size:13px;border:1px solid #e5e5e5;border-radius:8px;font-family:inherit;outline:none;"></div>';
+        html += '<button onclick="agregarRetiro()" style="padding:8px 14px;font-size:13px;font-weight:600;background:#f59e0b;color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit;">Retirar</button>';
+        html += '</div>';
+      }
       html += filaCorte("Total Retiros", "-$" + totalRetiros.toLocaleString(), "#f59e0b", true);
       if (retirosData.retiros && retirosData.retiros.length > 0) {
         retirosData.retiros.forEach(r => {
