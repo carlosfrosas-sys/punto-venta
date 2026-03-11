@@ -2492,6 +2492,7 @@ function enviarPedido() {
   // Reset
   productos = [];
   total = 0;
+  _prevProductCount = 0;
 
   document.getElementById("lista").innerHTML = "";
   document.getElementById("total").innerText = "0";
@@ -2548,6 +2549,7 @@ function cobrarTarjeta() {
             fetch("/pedido", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(pedidoData) });
             productos = [];
             total = 0;
+            _prevProductCount = 0;
             document.getElementById("lista").innerHTML = "";
             document.getElementById("total").innerText = "0";
             document.getElementById("proteinas").innerHTML = "";
@@ -2595,6 +2597,7 @@ function cancelarPagoTarjeta() {
 function cancelarPedido() {
   productos = [];
   total = 0;
+  _prevProductCount = 0;
 
   document.getElementById("lista").innerHTML = "";
   document.getElementById("total").innerText = "0";
