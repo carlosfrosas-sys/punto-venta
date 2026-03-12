@@ -486,12 +486,12 @@
       });
     });
 
-    // Tiempo transcurrido
-    function tiempoTranscurrido(horaEnvio) {
-      if (!horaEnvio) return "";
+    // Calcular minutos transcurridos
+    function calcularMinutos(horaEnvio) {
+      if (!horaEnvio) return 0;
       const ahora = new Date();
       const partes = horaEnvio.match(/(\d+):(\d+)/);
-      if (!partes) return "";
+      if (!partes) return 0;
       let h = parseInt(partes[1]);
       const m = parseInt(partes[2]);
       const esPM = /p\.?\s*m\.?/i.test(horaEnvio);
@@ -500,7 +500,11 @@
       if (esAM && h === 12) h = 0;
       const envio = new Date();
       envio.setHours(h, m, 0, 0);
-      const diff = Math.floor((ahora - envio) / 60000);
+      return Math.floor((ahora - envio) / 60000);
+    }
+
+    function tiempoTranscurrido(horaEnvio) {
+      const diff = calcularMinutos(horaEnvio);
       if (diff < 1) return "ahora";
       if (diff < 60) return "hace " + diff + " min";
       return "hace " + Math.floor(diff / 60) + "h " + (diff % 60) + "m";
@@ -614,7 +618,21 @@
         ${botonesHTML}
       `;
 
-      contenedor.appendChild(div);
+      // Insertar ordenado: más antiguo arriba (más minutos = más arriba)
+      const minutos = calcularMinutos(hora);
+      let insertado = false;
+      for (const hijo of contenedor.children) {
+        const tiempoHijo = hijo.querySelector(".tiempo");
+        if (tiempoHijo) {
+          const minHijo = calcularMinutos(tiempoHijo.dataset.hora);
+          if (minutos > minHijo) {
+            contenedor.insertBefore(div, hijo);
+            insertado = true;
+            break;
+          }
+        }
+      }
+      if (!insertado) contenedor.appendChild(div);
     }
 
     window.entregar = function(id) {
