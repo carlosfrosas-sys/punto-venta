@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Barra</title>
+  <link rel="manifest" href="/manifest-barra.json">
+  <link rel="apple-touch-icon" href="/icon-barra.png">
+  <meta name="theme-color" content="#111">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Barra">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #111;
+      color: #f5f5f5;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      padding: 8px 12px;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 28px;
+      font-weight: 300;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      color: #888;
+      margin-bottom: 15px;
+      border-bottom: 1px solid #333;
+      padding-bottom: 10px;
+    }
+
+    #pedidos {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      height: calc(100vh - 16px);
+      overflow-y: auto;
+    }
+
+    .pedido {
+      background: #1a1a1a;
+      border: 2px solid #60a5fa;
+      border-radius: 8px;
+      padding: 6px 12px;
+      width: 100%;
+    }
+
+    .pedido-body {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .productos {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      flex: 1;
+    }
+
+    .productos li {
+      font-size: 48px;
+      font-weight: 600;
+      padding: 2px 0;
+      text-transform: uppercase;
+    }
+
+    .punto {
+      color: #60a5fa;
+      margin-right: 8px;
+    }
+
+    .qty {
+      color: #ef4444;
+      font-weight: 800;
+    }
+
+    .nota {
+      display: inline;
+      font-size: 28px;
+      color: #f87171;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+
+    .pedido-lado {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: flex-end;
+      flex-shrink: 0;
+      margin-left: 20px;
+    }
+
+    .nota-general {
+      font-size: 28px;
+      color: #fbbf24;
+      font-weight: 600;
+      padding: 6px 12px;
+      background: #2a2200;
+      border-radius: 6px;
+      border-left: 4px solid #fbbf24;
+      text-align: right;
+    }
+
+    .para-llevar {
+      font-size: 20px;
+      color: #f97316;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .pedido {
+      position: relative;
+    }
+
+    .pedido-meta {
+      position: absolute;
+      right: 20px;
+      bottom: 10px;
+      display: flex;
+      gap: 12px;
+      font-size: 18px;
+      color: #666;
+      margin: 0;
+    }
+
+    .pedido-meta .hora-envio {
+      color: #60a5fa;
+    }
+
+    .pedido-meta .tiempo {
+      color: #f87171;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="pedidos"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const contenedor = document.getElementById("pedidos");
+    const pedidosMostrados = new Set();
+
+    // Sonido de notificación con AudioContext (beep real)
+    let audioCtx;
+
+    function getAudioCtx() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      return audioCtx;
+    }
+
+    function beep(ctx) {
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.frequency.value = 880;
+      osc1.type = "sine";
+      gain1.gain.setValueAtTime(0.6, ctx.currentTime);
+      gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+      osc1.start(ctx.currentTime);
+      osc1.stop(ctx.currentTime + 0.15);
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.frequency.value = 1200;
+      osc2.type = "sine";
+      gain2.gain.setValueAtTime(0.6, ctx.currentTime + 0.18);
+      gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+      osc2.start(ctx.currentTime + 0.18);
+      osc2.stop(ctx.currentTime + 0.35);
+    }
+
+    function playNotification() {
+      try {
+        const ctx = getAudioCtx();
+        if (ctx.state === "suspended") {
+          ctx.resume().then(() => beep(ctx));
+        } else {
+          beep(ctx);
+        }
+      } catch(e) {}
+    }
+
+    // Desbloquear audio en cualquier interacción
+    function unlockAudio() {
+      const ctx = getAudioCtx();
+      if (ctx.state === "running") return;
+      ctx.resume().then(() => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        gain.gain.value = 0;
+        osc.start();
+        osc.stop(ctx.currentTime + 0.01);
+      });
+    }
+
+    ["click", "touchstart", "keydown"].forEach(evt => {
+      document.addEventListener(evt, unlockAudio, { once: true });
+    });
+
+    try { getAudioCtx().resume(); } catch(e) {}
+
+    // Calcular minutos transcurridos
+    function calcularMinutos(horaEnvio) {
+      if (!horaEnvio) return 0;
+      const ahora = new Date();
+      const partes = horaEnvio.match(/(\d+):(\d+)/);
+      if (!partes) return 0;
+      let h = parseInt(partes[1]);
+      const m = parseInt(partes[2]);
+      const esPM = /p\.?\s*m\.?/i.test(horaEnvio);
+      const esAM = /a\.?\s*m\.?/i.test(horaEnvio);
+      if (esPM && h < 12) h += 12;
+      if (esAM && h === 12) h = 0;
+      const envio = new Date();
+      envio.setHours(h, m, 0, 0);
+      return Math.floor((ahora - envio) / 60000);
+    }
+
+    function tiempoTranscurrido(horaEnvio) {
+      const diff = calcularMinutos(horaEnvio);
+      if (diff < 1) return "ahora";
+      if (diff < 60) return "hace " + diff + " min";
+      return "hace " + Math.floor(diff / 60) + "h " + (diff % 60) + "m";
+    }
+
+    function colorPrioridad(min) {
+      if (min >= 12) return "#ef4444";
+      if (min >= 8) return "#fbbf24";
+      return "#60a5fa";
+    }
+
+    function actualizarTiempos() {
+      document.querySelectorAll(".pedido").forEach(el => {
+        const tiempoEl = el.querySelector(".tiempo");
+        if (!tiempoEl) return;
+        const hora = tiempoEl.dataset.hora;
+        if (!hora) return;
+        tiempoEl.innerText = tiempoTranscurrido(hora);
+        const min = calcularMinutos(hora);
+        el.style.borderColor = colorPrioridad(min);
+      });
+    }
+
+    setInterval(actualizarTiempos, 30000);
+
+    function cargarPedidos() {
+      contenedor.innerHTML = "";
+      pedidosMostrados.clear();
+      fetch("/pedidos")
+        .then(res => res.json())
+        .then(pedidos => {
+          pedidos.filter(p => p.estado === "pendiente").forEach(mostrarPedido);
+        });
+    }
+
+    // Cargar al inicio
+    cargarPedidos();
+
+    // Recargar al reconectar
+    socket.on("connect", () => {
+      if (pedidosMostrados.size > 0) {
+        cargarPedidos();
+      }
+    });
+
+    socket.on("nuevoPedido", (pedido) => {
+      if (!pedidosMostrados.has(pedido.id)) {
+        playNotification();
+        mostrarPedido(pedido);
+      }
+    });
+
+    socket.on("actualizarPedido", (pedido) => {
+      if (pedido.estado !== "pendiente") {
+        const el = document.getElementById("pedido-" + pedido.id);
+        if (el) el.remove();
+        pedidosMostrados.delete(pedido.id);
+      }
+    });
+
+    socket.on("pedidoEliminado", (id) => {
+      const el = document.getElementById("pedido-" + id);
+      if (el) el.remove();
+      pedidosMostrados.delete(id);
+    });
+
+    socket.on("productoEntregado", ({ pedidoId, index }) => {
+      const el = document.getElementById("pedido-" + pedidoId);
+      if (!el) return;
+      const li = el.querySelector(`li[data-index="${index}"]`);
+      if (li) li.remove();
+
+      const restantes = el.querySelectorAll(".productos li");
+      if (restantes.length === 0) {
+        el.remove();
+        pedidosMostrados.delete(pedidoId);
+      }
+    });
+
+    socket.on("productoRegresado", ({ pedidoId, index }) => {
+      fetch("/pedidos")
+        .then(res => res.json())
+        .then(pedidos => {
+          const pedido = pedidos.find(p => p.id === pedidoId && p.estado === "pendiente");
+          if (!pedido) return;
+          const el = document.getElementById("pedido-" + pedidoId);
+          if (el) {
+            el.remove();
+            pedidosMostrados.delete(pedidoId);
+          }
+          mostrarPedido(pedido);
+        });
+    });
+
+    socket.on("pedidoRegresado", (pedido) => {
+      if (!pedidosMostrados.has(pedido.id)) {
+        playNotification();
+        mostrarPedido(pedido);
+      }
+    });
+
+    // Productos de barra: bebidas, aguas, licuados, café, ensaladas, maruchan, agua de económico
+    const prefBebidas = ["Agua ", "Licuado de ", "Café ", "Capuccino", "Espumoso", "Té", "Yakult", "Panzoncita", "Peñafielita", "Boing", "Del Valle", "Refresco de Sabor", "Fuze Tea", "Lechita", "Jumex", "Coca", "Volt", "Electrolit", "Gatorade", "Monster", "Redbull", "Agua Caliente"];
+
+    function esDeBarra(nombre) {
+      if (prefBebidas.some(b => nombre.startsWith(b))) return true;
+      if (nombre.startsWith("Ensalada")) return true;
+      if (nombre === "Maruchan" || nombre.startsWith("Maruchan ")) return true;
+      if (nombre.startsWith("Económico")) return true;
+      return false;
+    }
+
+    function mostrarPedido(pedido) {
+      if (pedidosMostrados.has(pedido.id)) return;
+      pedidosMostrados.add(pedido.id);
+
+      const entregados = pedido.productosEntregados || [];
+      const productosBarra = pedido.productos
+        .map((p, i) => ({ ...p, _index: i }))
+        .filter(p => esDeBarra(p.nombre) && !entregados.includes(p._index));
+      if (productosBarra.length === 0) return;
+
+      const hora = pedido.horaEnvio || new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+
+      const div = document.createElement("div");
+      div.id = "pedido-" + pedido.id;
+      div.className = "pedido";
+      div.style.borderColor = colorPrioridad(calcularMinutos(hora));
+
+      div.innerHTML = `
+        <div class="pedido-body">
+          <ul class="productos">
+            ${productosBarra.map(p =>
+              `<li data-index="${p._index}">
+                <span class="punto">&#8226;</span> ${p.cantidad && p.cantidad > 1 ? `<span class="qty">${p.cantidad}</span> ` : ""}${p.nombre}
+                ${p.nota ? `<span class="nota">${p.nota.replace(/\s*\+\$\d+/g, "")}</span>` : ""}
+              </li>`
+            ).join("")}
+          </ul>
+          ${pedido.nota ? `<div class="pedido-lado">
+            <div class="nota-general">${pedido.nota}</div>
+          </div>` : ""}
+        </div>
+        <div class="pedido-meta">
+          ${pedido.paraLlevar ? `<span class="para-llevar">Para llevar</span>` : ""}
+          <span class="hora-envio">${hora}</span>
+          <span class="tiempo" data-hora="${hora}">${tiempoTranscurrido(hora)}</span>
+        </div>
+      `;
+
+      // Insertar ordenado: más antiguo arriba
+      const minutos = calcularMinutos(hora);
+      let insertado = false;
+      for (const hijo of contenedor.children) {
+        const tiempoHijo = hijo.querySelector(".tiempo");
+        if (tiempoHijo) {
+          const minHijo = calcularMinutos(tiempoHijo.dataset.hora);
+          if (minutos > minHijo) {
+            contenedor.insertBefore(div, hijo);
+            insertado = true;
+            break;
+          }
+        }
+      }
+      if (!insertado) contenedor.appendChild(div);
+    }
+  </script>
+
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js");
+    }
+  </script>
+</body>
+</html>

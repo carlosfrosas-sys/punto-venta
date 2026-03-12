@@ -190,6 +190,10 @@ app.get("/cocina", (req, res) => {
   res.sendFile(__dirname + "/public/cocina.html");
 });
 
+app.get("/barra", (req, res) => {
+  res.sendFile(__dirname + "/public/barra.html");
+});
+
 app.get("/entrega", (req, res) => {
   res.sendFile(__dirname + "/public/entrega.html");
 });
