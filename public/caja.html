@@ -1724,6 +1724,13 @@ function mostrarMultiSopes(datos, max) {
     cont.appendChild(btnSencillo);
   }
 
+  const btnMedia = document.createElement("button");
+  btnMedia.innerText = "Media Orden";
+  btnMedia.style.background = "#f59e0b";
+  btnMedia.style.color = "white";
+  btnMedia.onclick = () => mostrarMediaOrdenSopes(datos);
+  cont.appendChild(btnMedia);
+
   datos.proteinas.forEach(p => {
     const esObjeto = typeof p === "object";
     const nombre = esObjeto ? p.nombre : p;
@@ -1760,6 +1767,54 @@ function mostrarMultiSopes(datos, max) {
     if (seleccionados.length === 0) { alert("Elige al menos uno"); return; }
     const precioFinal = Math.max(...seleccionados.map(s => s.precio));
     const nombreFinal = "Sopes de " + seleccionados.map(s => s.nombre).join(" y ");
+    mostrarNotas(nombreFinal, precioFinal, notasAntojitos);
+  };
+  cont.appendChild(btnSig);
+}
+
+function mostrarMediaOrdenSopes(datos) {
+  const cont = document.getElementById("proteinas");
+  const seleccionados = [];
+  const especiales = ["Campechanos", "Arrachera"];
+
+  cont.innerHTML = "<h3>1/2 Orden Sopes - Elige hasta 2:</h3>";
+
+  datos.proteinas.forEach(p => {
+    const esObjeto = typeof p === "object";
+    const nombre = esObjeto ? p.nombre : p;
+    const precio = especiales.includes(nombre) ? 32 : 29;
+
+    const btn = document.createElement("button");
+    btn.innerText = nombre;
+    btn.style.background = "#e5e7eb";
+    btn.style.color = "#111827";
+    btn.onclick = () => {
+      const idx = seleccionados.findIndex(s => s.nombre === nombre);
+      if (idx >= 0) {
+        seleccionados.splice(idx, 1);
+        btn.style.background = "#e5e7eb";
+        btn.style.color = "#111827";
+      } else {
+        if (seleccionados.length >= 2) return;
+        seleccionados.push({ nombre, precio });
+        btn.style.background = "#16a34a";
+        btn.style.color = "white";
+      }
+    };
+    cont.appendChild(btn);
+  });
+
+  const btnSig = document.createElement("button");
+  btnSig.innerText = "Siguiente";
+  btnSig.style.background = "#2563eb";
+  btnSig.style.color = "white";
+  btnSig.style.fontSize = "16px";
+  btnSig.style.marginTop = "10px";
+  btnSig.style.width = "100%";
+  btnSig.onclick = () => {
+    if (seleccionados.length === 0) { alert("Elige al menos uno"); return; }
+    const precioFinal = Math.max(...seleccionados.map(s => s.precio));
+    const nombreFinal = "1/2 Sopes de " + seleccionados.map(s => s.nombre).join(" y ");
     mostrarNotas(nombreFinal, precioFinal, notasAntojitos);
   };
   cont.appendChild(btnSig);
