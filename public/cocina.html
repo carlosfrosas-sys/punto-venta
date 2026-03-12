@@ -317,6 +317,31 @@
       }
     });
 
+    // Producto regresado desde entrega → recargar pedido en cocina
+    socket.on("productoRegresado", ({ pedidoId, index }) => {
+      // Recargar el pedido completo para mostrar el producto regresado
+      fetch("/pedidos")
+        .then(res => res.json())
+        .then(pedidos => {
+          const pedido = pedidos.find(p => p.id === pedidoId && p.estado === "pendiente");
+          if (!pedido) return;
+          const el = document.getElementById("pedido-" + pedidoId);
+          if (el) {
+            el.remove();
+            pedidosMostrados.delete(pedidoId);
+          }
+          mostrarPedido(pedido);
+        });
+    });
+
+    // Pedido regresado desde entregados → mostrarlo de nuevo en cocina
+    socket.on("pedidoRegresado", (pedido) => {
+      if (!pedidosMostrados.has(pedido.id)) {
+        playNotification();
+        mostrarPedido(pedido);
+      }
+    });
+
     const bebidasCocina = ["Agua ", "Licuado de ", "Café ", "Capuccino", "Espumoso", "Té", "Yakult", "Panzoncita", "Peñafielita", "Boing", "Del Valle", "Refresco de Sabor", "Fuze Tea", "Lechita", "Jumex", "Coca", "Volt", "Electrolit", "Gatorade", "Monster", "Redbull", "Agua Caliente"];
 
     function esBebida(nombre) {

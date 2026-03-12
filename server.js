@@ -776,6 +776,40 @@ app.post("/pedido/entregado/:id", async (req, res) => {
   res.sendStatus(200);
 });
 
+// Regresar producto individual a cocina (quitar de productosEntregados)
+app.post("/pedido/:id/producto/:index/regresar", async (req, res) => {
+  const id = parseInt(req.params.id);
+  const index = parseInt(req.params.index);
+  const pedido = pedidos.find(p => p.id === id);
+
+  if (!pedido) return res.status(404).send("No encontrado");
+  if (!pedido.productosEntregados) return res.status(400).send("Sin productos entregados");
+
+  const idx = pedido.productosEntregados.indexOf(index);
+  if (idx >= 0) {
+    pedido.productosEntregados.splice(idx, 1);
+    await guardarPedido(pedido);
+    io.emit("productoRegresado", { pedidoId: id, index });
+  }
+
+  res.json({ ok: true });
+});
+
+// Regresar pedido entregado a entrega (pendiente)
+app.post("/pedido/:id/regresar", async (req, res) => {
+  const id = parseInt(req.params.id);
+  const pedido = pedidos.find(p => p.id === id);
+
+  if (!pedido) return res.status(404).send("No encontrado");
+
+  pedido.estado = "pendiente";
+  delete pedido.horaEntrega;
+  await guardarPedido(pedido);
+  io.emit("pedidoRegresado", pedido);
+
+  res.json({ ok: true });
+});
+
 // Helpers de fechas para filtros
 function parseFechaMX(fechaStr) {
   // Formato dd/mm/yyyy
