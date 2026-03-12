@@ -386,7 +386,21 @@
         </div>
       `;
 
-      contenedor.appendChild(div);
+      // Insertar ordenado: más antiguo arriba (más minutos = más arriba)
+      const minutos = calcularMinutos(hora);
+      let insertado = false;
+      for (const hijo of contenedor.children) {
+        const tiempoHijo = hijo.querySelector(".tiempo");
+        if (tiempoHijo) {
+          const minHijo = calcularMinutos(tiempoHijo.dataset.hora);
+          if (minutos > minHijo) {
+            contenedor.insertBefore(div, hijo);
+            insertado = true;
+            break;
+          }
+        }
+      }
+      if (!insertado) contenedor.appendChild(div);
     }
   </script>
 
