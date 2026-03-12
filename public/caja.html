@@ -849,7 +849,8 @@ const menu = {
       { nombre: "Atún", precio: 58 },
       { nombre: "Jamón con Queso", precio: 50 },
       { nombre: "Codito", precio: 35 },
-      { nombre: "Verduras", precio: 35 }
+      { nombre: "Verduras", precio: 35 },
+      { nombre: "Económico", precio: 45, economico: true }
     ]
   },
 
@@ -1288,6 +1289,8 @@ if (categoria === "Licuados") {
           mostrarPregunta("Capuccino Instantáneo", item.precio, "¿Qué sabor?", "Moka", "Vainilla");
         } else if (categoria === "Bebidas" || categoria === "Café") {
           agregarProductoSinNota(item.nombre, item.precio);
+        } else if (categoria === "Ensaladas" && item.economico) {
+          mostrarEconomico();
         } else if (categoria === "Ensaladas" && (item.nombre === "Codito" || item.nombre === "Verduras")) {
           mostrarOpcionesEnsalada(item.nombre, item.precio);
         } else if (categoria === "Ensaladas") {
@@ -2151,6 +2154,29 @@ function mostrarOpcionesEnsalada(nombre, precio) {
     btn.onclick = () => {
       agregarProductoSinNota("Ensalada de " + nombre + " con " + opcion, precioConProteina);
       cont.innerHTML = "";
+    };
+    cont.appendChild(btn);
+  });
+}
+
+function mostrarEconomico() {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>Económico</h3><p>¿Qué proteína?</p>";
+
+  ["Milanesa", "Pechuga"].forEach(proteina => {
+    const btn = document.createElement("button");
+    btn.innerText = proteina;
+    btn.onclick = () => {
+      cont.innerHTML = "<h3>Económico con " + proteina + "</h3><p>¿Qué bebida?</p>";
+      ["Horchata", "Jamaica"].forEach(bebida => {
+        const btnB = document.createElement("button");
+        btnB.innerText = bebida;
+        btnB.onclick = () => {
+          agregarProductoSinNota("Económico con " + proteina + ", " + bebida, 45);
+          cont.innerHTML = "";
+        };
+        cont.appendChild(btnB);
+      });
     };
     cont.appendChild(btn);
   });
