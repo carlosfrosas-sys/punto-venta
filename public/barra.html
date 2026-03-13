@@ -337,15 +337,30 @@
       }
     });
 
-    // Productos de barra: bebidas, aguas, licuados, café, ensaladas, maruchan, agua de económico
-    const prefBebidas = ["Agua ", "Licuado de ", "Café ", "Capuccino", "Espumoso", "Té", "Yakult", "Panzoncita", "Peñafielita", "Boing", "Del Valle", "Refresco de Sabor", "Fuze Tea", "Lechita", "Jumex", "Coca", "Volt", "Electrolit", "Gatorade", "Monster", "Redbull", "Agua Caliente"];
+    // Productos de barra: bebidas, aguas, licuados, café, ensaladas, snacks, tacos dorados, económico
+    const prefBebidas = ["Agua ", "Licuado de ", "Licuado Litro", "Café ", "Capuccino", "Espumoso", "Té", "Yakult", "Panzoncita", "Peñafielita", "Boing", "Del Valle", "Refresco de Sabor", "Fuze Tea", "Lechita", "Jumex", "Coca", "Volt", "Electrolit", "Gatorade", "Monster", "Redbull", "Agua Caliente"];
+    const snacks = ["Hot Dog", "2 Hot Dogs", "Banderilla", "Papas a la Francesa", "Nachos", "Maruchan"];
+    const bebidasPaquete = ["Té", "Café", "Jugo"];
 
     function esDeBarra(nombre) {
       if (prefBebidas.some(b => nombre.startsWith(b))) return true;
       if (nombre.startsWith("Ensalada")) return true;
-      if (nombre === "Maruchan" || nombre.startsWith("Maruchan ")) return true;
+      if (snacks.some(s => nombre.startsWith(s))) return true;
       if (nombre.startsWith("Económico")) return true;
+      if (nombre === "Tacos Dorados" || nombre === "1pza de Taco Dorado") return true;
       return false;
+    }
+
+    function esPaqueteConBebida(p) {
+      if (!p.nombre.startsWith("Paquete") || !p.nota) return false;
+      return bebidasPaquete.some(b => p.nota.includes(b));
+    }
+
+    function extraerBebidaPaquete(nota) {
+      for (const b of bebidasPaquete) {
+        if (nota.includes(b)) return b;
+      }
+      return "";
     }
 
     function mostrarPedido(pedido) {
@@ -353,9 +368,22 @@
       pedidosMostrados.add(pedido.id);
 
       const entregados = pedido.productosEntregados || [];
-      const productosBarra = pedido.productos
+      // Productos directos de barra
+      let productosBarra = pedido.productos
         .map((p, i) => ({ ...p, _index: i }))
-        .filter(p => esDeBarra(p.nombre) && !entregados.includes(p._index));
+        .filter(p => !entregados.includes(p._index) && esDeBarra(p.nombre));
+
+      // Bebidas de paquetes (Té, Café, Jugo) → mostrar como "Café de Paquete"
+      pedido.productos.forEach((p, i) => {
+        if (entregados.includes(i)) return;
+        if (esPaqueteConBebida(p)) {
+          const bebida = extraerBebidaPaquete(p.nota);
+          if (bebida) {
+            productosBarra.push({ nombre: bebida + " de Paquete", _index: i, _virtual: true });
+          }
+        }
+      });
+
       if (productosBarra.length === 0) return;
 
       const hora = pedido.horaEnvio || new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
@@ -371,7 +399,7 @@
             ${productosBarra.map(p =>
               `<li data-index="${p._index}">
                 <span class="punto">&#8226;</span> ${p.cantidad && p.cantidad > 1 ? `<span class="qty">${p.cantidad}</span> ` : ""}${p.nombre}
-                ${p.nota ? `<span class="nota">${p.nota.replace(/\s*\+\$\d+/g, "")}</span>` : ""}
+                ${p.nota && !p._virtual ? `<span class="nota">${p.nota.replace(/\s*\+\$\d+/g, "")}</span>` : ""}
               </li>`
             ).join("")}
           </ul>
