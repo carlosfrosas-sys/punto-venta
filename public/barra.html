@@ -354,6 +354,8 @@
 
     function esPaqueteConBebida(p) {
       if (!p.nombre.startsWith("Paquete") || !p.nota) return false;
+      // Paquete 4 ya sale completo en barra, no crear virtual
+      if (p.nombre.startsWith("Paquete 4")) return false;
       return bebidasPaquete.some(b => p.nota.includes(b));
     }
 
