@@ -348,6 +348,7 @@
       if (snacks.some(s => nombre.startsWith(s))) return true;
       if (nombre.startsWith("Económico")) return true;
       if (nombre === "Tacos Dorados" || nombre === "1pza de Taco Dorado") return true;
+      if (nombre.startsWith("Hot Cakes") || nombre.startsWith("Paquete 4")) return true;
       return false;
     }
 
