@@ -145,6 +145,12 @@
 </head>
 <body>
 
+  <div id="activar-sonido" onclick="activarSonido()" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);display:flex;align-items:center;justify-content:center;z-index:999;cursor:pointer;">
+    <div style="text-align:center;">
+      <div style="font-size:60px;margin-bottom:20px;">🔊</div>
+      <div style="font-size:24px;color:#4ade80;font-weight:600;">Tocar para activar sonido</div>
+    </div>
+  </div>
   <div id="pedidos"></div>
 
   <script src="/socket.io/socket.io.js"></script>
@@ -217,6 +223,14 @@
 
     // Intentar activar audio automáticamente al cargar (funciona en Android TV)
     try { getAudioCtx().resume(); } catch(e) {}
+
+    function activarSonido() {
+      const ctx = getAudioCtx();
+      ctx.resume().then(() => {
+        beep(ctx);
+        document.getElementById("activar-sonido").style.display = "none";
+      });
+    }
 
     // Calcular minutos transcurridos
     function calcularMinutos(horaEnvio) {
