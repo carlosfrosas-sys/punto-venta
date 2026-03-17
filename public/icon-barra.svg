@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="32" fill="#1a1a1a"/>
+  <!-- Vaso de licuadora -->
+  <path d="M68 50 L62 120 Q62 130 72 130 L120 130 Q130 130 130 120 L124 50 Z" fill="#60a5fa" opacity="0.3"/>
+  <path d="M68 50 L62 120 Q62 130 72 130 L120 130 Q130 130 130 120 L124 50 Z" stroke="#60a5fa" stroke-width="2.5" fill="none"/>
+  <!-- Tapa -->
+  <rect x="65" y="44" width="62" height="8" rx="3" fill="#888"/>
+  <rect x="90" y="32" width="12" height="14" rx="4" fill="#888"/>
+  <!-- Liquido -->
+  <path d="M64 80 L60 120 Q60 132 72 132 L120 132 Q132 132 132 120 L128 80 Z" fill="#60a5fa" opacity="0.5"/>
+  <!-- Lineas del vaso -->
+  <line x1="72" y1="70" x2="82" y2="70" stroke="#fff" stroke-width="1.5" opacity="0.3"/>
+  <line x1="70" y1="85" x2="80" y2="85" stroke="#fff" stroke-width="1.5" opacity="0.3"/>
+  <line x1="68" y1="100" x2="78" y2="100" stroke="#fff" stroke-width="1.5" opacity="0.3"/>
+  <!-- Base -->
+  <rect x="55" y="130" width="82" height="16" rx="4" fill="#555"/>
+  <rect x="50" y="146" width="92" height="10" rx="3" fill="#444"/>
+  <!-- Boton -->
+  <circle cx="96" cy="138" r="4" fill="#60a5fa"/>
+  <!-- Etiqueta -->
+  <text x="96" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="600" fill="#fff" opacity="0.5">BARRA</text>
+</svg>
