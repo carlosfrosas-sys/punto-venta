@@ -1843,28 +1843,39 @@ function mostrarMultiItems(prefijo, items, max) {
   cont.appendChild(lblPiezas);
 
   items.forEach(item => {
-    const row = document.createElement("div");
-    row.style.cssText = "display:flex;align-items:center;gap:6px;margin-bottom:6px;";
+    const btn = document.createElement("button");
+    btn.style.background = "#e5e7eb";
+    btn.style.color = "#111827";
+    btn.style.fontSize = "15px";
+    btn.style.minHeight = "38px";
+    btn.style.padding = "6px 8px";
+    btn.style.display = "flex";
+    btn.style.alignItems = "center";
+    btn.style.justifyContent = "space-between";
+    btn.style.gap = "4px";
+    btn.style.cursor = "default";
 
-    const btnMenos = document.createElement("button");
-    btnMenos.innerText = "−";
-    btnMenos.style.cssText = "width:40px;height:40px;font-size:20px;font-weight:bold;background:#ef4444;color:white;border:none;border-radius:8px;cursor:pointer;";
+    const spanMenos = document.createElement("span");
+    spanMenos.innerText = "−";
+    spanMenos.style.cssText = "cursor:pointer;font-weight:bold;font-size:18px;padding:0 6px;";
 
-    const lbl = document.createElement("span");
-    lbl.innerText = item.nombre;
-    lbl.style.cssText = "flex:1;text-align:center;font-size:15px;font-weight:600;";
+    const spanNombre = document.createElement("span");
+    spanNombre.innerText = item.nombre;
+    spanNombre.style.cssText = "flex:1;text-align:center;";
 
-    const btnMas = document.createElement("button");
-    btnMas.innerText = "+";
-    btnMas.style.cssText = "width:40px;height:40px;font-size:20px;font-weight:bold;background:#16a34a;color:white;border:none;border-radius:8px;cursor:pointer;";
+    const spanMas = document.createElement("span");
+    spanMas.innerText = "+";
+    spanMas.style.cssText = "cursor:pointer;font-weight:bold;font-size:18px;padding:0 6px;";
 
     function actualizar() {
       const c = conteo[item.nombre] ? conteo[item.nombre].cantidad : 0;
-      lbl.innerText = c > 0 ? item.nombre + " x" + c : item.nombre;
-      lbl.style.color = c > 0 ? "#16a34a" : "#111827";
+      spanNombre.innerText = c > 0 ? "− " + item.nombre + " (" + c + ") +" : "− " + item.nombre + " +";
+      btn.style.background = c > 0 ? "#16a34a" : "#e5e7eb";
+      btn.style.color = c > 0 ? "white" : "#111827";
     }
 
-    btnMas.onclick = () => {
+    spanMas.onclick = (e) => {
+      e.stopPropagation();
       if (!conteo[item.nombre]) conteo[item.nombre] = { cantidad: 0, precio: item.precio };
       conteo[item.nombre].cantidad++;
       totalPiezas++;
@@ -1872,7 +1883,8 @@ function mostrarMultiItems(prefijo, items, max) {
       actualizarLabel();
     };
 
-    btnMenos.onclick = () => {
+    spanMenos.onclick = (e) => {
+      e.stopPropagation();
       if (!conteo[item.nombre] || conteo[item.nombre].cantidad === 0) return;
       conteo[item.nombre].cantidad--;
       totalPiezas--;
@@ -1881,10 +1893,15 @@ function mostrarMultiItems(prefijo, items, max) {
       actualizarLabel();
     };
 
-    row.appendChild(btnMenos);
-    row.appendChild(lbl);
-    row.appendChild(btnMas);
-    cont.appendChild(row);
+    btn.onclick = (e) => {
+      if (e.target === spanMenos || e.target === spanMas) return;
+      spanMas.onclick(e);
+    };
+
+    btn.appendChild(spanMenos);
+    btn.appendChild(spanNombre);
+    btn.appendChild(spanMas);
+    cont.appendChild(btn);
   });
 
   const btnPapas = document.createElement("button");
@@ -1909,7 +1926,7 @@ function mostrarMultiItems(prefijo, items, max) {
   btnAgregar.style.width = "100%";
   btnAgregar.onclick = () => {
     if (totalPiezas === 0) { alert("Elige al menos uno"); return; }
-    const partes = Object.entries(conteo).map(([nombre, d]) => d.cantidad > 1 ? nombre + " x" + d.cantidad : nombre);
+    const partes = Object.entries(conteo).map(([nombre, d]) => d.cantidad > 1 ? nombre + " (" + d.cantidad + ")" : nombre);
     let precioFinal = Math.max(...Object.values(conteo).map(d => d.precio));
     const extras = Math.max(0, totalPiezas - max);
     precioFinal += extras * 17;
@@ -1937,6 +1954,7 @@ function mostrarMultiItems(prefijo, items, max) {
 
 function mostrarMultiProteina(categoria, datos, max, notas) {
   const cont = document.getElementById("proteinas");
+  const seleccionados = [];
   const conteo = {};
   let totalPiezas = 0;
   let conPapas = false;
@@ -1945,17 +1963,22 @@ function mostrarMultiProteina(categoria, datos, max, notas) {
   const prefijo = esBurrito ? "Burritos de " : categoria + " de ";
   const precioExtra = esBurrito ? 27 : 0;
 
-  cont.innerHTML = "<h3>" + prefijo.trim() + " - Elige piezas:</h3>";
+  cont.innerHTML = esBurrito ? "<h3>" + prefijo.trim() + " - Elige piezas:</h3>" : "";
 
-  const lblPiezas = document.createElement("p");
-  lblPiezas.style.fontWeight = "600";
-  lblPiezas.style.marginBottom = "8px";
-  function actualizarLabel() {
-    const extras = Math.max(0, totalPiezas - max);
-    lblPiezas.innerText = "Piezas: " + totalPiezas + (extras > 0 ? " (+" + extras + " extra = +$" + (extras * precioExtra) + ")" : "");
+  if (esBurrito) {
+    const lblPiezas = document.createElement("p");
+    lblPiezas.id = "lblPiezasBurrito";
+    lblPiezas.style.fontWeight = "600";
+    lblPiezas.style.marginBottom = "8px";
+    cont.appendChild(lblPiezas);
   }
-  actualizarLabel();
-  cont.appendChild(lblPiezas);
+  function actualizarLabel() {
+    const lbl = document.getElementById("lblPiezasBurrito");
+    if (!lbl) return;
+    const extras = Math.max(0, totalPiezas - max);
+    lbl.innerText = "Piezas: " + totalPiezas + (extras > 0 ? " (+" + extras + " extra = +$" + (extras * precioExtra) + ")" : "");
+  }
+  if (esBurrito) actualizarLabel();
 
   // Sencillo para mollequiles
   if (datos.sencillo) {
@@ -1972,48 +1995,85 @@ function mostrarMultiProteina(categoria, datos, max, notas) {
     const nombre = esObjeto ? p.nombre : p;
     const precio = esObjeto ? p.precio : datos.precio;
 
-    const row = document.createElement("div");
-    row.style.cssText = "display:flex;align-items:center;gap:6px;margin-bottom:6px;";
+    if (esBurrito) {
+      // Estilo − Nombre + para burritos
+      const btn = document.createElement("button");
+      btn.style.background = "#e5e7eb";
+      btn.style.color = "#111827";
+      btn.style.display = "flex";
+      btn.style.alignItems = "center";
+      btn.style.justifyContent = "space-between";
+      btn.style.gap = "4px";
+      btn.style.cursor = "default";
 
-    const btnMenos = document.createElement("button");
-    btnMenos.innerText = "−";
-    btnMenos.style.cssText = "width:40px;height:40px;font-size:20px;font-weight:bold;background:#ef4444;color:white;border:none;border-radius:8px;cursor:pointer;";
+      const spanMenos = document.createElement("span");
+      spanMenos.innerText = "−";
+      spanMenos.style.cssText = "cursor:pointer;font-weight:bold;font-size:18px;padding:0 6px;";
 
-    const lbl = document.createElement("span");
-    lbl.innerText = nombre;
-    lbl.style.cssText = "flex:1;text-align:center;font-size:15px;font-weight:600;";
+      const spanNombre = document.createElement("span");
+      spanNombre.innerText = nombre;
+      spanNombre.style.cssText = "flex:1;text-align:center;";
 
-    const btnMas = document.createElement("button");
-    btnMas.innerText = "+";
-    btnMas.style.cssText = "width:40px;height:40px;font-size:20px;font-weight:bold;background:#16a34a;color:white;border:none;border-radius:8px;cursor:pointer;";
+      const spanMas = document.createElement("span");
+      spanMas.innerText = "+";
+      spanMas.style.cssText = "cursor:pointer;font-weight:bold;font-size:18px;padding:0 6px;";
 
-    function actualizar() {
-      const c = conteo[nombre] ? conteo[nombre].cantidad : 0;
-      lbl.innerText = c > 0 ? nombre + " x" + c : nombre;
-      lbl.style.color = c > 0 ? "#16a34a" : "#111827";
+      function actualizar() {
+        const c = conteo[nombre] ? conteo[nombre].cantidad : 0;
+        spanNombre.innerText = c > 0 ? "− " + nombre + " (" + c + ") +" : "− " + nombre + " +";
+        btn.style.background = c > 0 ? "#16a34a" : "#e5e7eb";
+        btn.style.color = c > 0 ? "white" : "#111827";
+      }
+
+      spanMas.onclick = (e) => {
+        e.stopPropagation();
+        if (!conteo[nombre]) conteo[nombre] = { cantidad: 0, precio };
+        conteo[nombre].cantidad++;
+        totalPiezas++;
+        actualizar();
+        actualizarLabel();
+      };
+
+      spanMenos.onclick = (e) => {
+        e.stopPropagation();
+        if (!conteo[nombre] || conteo[nombre].cantidad === 0) return;
+        conteo[nombre].cantidad--;
+        totalPiezas--;
+        if (conteo[nombre].cantidad === 0) delete conteo[nombre];
+        actualizar();
+        actualizarLabel();
+      };
+
+      btn.onclick = (e) => {
+        if (e.target === spanMenos || e.target === spanMas) return;
+        spanMas.onclick(e);
+      };
+
+      btn.appendChild(spanMenos);
+      btn.appendChild(spanNombre);
+      btn.appendChild(spanMas);
+      cont.appendChild(btn);
+    } else {
+      // Estilo toggle original para mollequiles
+      const btn = document.createElement("button");
+      btn.innerText = nombre;
+      btn.style.background = "#e5e7eb";
+      btn.style.color = "#111827";
+      btn.onclick = () => {
+        const idx = seleccionados.findIndex(s => s.nombre === nombre);
+        if (idx >= 0) {
+          seleccionados.splice(idx, 1);
+          btn.style.background = "#e5e7eb";
+          btn.style.color = "#111827";
+        } else {
+          if (seleccionados.length >= max) return;
+          seleccionados.push({ nombre, precio });
+          btn.style.background = "#16a34a";
+          btn.style.color = "white";
+        }
+      };
+      cont.appendChild(btn);
     }
-
-    btnMas.onclick = () => {
-      if (!conteo[nombre]) conteo[nombre] = { cantidad: 0, precio };
-      conteo[nombre].cantidad++;
-      totalPiezas++;
-      actualizar();
-      actualizarLabel();
-    };
-
-    btnMenos.onclick = () => {
-      if (!conteo[nombre] || conteo[nombre].cantidad === 0) return;
-      conteo[nombre].cantidad--;
-      totalPiezas--;
-      if (conteo[nombre].cantidad === 0) delete conteo[nombre];
-      actualizar();
-      actualizarLabel();
-    };
-
-    row.appendChild(btnMenos);
-    row.appendChild(lbl);
-    row.appendChild(btnMas);
-    cont.appendChild(row);
   });
 
   // Papas solo para burritos, no mollequiles
@@ -2040,14 +2100,21 @@ function mostrarMultiProteina(categoria, datos, max, notas) {
   btnSig.style.marginTop = "10px";
   btnSig.style.width = "100%";
   btnSig.onclick = () => {
-    if (totalPiezas === 0) { alert("Elige al menos una proteína"); return; }
-    const partes = Object.entries(conteo).map(([n, d]) => d.cantidad > 1 ? n + " x" + d.cantidad : n);
-    let precioFinal = Math.max(...Object.values(conteo).map(d => d.precio));
-    const extras = Math.max(0, totalPiezas - max);
-    precioFinal += extras * precioExtra;
-    let nombreFinal = prefijo + partes.join(" y ");
-    if (conPapas) { nombreFinal += " con Papas"; precioFinal += 18; }
-    mostrarNotas(nombreFinal, precioFinal, notas);
+    if (esBurrito) {
+      if (totalPiezas === 0) { alert("Elige al menos una proteína"); return; }
+      const partes = Object.entries(conteo).map(([n, d]) => d.cantidad > 1 ? n + " (" + d.cantidad + ")" : n);
+      let precioFinal = Math.max(...Object.values(conteo).map(d => d.precio));
+      const extras = Math.max(0, totalPiezas - max);
+      precioFinal += extras * precioExtra;
+      let nombreFinal = prefijo + partes.join(" y ");
+      if (conPapas) { nombreFinal += " con Papas"; precioFinal += 18; }
+      mostrarNotas(nombreFinal, precioFinal, notas);
+    } else {
+      if (seleccionados.length === 0) { alert("Elige al menos una proteína"); return; }
+      let precioFinal = Math.max(...seleccionados.map(s => s.precio));
+      let nombreFinal = prefijo + seleccionados.map(s => s.nombre).join(" y ");
+      mostrarNotas(nombreFinal, precioFinal, notas);
+    }
   };
 
   const row = document.createElement("div");
