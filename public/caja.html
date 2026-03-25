@@ -729,23 +729,22 @@ const menu = {
   "Bebidas": {
     items: [
       { nombre: "Agua", precio: 0, agua: true },
+      { nombre: "Coca Cola", precio: 25, sabores: ["Original 600ml", "Sin Azucar 600ml", {nombre: "Panzoncita", precio: 18}, {nombre: "Panzoncita Sin Azucar", precio: 18}, "Coca de Lata", {nombre: "Coca 3L", precio: 60}] },
+      { nombre: "Refresco de Sabor", precio: 24, sabores: ["Fanta", "Sprite", "Senzao", "Prisco", "Yoli", "Deliciosa", "Naranjada", "Toronjada", "Limonada", "Piñada", "Manzanada", "Delaware", "Sidral", "Topo Chico", "Peñafiel Mineral"] },
       { nombre: "Yakult", precio: 10 },
       { nombre: "Peñafielita", precio: 18, sabores: ["Limon", "Naranja", "Fresa", "Piña"] },
       { nombre: "Boing", precio: 20, sabores: ["Mango", "Guayaba", "Manzana", "Fresa", "Uva", "Naranja"] },
       { nombre: "Del Valle", precio: 24, sabores: ["Mango", "Durazno"] },
-      { nombre: "Bonafont de Sabor", precio: 22, sabores: ["Naranja Guayaba", "Limon", "Frutos Rojos", "Piña Coco", "Pepino con Limon"] },
+      { nombre: "Bonafont de Sabor", precio: 22, sabores: ["Naranja", "Guayaba", "Limon", "Frutos Rojos", "Piña Coco", "Pepino con Limon"] },
       { nombre: "Santa Clara", precio: 22, sabores: ["Fresa", "Chocolate", "Choco Menta"] },
-      { nombre: "Refresco de Sabor", precio: 24, sabores: ["Fanta", "Sprite", "Senzao", "Prisco", "Yoli", "Deliciosa", "Naranjada", "Toronjada", "Limonada", "Piñada", "Manzanada", "Delaware", "Sidral", "Mineral", "Topo Chico"] },
       { nombre: "Fuze Tea", precio: 24, sabores: ["Té Negro", "Té Verde", "Durazno"] },
       { nombre: "Arizona", precio: 24, sabores: ["Mango", "Kiwi", "Sandia", "Te Verde"] },
       { nombre: "Jumex", precio: 24, sabores: ["Mango", "Manzana", "Durazno"] },
-      { nombre: "Coca Cola", precio: 25, sabores: ["Original 600ml", "Sin Azucar 600ml", "Panzoncita", "Panzoncita Sin Azucar", "Coca de Lata"] },
       { nombre: "Volt", precio: 30 },
-      { nombre: "Electrolit", precio: 35 },
-      { nombre: "Gatorade", precio: 35 },
+      { nombre: "Electrolit", precio: 35, sabores: ["Mora", "Lima Limon", "Fresa", "Fresa Kiwi", "Horchata", "Uva"] },
+      { nombre: "Gatorade", precio: 35, sabores: ["Naranja", "Mora", "Ponche"] },
       { nombre: "Monster", precio: 40 },
-      { nombre: "Redbull", precio: 47 },
-      { nombre: "Coca 3L", precio: 60 }
+      { nombre: "Redbull", precio: 47 }
     ]
   },
 
@@ -2248,10 +2247,13 @@ function mostrarSaboresBebida(nombre, precio, sabores) {
   cont.innerHTML = "<h3>" + nombre + "</h3><p>Elige sabor:</p>";
 
   sabores.forEach(sabor => {
+    const esObjeto = typeof sabor === "object";
+    const nombreSabor = esObjeto ? sabor.nombre : sabor;
+    const precioSabor = esObjeto ? sabor.precio : precio;
     const btn = document.createElement("button");
-    btn.innerText = sabor;
+    btn.innerText = nombreSabor;
     btn.onclick = () => {
-      agregarProductoSinNota(nombre + " " + sabor, precio);
+      agregarProductoSinNota(nombre + " " + nombreSabor, precioSabor);
       cont.innerHTML = "";
     };
     cont.appendChild(btn);
@@ -2265,7 +2267,8 @@ function mostrarTamañosAguaNatural() {
   const tamaños = [
     { nombre: "1/2 Litro", precio: 12 },
     { nombre: "1 Litro", precio: 16 },
-    { nombre: "1.5 Litros", precio: 20 }
+    { nombre: "1.5 Litros", precio: 20 },
+    { nombre: "2 Litros", precio: 25 }
   ];
 
   tamaños.forEach(t => {
