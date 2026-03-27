@@ -312,7 +312,7 @@ app.post("/crear-preferencia", async (req, res) => {
   let montoFinal = monto;
   let notaConCupon = nota || "";
   if (descuento > 0) {
-    montoFinal = Math.round(monto * (1 - descuento / 100) * 100) / 100;
+    montoFinal = monto * (1 - descuento / 100);
     notaConCupon = "[CUPON " + cuponUpper + " -" + descuento + "%] " + notaConCupon;
   }
 

@@ -542,6 +542,7 @@
     </div>
     <div class="section-title">Menú</div>
     <div class="categorias-wrap">
+      <button id="btnVolver" onclick="volverACategorias()" style="display:none;width:100%;margin-bottom:8px;background:#fff;color:#007bb5;border:1.5px solid #b8d8e8;border-radius:12px;font-size:16px;min-height:44px;cursor:pointer;">← Volver al menú</button>
       <div id="categorias"></div>
     </div>
     <div class="proteinas-wrap">
@@ -988,6 +989,13 @@ const menu = {
 
 };
 
+function volverACategorias() {
+  document.getElementById("categorias").style.display = "grid";
+  document.getElementById("btnVolver").style.display = "none";
+  document.getElementById("proteinas").innerHTML = "";
+  document.querySelector(".section-title").innerText = "Menú";
+}
+
 function cargarCategorias() {
   const cont = document.getElementById("categorias");
   for (let categoria in menu) {
@@ -1014,6 +1022,11 @@ function mostrarOpciones(categoria) {
     agregarProductoSinNota(categoria, datos.precio);
     return;
   }
+
+  // Ocultar categorias, mostrar boton volver
+  document.getElementById("categorias").style.display = "none";
+  document.getElementById("btnVolver").style.display = "block";
+  document.querySelector(".section-title").innerText = categoria;
 
   // LICUADOS
   if (categoria === "Licuados") {
@@ -1160,7 +1173,8 @@ function mostrarOpciones(categoria) {
   if (datos.items) {
     datos.items.forEach(item => {
       const btn = document.createElement("button");
-      btn.innerText = item.precio > 0 ? item.nombre + " - $" + item.precio : item.nombre;
+      const tieneMultiPrecio = item.sabores && item.sabores.some(s => typeof s === "object");
+      btn.innerText = item.precio > 0 && !tieneMultiPrecio ? item.nombre + " - $" + item.precio : item.nombre;
       btn.onclick = () => {
         if (categoria === "Burguers") {
           mostrarNotas(item.nombre, item.precio, notasHamburguesas);
@@ -2026,7 +2040,8 @@ function mostrarEconomico() {
 
 function mostrarSaboresBebida(nombre, precio, sabores) {
   const cont = document.getElementById("proteinas");
-  cont.innerHTML = "<h3>" + nombre + " - $" + precio + "</h3><p>Elige sabor:</p>";
+  const tieneMultiPrecio = sabores.some(s => typeof s === "object");
+  cont.innerHTML = tieneMultiPrecio ? "<h3>" + nombre + "</h3><p>Elige sabor:</p>" : "<h3>" + nombre + " - $" + precio + "</h3><p>Elige sabor:</p>";
 
   sabores.forEach(sabor => {
     const esObjeto = typeof sabor === "object";
@@ -2279,6 +2294,7 @@ function agregarProductoConNota(nombre, precio) {
 }
 
 function scrollACategorias() {
+  volverACategorias();
   const pw = document.querySelector(".proteinas-wrap");
   if (pw) pw.scrollTop = 0;
 }
@@ -2348,7 +2364,7 @@ function eliminarProducto(index) {
 function actualizarTotalConDescuento() {
   const llevar = document.getElementById("paraLlevar").checked ? 10 : 0;
   const subtotal = total + llevar;
-  const montoDescuento = descuentoAplicado > 0 ? Math.round(subtotal * descuentoAplicado / 100) : 0;
+  const montoDescuento = descuentoAplicado > 0 ? subtotal * descuentoAplicado / 100 : 0;
   const totalFinal = subtotal - montoDescuento;
 
   document.getElementById("paraLlevarRow").style.display = llevar ? "flex" : "none";
