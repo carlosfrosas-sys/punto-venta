@@ -1869,7 +1869,7 @@ function mostrarMultiItems(prefijo, items, max) {
 
     function actualizar() {
       const c = conteo[item.nombre] ? conteo[item.nombre].cantidad : 0;
-      spanNombre.innerText = c > 0 ? "− " + item.nombre + " (" + c + ") +" : "− " + item.nombre + " +";
+      spanNombre.innerText = c > 0 ? item.nombre + " (" + c + ")" : item.nombre;
       btn.style.background = c > 0 ? "#16a34a" : "#e5e7eb";
       btn.style.color = c > 0 ? "white" : "#111827";
     }
@@ -2020,7 +2020,7 @@ function mostrarMultiProteina(categoria, datos, max, notas) {
 
       function actualizar() {
         const c = conteo[nombre] ? conteo[nombre].cantidad : 0;
-        spanNombre.innerText = c > 0 ? "− " + nombre + " (" + c + ") +" : "− " + nombre + " +";
+        spanNombre.innerText = c > 0 ? nombre + " (" + c + ")" : nombre;
         btn.style.background = c > 0 ? "#16a34a" : "#e5e7eb";
         btn.style.color = c > 0 ? "white" : "#111827";
       }
