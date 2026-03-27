@@ -356,10 +356,10 @@
       }
     });
 
-    const bebidasCocina = ["Agua ", "Licuado de ", "Licuado Litro", "Café ", "Capuccino", "Espumoso", "Té", "Yakult", "Panzoncita", "Peñafielita", "Boing", "Del Valle", "Refresco de Sabor", "Fuze Tea", "Lechita", "Jumex", "Coca", "Volt", "Electrolit", "Gatorade", "Monster", "Redbull", "Agua Caliente"];
+    const bebidasCocina = ["Agua ", "Licuado de ", "Licuado Litro", "Café ", "Capuccino", "Espumoso", "Té", "Yakult", "Peñafielita", "Boing", "Del Valle", "Bonafont", "Santa Clara", "Refresco de Sabor", "Fuze Tea", "Arizona", "Jumex", "Coca", "Volt", "Electrolit", "Gatorade", "Monster", "Redbull", "Agua Caliente"];
 
     function esBebida(nombre) {
-      return bebidasCocina.some(b => nombre.startsWith(b)) || nombre.startsWith("Otro") || nombre.startsWith("Hot Cakes");
+      return bebidasCocina.some(b => nombre.startsWith(b)) || nombre.startsWith("Otro") || nombre.startsWith("Hot Cakes") || nombre.startsWith("HotCakes") || nombre === "Corn Flakes";
     }
 
     function mostrarPedido(pedido) {
