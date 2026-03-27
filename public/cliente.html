@@ -597,7 +597,13 @@ let total = 0;
 let descuentoAplicado = 0;
 let cuponAplicado = "";
 
-const CUPONES_VALIDOS = { "TESTCABA100": 100, "CABANA10": 10 };
+const CUPONES_VALIDOS = {
+  "TESTCABA100": 100, "CABANA10": 10,
+  "CABANA-R7K2": 10, "CABANA-M4P8": 10, "CABANA-X9L3": 10,
+  "CABANA-J6W1": 10, "CABANA-T2N5": 10, "CABANA-H8Q4": 10,
+  "CABANA-F3V7": 10, "CABANA-D5B9": 10, "CABANA-Y1C6": 10,
+  "CABANA-G7S2": 10
+};
 
 const notasTortas = ["Sin Mayonesa", "Sin Queso", "Sin Frijoles", "Sin Jitomate", "Sin Aguacate"];
 const notasHamburguesas = ["Sin Mayonesa", "Sin Catsup", "Sin Mostaza", "Sin Lechuga", "Sin Jitomate", "Sin Queso"];
@@ -646,23 +652,22 @@ const menu = {
   "Bebidas": {
     items: [
       { nombre: "Agua", precio: 0, agua: true },
+      { nombre: "Coca Cola", precio: 25, sabores: ["Original 600ml", "Sin Azucar 600ml", {nombre: "Panzoncita", precio: 18}, {nombre: "Panzoncita Sin Azucar", precio: 18}, "Coca de Lata", {nombre: "Coca 3L", precio: 60}] },
+      { nombre: "Refresco de Sabor", precio: 24, sabores: ["Fanta", "Sprite", "Senzao", "Prisco", "Yoli", "Deliciosa", "Naranjada", "Toronjada", "Limonada", "Pinada", "Manzanada", "Delaware", "Sidral", "Topo Chico", "Penafiel Mineral", "Dr. Pepper", "Cream Soda", "Dr. Berry", "Dr. Cherry", "Fresada", "Fresca", "Squirt", "Orange"] },
       { nombre: "Yakult", precio: 10 },
-      { nombre: "Panzoncita", precio: 18 },
-      { nombre: "Penafielita", precio: 18 },
+      { nombre: "Penafielita", precio: 18, sabores: ["Limon", "Naranja", "Fresa", "Pina"] },
       { nombre: "Boing", precio: 20, sabores: ["Mango", "Guayaba", "Manzana", "Fresa", "Uva", "Naranja"] },
-      { nombre: "Del Valle", precio: 20 },
-      { nombre: "Refresco de Sabor", precio: 24 },
-      { nombre: "Fuze Tea", precio: 22, sabores: ["Te Negro", "Te Verde", "Durazno"] },
-      { nombre: "Lechita", precio: 22 },
-      { nombre: "Jumex", precio: 23 },
-      { nombre: "Coca Cola", precio: 25 },
-      { nombre: "Coca Lata", precio: 25 },
+      { nombre: "Del Valle", precio: 24, sabores: ["Mango", "Durazno"] },
+      { nombre: "Bonafont de Sabor", precio: 22, sabores: ["Naranja", "Guayaba", "Limon", "Frutos Rojos", "Pina Coco", "Pepino con Limon"] },
+      { nombre: "Santa Clara", precio: 22, sabores: ["Fresa", "Chocolate", "Choco Menta"] },
+      { nombre: "Fuze Tea", precio: 24, sabores: ["Te Negro", "Te Verde", "Durazno"] },
+      { nombre: "Arizona", precio: 24, sabores: ["Mango", "Kiwi", "Sandia", "Te Verde"] },
+      { nombre: "Jumex", precio: 24, sabores: ["Mango", "Manzana", "Durazno"] },
       { nombre: "Volt", precio: 30 },
-      { nombre: "Electrolit", precio: 35 },
-      { nombre: "Gatorade", precio: 35 },
+      { nombre: "Electrolit", precio: 35, sabores: ["Mora", "Lima Limon", "Fresa", "Fresa Kiwi", "Horchata", "Uva"] },
+      { nombre: "Gatorade", precio: 35, sabores: ["Naranja", "Mora", "Ponche"] },
       { nombre: "Monster", precio: 40 },
-      { nombre: "Redbull", precio: 47 },
-      { nombre: "Coca 3L", precio: 60 }
+      { nombre: "Redbull", precio: 47 }
     ]
   },
 
@@ -719,7 +724,8 @@ const menu = {
       { nombre: "Atun", precio: 58 },
       { nombre: "Jamon con Queso", precio: 50 },
       { nombre: "Codito", precio: 35 },
-      { nombre: "Verduras", precio: 35 }
+      { nombre: "Verduras", precio: 35 },
+      { nombre: "Economico", precio: 45, economico: true }
     ]
   },
 
@@ -769,14 +775,14 @@ const menu = {
     precio: 35
   },
 
-  "Paquetes": {
+  "Desayunos": {
     subcategorias: {
       "Paquete 1": {
         precio: 58,
         proteinas: ["Jamon","Chorizo","Champinones","Salchicha","Nopales","A la Mexicana"],
         bebida: true
       },
-      "Paquete 2 - Chilaquiles con Huevo - $58": {
+      "Paquete 2": {
         directo: true,
         nombre: "Paquete 2 - Chilaquiles con Huevo",
         precio: 58,
@@ -790,24 +796,33 @@ const menu = {
         notas: ["Sin Queso", "Sin Crema"],
         bebida: true
       },
-      "Paquete 4 - Hot Cakes con Huevo - $50": {
+      "Paquete 4": {
         directo: true,
         nombre: "Paquete 4 - Hot Cakes con Huevo",
         precio: 50,
         acompanamiento: ["Miel Maple", "Mermelada", "Lechera"],
         bebida: true
       },
-      "HotCakes - $40": {
-        directo: true,
-        nombre: "HotCakes",
-        precio: 40,
-        acompanamiento: ["Mermelada", "Miel", "Lechera"]
-      },
-      "Paquete 5 - Bisquet con Mermelada y Cafe - $38": {
+      "Paquete 5": {
         directo: true,
         nombre: "Paquete 5 - Bisquet con Mermelada y Cafe con Leche",
         precio: 38,
         bebida: true
+      },
+      "Orden de Huevo": {
+        precio: 45,
+        proteinas: ["Jamon","Chorizo","Champinones","Salchicha","Nopales","A la Mexicana"]
+      },
+      "HotCakes": {
+        directo: true,
+        nombre: "HotCakes",
+        precio: 40,
+        notas: ["Miel", "Lechera", "Mermelada"]
+      },
+      "Corn Flakes": {
+        directo: true,
+        nombre: "Corn Flakes",
+        precio: 30
       }
     }
   },
@@ -837,7 +852,8 @@ const menu = {
           { nombre: "Pollo", precio: 40 },
           { nombre: "Atun", precio: 40 },
           { nombre: "Pechuga", precio: 40 },
-          { nombre: "Pollo c/ Mole", precio: 40 }
+          { nombre: "Pollo c/ Mole", precio: 40 },
+          { nombre: "Arrachera", precio: 45 }
         ]
       },
       "Cuernito": {
@@ -1169,6 +1185,8 @@ function mostrarOpciones(categoria) {
           mostrarPregunta("Capuccino Instantaneo", item.precio, "Que sabor?", "Moka", "Vainilla");
         } else if (categoria === "Bebidas" || categoria === "Cafe") {
           agregarProductoSinNota(item.nombre, item.precio);
+        } else if (categoria === "Ensaladas" && item.economico) {
+          mostrarEconomico();
         } else if (categoria === "Ensaladas" && (item.nombre === "Codito" || item.nombre === "Verduras")) {
           mostrarOpcionesEnsalada(item.nombre, item.precio);
         } else if (categoria === "Ensaladas") {
@@ -1976,15 +1994,41 @@ function mostrarOpcionesEnsalada(nombre, precio) {
   });
 }
 
+function mostrarEconomico() {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>Economico - $45</h3><p>Elige proteina:</p>";
+
+  ["Milanesa", "Pechuga"].forEach(proteina => {
+    const btn = document.createElement("button");
+    btn.innerText = proteina;
+    btn.onclick = () => {
+      cont.innerHTML = "<h3>Economico con " + proteina + "</h3><p>Elige bebida:</p>";
+      ["Horchata", "Jamaica"].forEach(bebida => {
+        const btnB = document.createElement("button");
+        btnB.innerText = bebida;
+        btnB.onclick = () => {
+          agregarProductoSinNota("Economico con " + proteina + ", " + bebida, 45);
+          cont.innerHTML = "";
+        };
+        cont.appendChild(btnB);
+      });
+    };
+    cont.appendChild(btn);
+  });
+}
+
 function mostrarSaboresBebida(nombre, precio, sabores) {
   const cont = document.getElementById("proteinas");
   cont.innerHTML = "<h3>" + nombre + " - $" + precio + "</h3><p>Elige sabor:</p>";
 
   sabores.forEach(sabor => {
+    const esObjeto = typeof sabor === "object";
+    const nombreSabor = esObjeto ? sabor.nombre : sabor;
+    const precioSabor = esObjeto ? sabor.precio : precio;
     const btn = document.createElement("button");
-    btn.innerText = sabor;
+    btn.innerText = nombreSabor + " - $" + precioSabor;
     btn.onclick = () => {
-      agregarProductoSinNota(nombre + " " + sabor, precio);
+      agregarProductoSinNota(nombre + " " + nombreSabor, precioSabor);
       cont.innerHTML = "";
     };
     cont.appendChild(btn);
@@ -1998,7 +2042,8 @@ function mostrarTamanosAguaNatural() {
   const tamanos = [
     { nombre: "1/2 Litro", precio: 12 },
     { nombre: "1 Litro", precio: 16 },
-    { nombre: "1.5 Litros", precio: 20 }
+    { nombre: "1.5 Litros", precio: 20 },
+    { nombre: "2 Litros", precio: 25 }
   ];
 
   tamanos.forEach(t => {

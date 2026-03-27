@@ -23,6 +23,27 @@ const MP_TOKEN_PRESENCIAL = process.env.MERCADOPAGO_ACCESS_TOKEN_PRESENCIAL || p
 // Cupones de descuento
 const CUPONES = { "TESTCABA100": 100, "CABANA10": 10 };
 
+// Cupones de un solo uso (10% descuento)
+const CUPONES_1USO = {
+  "CABANA-R7K2": 10,
+  "CABANA-M4P8": 10,
+  "CABANA-X9L3": 10,
+  "CABANA-J6W1": 10,
+  "CABANA-T2N5": 10,
+  "CABANA-H8Q4": 10,
+  "CABANA-F3V7": 10,
+  "CABANA-D5B9": 10,
+  "CABANA-Y1C6": 10,
+  "CABANA-G7S2": 10
+};
+const cuponesUsados = new Set();
+async function marcarCuponUsado(codigo) {
+  cuponesUsados.add(codigo);
+  if (db) {
+    try { await db.collection("cupones_usados").insertOne({ codigo, fecha: new Date() }); } catch(e) {}
+  }
+}
+
 // MongoDB
 let db;
 let pedidos = [];
@@ -101,6 +122,11 @@ async function cargarPedidos() {
       ventasTarjeta = await db.collection("ventas_tarjeta").find().toArray();
       ventasTarjeta.forEach(v => delete v._id);
       ventaTarjetaIdCounter = ventasTarjeta.length > 0 ? Math.max(...ventasTarjeta.map(v => v.id)) + 1 : 1;
+    } catch(e) {}
+    try {
+      const usados = await db.collection("cupones_usados").find().toArray();
+      usados.forEach(c => cuponesUsados.add(c.codigo));
+      console.log("Cupones usados cargados:", cuponesUsados.size);
     } catch(e) {}
     if (pedidos.length > 0) return;
   }
@@ -216,7 +242,15 @@ app.post("/crear-preferencia", async (req, res) => {
 
   // Validar cupón
   const cuponUpper = cupon ? cupon.trim().toUpperCase() : "";
-  const descuento = CUPONES[cuponUpper] || 0;
+  let descuento = CUPONES[cuponUpper] || 0;
+
+  // Cupones de un solo uso
+  if (!descuento && CUPONES_1USO[cuponUpper]) {
+    if (cuponesUsados.has(cuponUpper)) {
+      return res.status(400).json({ error: "Este cupón ya fue utilizado" });
+    }
+    descuento = CUPONES_1USO[cuponUpper];
+  }
 
   // Cupón 100%: crear pedido directo sin Mercado Pago
   if (descuento === 100) {
@@ -240,6 +274,7 @@ app.post("/crear-preferencia", async (req, res) => {
 
       pedidos.push(pedido);
       await guardarPedido(pedido);
+      if (CUPONES_1USO[cuponUpper]) await marcarCuponUsado(cuponUpper);
       io.emit("nuevoPedido", pedido);
 
       return res.json({ directo: true });
@@ -303,7 +338,7 @@ app.post("/crear-preferencia", async (req, res) => {
       }
     });
 
-    await guardarPedidoPendiente(ref, { cliente, telefono, productos: prods, total: montoFinal, nota: notaConCupon, paraLlevar: paraLlevar || false });
+    await guardarPedidoPendiente(ref, { cliente, telefono, productos: prods, total: montoFinal, nota: notaConCupon, paraLlevar: paraLlevar || false, cupon: cuponUpper });
 
     res.json({ init_point: result.init_point });
   } catch (e) {
@@ -354,6 +389,7 @@ app.get("/pago-exitoso", async (req, res) => {
 
     pedidos.push(pedido);
     await guardarPedido(pedido);
+    if (pendiente.cupon && CUPONES_1USO[pendiente.cupon]) await marcarCuponUsado(pendiente.cupon);
     io.emit("nuevoPedido", pedido);
 
     await eliminarPedidoPendiente(external_reference);
