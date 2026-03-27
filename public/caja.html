@@ -1728,13 +1728,6 @@ function mostrarMultiSopes(datos, max) {
     cont.appendChild(btnSencillo);
   }
 
-  const btnMedia = document.createElement("button");
-  btnMedia.innerText = "Media Orden";
-  btnMedia.style.background = "#f59e0b";
-  btnMedia.style.color = "white";
-  btnMedia.onclick = () => mostrarMediaOrdenSopes(datos);
-  cont.appendChild(btnMedia);
-
   datos.proteinas.forEach(p => {
     const esObjeto = typeof p === "object";
     const nombre = esObjeto ? p.nombre : p;
@@ -1759,6 +1752,15 @@ function mostrarMultiSopes(datos, max) {
     };
     cont.appendChild(btn);
   });
+
+  const btnMedia = document.createElement("button");
+  btnMedia.innerText = "Media Orden";
+  btnMedia.style.background = "#f59e0b";
+  btnMedia.style.color = "white";
+  btnMedia.style.width = "100%";
+  btnMedia.style.marginTop = "10px";
+  btnMedia.onclick = () => mostrarMediaOrdenSopes(datos);
+  cont.appendChild(btnMedia);
 
   const btnSig = document.createElement("button");
   btnSig.innerText = "Siguiente";
