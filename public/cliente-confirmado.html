@@ -88,17 +88,67 @@
       font-family: inherit;
     }
     .btn-copiar:hover { background: #388e3c; }
+    .btn-whatsapp {
+      display: inline-block;
+      background: #25d366;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      text-decoration: none;
+      margin-left: 6px;
+    }
+    .btn-whatsapp:hover { background: #1da851; }
+    .tiempo-box {
+      background: #fff3e0;
+      border: 2px solid #ff9800;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    .tiempo-box .reloj {
+      font-size: 36px;
+      margin-bottom: 8px;
+    }
+    .tiempo-box .tiempo-texto {
+      font-size: 18px;
+      font-weight: 700;
+      color: #e65100;
+      margin-bottom: 4px;
+    }
+    .tiempo-box .tiempo-sub {
+      font-size: 13px;
+      color: #bf360c;
+      margin: 0;
+    }
+    .ref-buttons {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
   </style>
 </head>
 <body>
   <div class="card">
     <div class="icon">&#10003;</div>
     <h1>Tu pedido ha sido recibido</h1>
-    <p>Tu pago fue procesado exitosamente. Tu pedido ya esta en preparacion.</p>
+    <div class="tiempo-box">
+      <div class="reloj">&#9201;</div>
+      <div class="tiempo-texto">Tiempo estimado: 10 - 15 min</div>
+      <p class="tiempo-sub">Tu pedido ya esta en preparacion</p>
+    </div>
     <div id="refBox" class="ref-box" style="display:none;">
       <p>Comparte este link con tus amigos y ellos recibiran 10% de descuento en su primer pedido:</p>
       <div id="refLink" class="ref-link"></div>
-      <button class="btn-copiar" onclick="copiarLink()">Copiar link</button>
+      <div class="ref-buttons">
+        <button class="btn-copiar" onclick="copiarLink()">Copiar link</button>
+        <a id="btnWhatsapp" class="btn-whatsapp" target="_blank">Compartir por WhatsApp</a>
+      </div>
     </div>
     <a href="/cliente">Hacer otro pedido</a>
   </div>
@@ -110,6 +160,8 @@
         const link = window.location.origin + "/cliente?ref=" + ref;
         document.getElementById("refLink").innerText = link;
         document.getElementById("refBox").style.display = "block";
+        const mensaje = "Hola! Pide en La Cabana y recibe 10% de descuento en tu primer pedido: " + link;
+        document.getElementById("btnWhatsapp").href = "https://wa.me/?text=" + encodeURIComponent(mensaje);
       }
     })();
     function copiarLink() {
