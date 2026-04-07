@@ -269,6 +269,18 @@ app.post("/crear-referido-inicial", async (req, res) => {
   }
 });
 
+// Consultar estado de referidos
+app.get("/referidos-status", async (req, res) => {
+  if (!db) return res.json({ referidos: [] });
+  try {
+    const referidos = await db.collection("referidos").find().sort({ fecha: -1 }).toArray();
+    referidos.forEach(r => delete r._id);
+    return res.json({ referidos });
+  } catch(e) {
+    return res.json({ referidos: [] });
+  }
+});
+
 // Mercado Pago: crear preferencia de pago
 app.post("/crear-preferencia", async (req, res) => {
   const { cliente, telefono, productos: prods, total: monto, nota, cupon, paraLlevar } = req.body;
