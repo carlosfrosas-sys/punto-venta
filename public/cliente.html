@@ -610,8 +610,7 @@ const CUPONES_VALIDOS = {
   "CABANA-R7K2": 10, "CABANA-M4P8": 10, "CABANA-X9L3": 10,
   "CABANA-J6W1": 10, "CABANA-T2N5": 10, "CABANA-H8Q4": 10,
   "CABANA-F3V7": 10, "CABANA-D5B9": 10, "CABANA-Y1C6": 10,
-  "CABANA-G7S2": 10,
-  "REFERIDO10": 10
+  "CABANA-G7S2": 10
 };
 
 const notasTortas = ["Sin Mayonesa", "Sin Queso", "Sin Frijoles", "Sin Jitomate", "Sin Aguacate"];
@@ -2483,7 +2482,7 @@ async function iniciarPago() {
     const data = await res.json();
 
     if (data.directo) {
-      window.location.href = "/cliente-confirmado.html";
+      window.location.href = "/cliente-confirmado.html" + (data.nuevoRef ? "?ref=" + data.nuevoRef : "");
     } else if (data.init_point) {
       window.location.href = data.init_point;
     } else {
@@ -2500,22 +2499,35 @@ async function iniciarPago() {
 
 cargarCategorias();
 
-// Detectar link de referido (?ref=1)
+// Detectar link de referido (?ref=CODIGO)
 (function() {
   const params = new URLSearchParams(window.location.search);
-  if (params.has("ref")) {
-    const cuponInput = document.getElementById("cupon");
-    const info = document.getElementById("cuponInfo");
-    cuponInput.value = "REFERIDO10";
-    cuponInput.disabled = true;
-    descuentoAplicado = 10;
-    cuponAplicado = "REFERIDO10";
-    info.style.display = "block";
-    info.style.background = "#e8f5e9";
-    info.style.borderColor = "#4caf50";
-    info.style.color = "#2e7d32";
-    info.innerText = "🎉 Cupón de bienvenida aplicado: 10% de descuento";
-    actualizarTotalConDescuento();
+  const refCode = params.get("ref");
+  if (refCode) {
+    fetch("/validar-ref/" + refCode)
+      .then(r => r.json())
+      .then(data => {
+        const cuponInput = document.getElementById("cupon");
+        const info = document.getElementById("cuponInfo");
+        if (data.valido) {
+          cuponInput.value = "REF-" + refCode.toUpperCase();
+          cuponInput.disabled = true;
+          descuentoAplicado = 10;
+          cuponAplicado = "REF-" + refCode.toUpperCase();
+          info.style.display = "block";
+          info.style.background = "#e8f5e9";
+          info.style.borderColor = "#4caf50";
+          info.style.color = "#2e7d32";
+          info.innerText = "Cupon de bienvenida aplicado: 10% de descuento";
+          actualizarTotalConDescuento();
+        } else {
+          info.style.display = "block";
+          info.style.background = "#fce4ec";
+          info.style.borderColor = "#e53935";
+          info.style.color = "#c62828";
+          info.innerText = data.mensaje || "Este link ya no es valido";
+        }
+      }).catch(() => {});
   }
 })();
 

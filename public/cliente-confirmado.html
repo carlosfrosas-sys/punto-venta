@@ -52,6 +52,42 @@
     a:hover {
       background: #007bb5;
     }
+    .ref-box {
+      background: #e8f5e9;
+      border: 2px solid #4caf50;
+      border-radius: 12px;
+      padding: 16px;
+      margin: 20px 0;
+      text-align: center;
+    }
+    .ref-box p {
+      font-size: 14px;
+      color: #2e7d32;
+      margin-bottom: 10px;
+    }
+    .ref-link {
+      font-size: 13px;
+      color: #007bb5;
+      word-break: break-all;
+      background: #f0f7fb;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+    .btn-copiar {
+      display: inline-block;
+      background: #4caf50;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .btn-copiar:hover { background: #388e3c; }
   </style>
 </head>
 <body>
@@ -59,7 +95,31 @@
     <div class="icon">&#10003;</div>
     <h1>Tu pedido ha sido recibido</h1>
     <p>Tu pago fue procesado exitosamente. Tu pedido ya esta en preparacion.</p>
+    <div id="refBox" class="ref-box" style="display:none;">
+      <p>Comparte este link con tus amigos y ellos recibiran 10% de descuento en su primer pedido:</p>
+      <div id="refLink" class="ref-link"></div>
+      <button class="btn-copiar" onclick="copiarLink()">Copiar link</button>
+    </div>
     <a href="/cliente">Hacer otro pedido</a>
   </div>
+  <script>
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get("ref");
+      if (ref) {
+        const link = window.location.origin + "/cliente?ref=" + ref;
+        document.getElementById("refLink").innerText = link;
+        document.getElementById("refBox").style.display = "block";
+      }
+    })();
+    function copiarLink() {
+      const link = document.getElementById("refLink").innerText;
+      navigator.clipboard.writeText(link).then(() => {
+        const btn = document.querySelector(".btn-copiar");
+        btn.innerText = "Copiado!";
+        setTimeout(() => { btn.innerText = "Copiar link"; }, 2000);
+      });
+    }
+  </script>
 </body>
 </html>
