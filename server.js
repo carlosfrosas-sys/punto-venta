@@ -281,6 +281,21 @@ app.get("/referidos-status", async (req, res) => {
   }
 });
 
+// Eliminar cupón de referido
+app.delete("/eliminar-referido/:codigo", async (req, res) => {
+  const codigo = req.params.codigo.toUpperCase();
+  if (!db) return res.status(500).json({ error: "Sin base de datos" });
+  try {
+    const result = await db.collection("referidos").deleteOne({ codigo });
+    if (result.deletedCount > 0) {
+      return res.json({ ok: true });
+    }
+    return res.status(404).json({ error: "Cupón no encontrado" });
+  } catch(e) {
+    return res.status(500).json({ error: "Error al eliminar" });
+  }
+});
+
 // Mercado Pago: crear preferencia de pago
 app.post("/crear-preferencia", async (req, res) => {
   const { cliente, telefono, productos: prods, total: monto, nota, cupon, paraLlevar } = req.body;
