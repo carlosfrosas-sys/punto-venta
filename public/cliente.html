@@ -610,7 +610,8 @@ const CUPONES_VALIDOS = {
   "CABANA-R7K2": 10, "CABANA-M4P8": 10, "CABANA-X9L3": 10,
   "CABANA-J6W1": 10, "CABANA-T2N5": 10, "CABANA-H8Q4": 10,
   "CABANA-F3V7": 10, "CABANA-D5B9": 10, "CABANA-Y1C6": 10,
-  "CABANA-G7S2": 10
+  "CABANA-G7S2": 10,
+  "REFERIDO10": 10
 };
 
 const notasTortas = ["Sin Mayonesa", "Sin Queso", "Sin Frijoles", "Sin Jitomate", "Sin Aguacate"];
@@ -2498,6 +2499,26 @@ async function iniciarPago() {
 }
 
 cargarCategorias();
+
+// Detectar link de referido (?ref=1)
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.has("ref")) {
+    const cuponInput = document.getElementById("cupon");
+    const info = document.getElementById("cuponInfo");
+    cuponInput.value = "REFERIDO10";
+    cuponInput.disabled = true;
+    descuentoAplicado = 10;
+    cuponAplicado = "REFERIDO10";
+    info.style.display = "block";
+    info.style.background = "#e8f5e9";
+    info.style.borderColor = "#4caf50";
+    info.style.color = "#2e7d32";
+    info.innerText = "🎉 Cupón de bienvenida aplicado: 10% de descuento";
+    actualizarTotalConDescuento();
+  }
+})();
+
 (function(){var o=document.getElementById("loadingOverlay");if(o){o.style.opacity="0";setTimeout(function(){o.remove();},500);}})();
 </script>
   <script>

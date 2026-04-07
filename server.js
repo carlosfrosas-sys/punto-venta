@@ -232,6 +232,23 @@ app.get("/cliente", (req, res) => {
   res.sendFile(__dirname + "/public/cliente.html");
 });
 
+// Cupón de referido: validar si el teléfono ya lo usó
+app.post("/validar-referido", async (req, res) => {
+  const { telefono } = req.body;
+  if (!telefono || telefono.length !== 10) {
+    return res.status(400).json({ error: "Teléfono inválido" });
+  }
+  if (db) {
+    try {
+      const existe = await db.collection("referidos_usados").findOne({ telefono });
+      if (existe) {
+        return res.json({ valido: false, mensaje: "Ya usaste tu cupón de bienvenida" });
+      }
+    } catch(e) {}
+  }
+  return res.json({ valido: true, descuento: 10 });
+});
+
 // Mercado Pago: crear preferencia de pago
 app.post("/crear-preferencia", async (req, res) => {
   const { cliente, telefono, productos: prods, total: monto, nota, cupon, paraLlevar } = req.body;
@@ -250,6 +267,19 @@ app.post("/crear-preferencia", async (req, res) => {
       return res.status(400).json({ error: "Este cupón ya fue utilizado" });
     }
     descuento = CUPONES_1USO[cuponUpper];
+  }
+
+  // Cupón de referido (primera compra por teléfono)
+  if (!descuento && cuponUpper === "REFERIDO10") {
+    if (db) {
+      try {
+        const existe = await db.collection("referidos_usados").findOne({ telefono });
+        if (existe) {
+          return res.status(400).json({ error: "Ya usaste tu cupón de bienvenida" });
+        }
+      } catch(e) {}
+    }
+    descuento = 10;
   }
 
   // Cupón 100%: crear pedido directo sin Mercado Pago
@@ -275,6 +305,9 @@ app.post("/crear-preferencia", async (req, res) => {
       pedidos.push(pedido);
       await guardarPedido(pedido);
       if (CUPONES_1USO[cuponUpper]) await marcarCuponUsado(cuponUpper);
+      if (cuponUpper === "REFERIDO10" && db) {
+        try { await db.collection("referidos_usados").insertOne({ telefono, fecha: new Date() }); } catch(e) {}
+      }
       io.emit("nuevoPedido", pedido);
 
       return res.json({ directo: true });
@@ -301,6 +334,9 @@ app.post("/crear-preferencia", async (req, res) => {
       };
       pedidos.push(pedido);
       await guardarPedido(pedido);
+      if (cuponUpper === "REFERIDO10" && db) {
+        try { await db.collection("referidos_usados").insertOne({ telefono, fecha: new Date() }); } catch(e) {}
+      }
       io.emit("nuevoPedido", pedido);
       return res.json({ directo: true });
     } catch (e) {
@@ -390,6 +426,9 @@ app.get("/pago-exitoso", async (req, res) => {
     pedidos.push(pedido);
     await guardarPedido(pedido);
     if (pendiente.cupon && CUPONES_1USO[pendiente.cupon]) await marcarCuponUsado(pendiente.cupon);
+    if (pendiente.cupon === "REFERIDO10" && pendiente.telefono && db) {
+      try { await db.collection("referidos_usados").insertOne({ telefono: pendiente.telefono, fecha: new Date() }); } catch(e) {}
+    }
     io.emit("nuevoPedido", pedido);
 
     await eliminarPedidoPendiente(external_reference);
