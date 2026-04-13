@@ -581,7 +581,7 @@ app.put("/pedido/:id", async (req, res) => {
 });
 
 // Mercado Pago Point: cobrar con terminal (API v1/orders)
-const MP_DEVICE_ID = process.env.MP_DEVICE_ID || "NEWLAND_N950__N950NCCB05293066";
+const MP_DEVICE_ID = process.env.MP_DEVICE_ID || "NEWLAND_N950__N950NCCB05482252";
 
 let lastOrderId = null;
 
