@@ -1390,6 +1390,8 @@ function mostrarSubcategoria(categoria, sub) {
       btn.onclick = () => {
         if (categoria === "Quesadillas" || categoria === "Sopes" || categoria === "Tostadas") {
           mostrarNotas(sub + " de " + p.nombre, p.precio, notasAntojitos);
+        } else if (categoria === "Sandwiches" && p.nombre === "Huevo") {
+          mostrarOpcionesHuevoSandwich(sub, p.precio);
         } else if (categoria === "Sandwiches") {
           mostrarNotas(sub + " de " + p.nombre, p.precio, notasSandwiches);
         } else {
@@ -1566,6 +1568,31 @@ function mostrarOpcionesAgua(nombre, precio) {
     cont.innerHTML = "";
   };
   cont.appendChild(btnAgregar);
+}
+
+function mostrarOpcionesHuevoSandwich(sub, precio) {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>" + sub + " de Huevo</h3><p>¿Con qué?</p>";
+
+  const opciones = [
+    { nombre: "Solo", extra: 0 },
+    { nombre: "con Salchicha", extra: 8 },
+    { nombre: "con Jamón", extra: 8 },
+    { nombre: "con Nopales", extra: 8 },
+    { nombre: "Huevo Extra", extra: 8 }
+  ];
+
+  opciones.forEach(op => {
+    const btn = document.createElement("button");
+    btn.innerText = op.nombre + (op.extra > 0 ? " +$" + op.extra : "");
+    btn.onclick = () => {
+      const nombreFinal = op.nombre === "Solo" ? sub + " de Huevo" :
+                          op.nombre === "Huevo Extra" ? sub + " de Huevo Extra" :
+                          sub + " de Huevo " + op.nombre;
+      mostrarNotas(nombreFinal, precio + op.extra, notasSandwiches);
+    };
+    cont.appendChild(btn);
+  });
 }
 
 function mostrarOpcionPapasGringa(nombre, precio) {
