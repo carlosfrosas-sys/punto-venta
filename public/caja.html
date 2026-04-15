@@ -1017,14 +1017,14 @@ const menu = {
 
   "Tacos": {
     items: [
-      { nombre: "Pastor", precio: 50 },
-      { nombre: "Bistec", precio: 50 },
-      { nombre: "Chuleta", precio: 50 },
-      { nombre: "Campechanos", precio: 55 },
-      { nombre: "Pechuga", precio: 55 },
-      { nombre: "Alambre", precio: 55 },
+      { nombre: "Pastor", precio: 50, precioExtra: 25 },
+      { nombre: "Bistec", precio: 50, precioExtra: 25 },
+      { nombre: "Chuleta", precio: 50, precioExtra: 25 },
+      { nombre: "Campechanos", precio: 55, precioExtra: 28 },
+      { nombre: "Pechuga", precio: 55, precioExtra: 28 },
+      { nombre: "Alambre", precio: 55, precioExtra: 28 },
       { nombre: "Tacos Dorados", precio: 55 },
-      { nombre: "Arrachera", precio: 60 }
+      { nombre: "Arrachera", precio: 60, precioExtra: 30 }
     ]
   },
 
@@ -1162,7 +1162,7 @@ if (categoria === "Licuados") {
       } else if (categoria === "Molletes") {
         mostrarPicoDegallo(categoria + " Sencillos", datos.sencillo);
       } else if (categoria === "Mollequiles") {
-        mostrarNotas(categoria + " Sencillos", datos.sencillo, ["Sin Crema"]);
+        mostrarNotas(categoria + " Sencillos", datos.sencillo, ["Sin Crema", "Sin Queso"]);
       } else {
         agregarProducto(categoria + " Sencillos", datos.sencillo);
       }
@@ -1179,7 +1179,7 @@ if (categoria === "Licuados") {
 
   // 🔥 MOLLEQUILES - multi-selección max 2
   if (categoria === "Mollequiles" && datos.proteinas) {
-    mostrarMultiProteina(categoria, datos, 2, ["Sin Crema"]);
+    mostrarMultiProteina(categoria, datos, 2, ["Sin Crema", "Sin Queso"]);
     return;
   }
 
@@ -1202,7 +1202,7 @@ if (categoria === "Licuados") {
           if (categoria === "Molletes") {
             mostrarPicoDegallo(categoria + " de " + p.nombre, p.precio);
           } else if (categoria === "Mollequiles") {
-            mostrarNotas(categoria + " de " + p.nombre, p.precio, ["Sin Crema"]);
+            mostrarNotas(categoria + " de " + p.nombre, p.precio, ["Sin Crema", "Sin Queso"]);
           } else if (categoria === "Chilaquiles") {
             mostrarNotas(categoria + " de " + p.nombre, p.precio, notasChilaquiles);
           } else if (categoria === "Sandwiches") {
@@ -1227,7 +1227,7 @@ if (categoria === "Licuados") {
           if (categoria === "Molletes") {
             mostrarPicoDegallo(categoria + " de " + p, datos.precio);
           } else if (categoria === "Mollequiles") {
-            mostrarNotas(categoria + " de " + p, datos.precio, ["Sin Crema"]);
+            mostrarNotas(categoria + " de " + p, datos.precio, ["Sin Crema", "Sin Queso"]);
           } else if (categoria === "Chilaquiles" && p === "Huevo") {
             mostrarTipoHuevoChilaquiles(datos.precio);
           } else if (categoria === "Chilaquiles") {
@@ -1628,31 +1628,114 @@ function mostrarPicoDegallo(nombre, precio) {
 
 function mostrarMultiTacos(items, max) {
   const cont = document.getElementById("proteinas");
-  const seleccionados = [];
+  const conteo = {};
+  let totalPiezas = 0;
   let conPapas = false;
 
-  cont.innerHTML = "";
+  cont.innerHTML = "<h3>Tacos - Elige piezas:</h3>";
 
-  items.forEach(item => {
+  const lblPiezas = document.createElement("p");
+  lblPiezas.style.fontWeight = "600";
+  lblPiezas.style.marginBottom = "8px";
+  function actualizarLabel() {
+    const extras = Math.max(0, totalPiezas - max);
+    const costoExtras = extras > 0 ? Object.entries(conteo).reduce((sum, [nombre, d]) => {
+      const extrasDeEste = Math.max(0, d.cantidad - (totalPiezas <= max ? d.cantidad : 0));
+      return sum;
+    }, 0) : 0;
+    let textoExtras = "";
+    if (extras > 0) {
+      let totalExtra = 0;
+      // Calcular costo de extras: las primeras max piezas al precio base, las demás al precioExtra
+      const todasPiezas = [];
+      Object.entries(conteo).forEach(([nombre, d]) => {
+        const item = items.find(i => i.nombre === nombre);
+        for (let i = 0; i < d.cantidad; i++) todasPiezas.push(item);
+      });
+      // Ordenar: las más caras primero (esas son las base)
+      todasPiezas.sort((a, b) => b.precio - a.precio);
+      for (let i = max; i < todasPiezas.length; i++) {
+        totalExtra += todasPiezas[i].precioExtra || 25;
+      }
+      textoExtras = " (+" + extras + " extra = +$" + totalExtra + ")";
+    }
+    lblPiezas.innerText = "Piezas: " + totalPiezas + textoExtras;
+  }
+  actualizarLabel();
+  cont.appendChild(lblPiezas);
+
+  // Tacos Dorados aparte (no usa +/-)
+  const dorados = items.find(i => i.nombre === "Tacos Dorados");
+  const itemsSinDorados = items.filter(i => i.nombre !== "Tacos Dorados");
+
+  itemsSinDorados.forEach(item => {
     const btn = document.createElement("button");
-    btn.innerText = item.nombre;
     btn.style.background = "#e5e7eb";
     btn.style.color = "#111827";
-    btn.onclick = () => {
-      const idx = seleccionados.findIndex(s => s.nombre === item.nombre);
-      if (idx >= 0) {
-        seleccionados.splice(idx, 1);
-        btn.style.background = "#e5e7eb";
-        btn.style.color = "#111827";
-      } else {
-        if (seleccionados.length >= max) return;
-        seleccionados.push({ nombre: item.nombre, precio: item.precio });
-        btn.style.background = "#16a34a";
-        btn.style.color = "white";
-      }
+    btn.style.display = "flex";
+    btn.style.alignItems = "center";
+    btn.style.justifyContent = "space-between";
+    btn.style.gap = "4px";
+    btn.style.cursor = "default";
+
+    const spanMenos = document.createElement("span");
+    spanMenos.innerText = "−";
+    spanMenos.style.cssText = "cursor:pointer;font-weight:bold;font-size:18px;padding:0 6px;";
+
+    const spanNombre = document.createElement("span");
+    spanNombre.innerText = item.nombre;
+    spanNombre.style.cssText = "flex:1;text-align:center;";
+
+    const spanMas = document.createElement("span");
+    spanMas.innerText = "+";
+    spanMas.style.cssText = "cursor:pointer;font-weight:bold;font-size:18px;padding:0 6px;";
+
+    function actualizar() {
+      const c = conteo[item.nombre] ? conteo[item.nombre].cantidad : 0;
+      spanNombre.innerText = c > 0 ? item.nombre + " (" + c + ")" : item.nombre;
+      btn.style.background = c > 0 ? "#16a34a" : "#e5e7eb";
+      btn.style.color = c > 0 ? "white" : "#111827";
+    }
+
+    spanMas.onclick = (e) => {
+      e.stopPropagation();
+      if (!conteo[item.nombre]) conteo[item.nombre] = { cantidad: 0, precio: item.precio, precioExtra: item.precioExtra || 25 };
+      conteo[item.nombre].cantidad++;
+      totalPiezas++;
+      actualizar();
+      actualizarLabel();
     };
+
+    spanMenos.onclick = (e) => {
+      e.stopPropagation();
+      if (!conteo[item.nombre] || conteo[item.nombre].cantidad === 0) return;
+      conteo[item.nombre].cantidad--;
+      totalPiezas--;
+      if (conteo[item.nombre].cantidad === 0) delete conteo[item.nombre];
+      actualizar();
+      actualizarLabel();
+    };
+
+    btn.onclick = (e) => {
+      if (e.target === spanMenos || e.target === spanMas) return;
+      spanMas.onclick(e);
+    };
+
+    btn.appendChild(spanMenos);
+    btn.appendChild(spanNombre);
+    btn.appendChild(spanMas);
     cont.appendChild(btn);
   });
+
+  // Botón Tacos Dorados (sin +/-, directo a notas)
+  if (dorados) {
+    const btnDorados = document.createElement("button");
+    btnDorados.innerText = "Tacos Dorados";
+    btnDorados.style.background = "#e5e7eb";
+    btnDorados.style.color = "#111827";
+    btnDorados.onclick = () => mostrarNotas("Tacos Dorados", dorados.precio, notasTacosDorados);
+    cont.appendChild(btnDorados);
+  }
 
   const btnPapas = document.createElement("button");
   btnPapas.innerText = "+ Papas $18";
@@ -1675,34 +1758,39 @@ function mostrarMultiTacos(items, max) {
   btnSig.style.marginTop = "10px";
   btnSig.style.width = "100%";
   btnSig.onclick = () => {
-    if (seleccionados.length === 0) { alert("Elige al menos uno"); return; }
-    let precioFinal = Math.max(...seleccionados.map(s => s.precio));
-    const tieneDorados = seleccionados.some(s => s.nombre === "Tacos Dorados");
-    let nombreFinal;
-    if (seleccionados.length === 1) {
-      nombreFinal = seleccionados[0].nombre === "Tacos Dorados" ? "Tacos Dorados" : "Tacos de " + seleccionados[0].nombre;
-    } else {
-      const nombres = seleccionados.map(s => s.nombre);
-      nombreFinal = "Tacos de " + nombres.join(" y ");
+    if (totalPiezas === 0) { alert("Elige al menos uno"); return; }
+
+    // Calcular precio: base + extras
+    const todasPiezas = [];
+    Object.entries(conteo).forEach(([nombre, d]) => {
+      const item = items.find(i => i.nombre === nombre);
+      for (let i = 0; i < d.cantidad; i++) todasPiezas.push(item);
+    });
+    todasPiezas.sort((a, b) => b.precio - a.precio);
+
+    let precioFinal = Math.max(...todasPiezas.map(p => p.precio));
+    for (let i = max; i < todasPiezas.length; i++) {
+      precioFinal += todasPiezas[i].precioExtra || 25;
     }
+
+    const partes = Object.entries(conteo).map(([n, d]) => d.cantidad > 1 ? n + " (" + d.cantidad + ")" : n);
+    let nombreFinal = "Tacos de " + partes.join(" y ");
     if (conPapas) { nombreFinal += " con Papas"; precioFinal += 18; }
-    // Elegir notas según los ingredientes
-    let notas;
-    const tieneAlambre = seleccionados.some(s => s.nombre === "Alambre");
-    if (tieneDorados) {
-      notas = notasTacosDorados;
-    } else if (tieneAlambre) {
+
+    // Elegir notas
+    const tieneAlambre = conteo["Alambre"];
+    const soloArrachera = Object.keys(conteo).length === 1 && conteo["Arrachera"];
+    if (tieneAlambre) {
       productos.push({ nombre: nombreFinal, precio: precioFinal, precioBase: precioFinal, cantidad: 1, nota: "" });
       total += precioFinal;
       renderizarLista();
       cont.innerHTML = "";
       return;
-    } else if (seleccionados.length === 1 && seleccionados[0].nombre === "Arrachera") {
-      notas = notasTacosArrachera;
+    } else if (soloArrachera) {
+      mostrarNotas(nombreFinal, precioFinal, notasTacosArrachera);
     } else {
-      notas = notasTacos;
+      mostrarNotas(nombreFinal, precioFinal, notasTacos);
     }
-    mostrarNotas(nombreFinal, precioFinal, notas);
   };
 
   const row = document.createElement("div");
