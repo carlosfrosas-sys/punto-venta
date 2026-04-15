@@ -706,7 +706,7 @@ const notasTacosAlambre = ["Sin Papa", "Sin Nopales"];
 const notasBagels = ["Sin Mayonesa", "Sin Queso"];
 const notasBurritos = ["Sin Arroz", "Sin Frijoles", "Sin Queso"];
 const tacosSinNota = ["Pastor"];
-const tacosConNotas = ["Bistec", "Pechuga", "Chuleta", "Campechanos"];
+const tacosConNotas = ["Bistec", "Pechuga", "Pechuga Empanizada", "Pechuga Asada", "Chuleta", "Campechanos"];
 
 const menu = {
 
@@ -768,7 +768,7 @@ const menu = {
 
   "Burritos": {
     precio: 52,
-    proteinas: ["Pollo","Bistec","Pastor","Chorizo","Arrachera","Campechanos"]
+    proteinas: ["Pollo","Bistec","Pastor","Chorizo","Arrachera","Campechanos",{nombre:"Pechuga",precio:55}]
   },
 
   "Café": {
@@ -1023,7 +1023,8 @@ const menu = {
       { nombre: "Bistec", precio: 50, precioExtra: 25 },
       { nombre: "Chuleta", precio: 50, precioExtra: 25 },
       { nombre: "Campechanos", precio: 55, precioExtra: 28 },
-      { nombre: "Pechuga", precio: 55, precioExtra: 28 },
+      { nombre: "Pechuga Empanizada", precio: 55, precioExtra: 28 },
+      { nombre: "Pechuga Asada", precio: 55, precioExtra: 28 },
       { nombre: "Alambre", precio: 55, precioExtra: 28 },
       { nombre: "Tacos Dorados", precio: 55 },
       { nombre: "Arrachera", precio: 60, precioExtra: 30 }
