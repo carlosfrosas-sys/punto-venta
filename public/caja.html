@@ -2712,30 +2712,68 @@ function enviarPedido() {
 
   const nota = document.getElementById("notaPedido").value.trim();
 
+  const datos = {
+    cliente: nombreCliente,
+    productos,
+    total,
+    nota,
+    paraLlevar: document.getElementById("paraLlevar").checked,
+    metodoPago: "efectivo"
+  };
+
+  const btnEnviar = document.querySelector(".btn-enviar");
+  btnEnviar.disabled = true;
+  btnEnviar.innerText = "Enviando...";
+
   fetch("/pedido", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      cliente: nombreCliente,
-      productos,
-      total,
-      nota,
-      paraLlevar: document.getElementById("paraLlevar").checked,
-      metodoPago: "efectivo"
-    })
+    body: JSON.stringify(datos)
+  }).then(res => {
+    if (!res.ok) throw new Error("Error " + res.status);
+    return res.json();
+  }).then(() => {
+    productos = [];
+    total = 0;
+    _prevProductCount = 0;
+    document.getElementById("lista").innerHTML = "";
+    document.getElementById("total").innerText = "0";
+    document.getElementById("proteinas").innerHTML = "";
+    document.getElementById("cliente").value = "";
+    document.getElementById("notaPedido").value = "";
+    document.getElementById("paraLlevar").checked = false;
+    btnEnviar.disabled = false;
+    btnEnviar.innerText = "Efectivo";
+  }).catch(err => {
+    alert("Error al enviar pedido. Reintentando...");
+    setTimeout(() => {
+      fetch("/pedido", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(datos)
+      }).then(res => {
+        if (res.ok) {
+          productos = [];
+          total = 0;
+          _prevProductCount = 0;
+          document.getElementById("lista").innerHTML = "";
+          document.getElementById("total").innerText = "0";
+          document.getElementById("proteinas").innerHTML = "";
+          document.getElementById("cliente").value = "";
+          document.getElementById("notaPedido").value = "";
+          document.getElementById("paraLlevar").checked = false;
+        } else {
+          alert("No se pudo enviar el pedido. Revisa tu conexión.");
+        }
+        btnEnviar.disabled = false;
+        btnEnviar.innerText = "Efectivo";
+      }).catch(() => {
+        alert("No se pudo enviar el pedido. Revisa tu conexión.");
+        btnEnviar.disabled = false;
+        btnEnviar.innerText = "Efectivo";
+      });
+    }, 2000);
   });
-
-  // Reset
-  productos = [];
-  total = 0;
-  _prevProductCount = 0;
-
-  document.getElementById("lista").innerHTML = "";
-  document.getElementById("total").innerText = "0";
-  document.getElementById("proteinas").innerHTML = "";
-  document.getElementById("cliente").value = "";
-  document.getElementById("notaPedido").value = "";
-  document.getElementById("paraLlevar").checked = false;
 }
 
 let _tarjetaIntentId = null;
@@ -2782,7 +2820,11 @@ function cobrarTarjeta() {
             _tarjetaPolling = null;
             _tarjetaIntentId = null;
             // Pago acreditado, crear pedido
-            fetch("/pedido", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(pedidoData) });
+            fetch("/pedido", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(pedidoData) })
+            .then(r => { if (!r.ok) throw new Error(); })
+            .catch(() => {
+              setTimeout(() => fetch("/pedido", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(pedidoData) }), 2000);
+            });
             productos = [];
             total = 0;
             _prevProductCount = 0;

@@ -82,6 +82,7 @@ setInterval(respaldarDatos, 5 * 60 * 1000);
 // Pedidos pendientes (en memoria + MongoDB)
 const pedidosPendientes = new Map();
 
+let mongoClient;
 async function conectarDB() {
   const uri = process.env.MONGODB_URI;
   if (!uri) {
@@ -89,12 +90,20 @@ async function conectarDB() {
     return;
   }
   try {
-    const client = new MongoClient(uri);
-    await client.connect();
-    db = client.db("pdv");
+    mongoClient = new MongoClient(uri, { serverSelectionTimeoutMS: 5000 });
+    await mongoClient.connect();
+    db = mongoClient.db("pdv");
     console.log("Conectado a MongoDB");
+
+    mongoClient.on("close", () => {
+      console.log("MongoDB desconectado, reintentando...");
+      db = null;
+      setTimeout(conectarDB, 5000);
+    });
   } catch (e) {
     console.error("Error conectando a MongoDB:", e.message);
+    db = null;
+    setTimeout(conectarDB, 5000);
   }
 }
 
