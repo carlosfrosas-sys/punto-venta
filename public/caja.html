@@ -714,7 +714,8 @@ const menu = {
     sabores: ["Horchata","Jamaica","Sandía","Melón","Papaya","Piña","Limón","Fresa","Guayaba","Avena"],
     tamaños: {
       "1/2 Litro": 20,
-      "1 Litro": 35
+      "1 Litro": 35,
+      "1.5 Litros": 50
     },
     extra: 4
   },
@@ -866,8 +867,12 @@ const menu = {
   },
 
   "Gringa": {
-    directo: true,
-    precio: 35
+    items: [
+      { nombre: "Pastor", precio: 35, nombreFinal: "Gringa" },
+      { nombre: "Bistec", precio: 35, nombreFinal: "Norteña" },
+      { nombre: "Campechana", precio: 38, nombreFinal: "Campecheña" },
+      { nombre: "Arrachera", precio: 40, nombreFinal: "Arracheña" }
+    ]
   },
 
   "Licuados": {
@@ -906,10 +911,6 @@ const menu = {
     ]
   },
 
-  "Norteña": {
-    directo: true,
-    precio: 35
-  },
 
   "Quesadillas": {
     precio: 28,
@@ -1307,6 +1308,8 @@ if (categoria === "Licuados") {
           mostrarOpcionesEnsalada(item.nombre, item.precio);
         } else if (categoria === "Ensaladas") {
           agregarProductoSinNota("Ensalada de " + item.nombre, item.precio);
+        } else if (categoria === "Gringa") {
+          mostrarOpcionPapasGringa(item.nombreFinal || item.nombre, item.precio);
         } else if (categoria === "OTROS..") {
           agregarProductoSinNota("Otro", item.precio);
         } else {
@@ -1491,10 +1494,109 @@ function mostrarTamañosAgua(sabores, conChia) {
     btn.innerText = tamaño;
     btn.onclick = () => {
       const nombreFinal = nombreBase + conExtras + chiaTxt + " " + tamaño;
-      mostrarNotas(nombreFinal, precioTotal, ["Sin Azúcar", "Poca Azúcar"]);
+      const esLitroYMedio = tamaño === "1.5 Litros";
+      if (esLitroYMedio) {
+        // 1.5L ya va embotellada
+        mostrarNotas(nombreFinal + " Embotellada", precioTotal, ["Sin Azúcar", "Poca Azúcar"]);
+      } else {
+        // 1/2L y 1L: mostrar opciones de azúcar + embotellada
+        mostrarOpcionesAgua(nombreFinal, precioTotal);
+      }
     };
     cont.appendChild(btn);
   }
+}
+
+function mostrarOpcionesAgua(nombre, precio) {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>" + nombre + " - $" + precio + "</h3>";
+
+  let notasSeleccionadas = [];
+  let embotellada = false;
+
+  const notas = ["Sin Azúcar", "Poca Azúcar"];
+  notas.forEach(nota => {
+    const btn = document.createElement("button");
+    btn.innerText = nota;
+    btn.style.background = "#e5e7eb";
+    btn.style.color = "#111827";
+    btn.onclick = () => {
+      const idx = notasSeleccionadas.indexOf(nota);
+      if (idx >= 0) {
+        notasSeleccionadas.splice(idx, 1);
+        btn.style.background = "#e5e7eb";
+        btn.style.color = "#111827";
+      } else {
+        notasSeleccionadas.push(nota);
+        btn.style.background = "#16a34a";
+        btn.style.color = "white";
+      }
+    };
+    cont.appendChild(btn);
+  });
+
+  const btnEmb = document.createElement("button");
+  btnEmb.innerText = "Embotellada +$5";
+  btnEmb.style.background = "#e5e7eb";
+  btnEmb.style.color = "#111827";
+  btnEmb.onclick = () => {
+    embotellada = !embotellada;
+    btnEmb.style.background = embotellada ? "#f59e0b" : "#e5e7eb";
+    btnEmb.style.color = embotellada ? "white" : "#111827";
+  };
+  cont.appendChild(btnEmb);
+
+  const btnAgregar = document.createElement("button");
+  btnAgregar.innerText = "Agregar al pedido";
+  btnAgregar.style.background = "#16a34a";
+  btnAgregar.style.color = "white";
+  btnAgregar.style.fontSize = "16px";
+  btnAgregar.style.width = "100%";
+  btnAgregar.style.marginTop = "10px";
+  btnAgregar.onclick = () => {
+    let nombreFinal = nombre;
+    let precioFinal = precio;
+    if (embotellada) { nombreFinal += " Embotellada"; precioFinal += 5; }
+    const nota = notasSeleccionadas.join(", ");
+    productos.push({ nombre: nombreFinal, precio: precioFinal, precioBase: precioFinal, cantidad: 1, nota });
+    total += precioFinal;
+    renderizarLista();
+    cont.innerHTML = "";
+  };
+  cont.appendChild(btnAgregar);
+}
+
+function mostrarOpcionPapasGringa(nombre, precio) {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>" + nombre + " - $" + precio + "</h3>";
+  let conPapas = false;
+
+  const btnPapas = document.createElement("button");
+  btnPapas.innerText = "+ Papas $18";
+  btnPapas.style.background = "#e5e7eb";
+  btnPapas.style.color = "#111827";
+  btnPapas.style.width = "100%";
+  btnPapas.onclick = () => {
+    conPapas = !conPapas;
+    btnPapas.style.background = conPapas ? "#f59e0b" : "#e5e7eb";
+    btnPapas.style.color = conPapas ? "white" : "#111827";
+  };
+  cont.appendChild(btnPapas);
+
+  const btnAgregar = document.createElement("button");
+  btnAgregar.innerText = "Agregar al pedido";
+  btnAgregar.style.background = "#16a34a";
+  btnAgregar.style.color = "white";
+  btnAgregar.style.fontSize = "16px";
+  btnAgregar.style.width = "100%";
+  btnAgregar.style.marginTop = "10px";
+  btnAgregar.onclick = () => {
+    let nombreFinal = nombre;
+    let precioFinal = precio;
+    if (conPapas) { nombreFinal += " con Papas"; precioFinal += 18; }
+    agregarProductoSinNota(nombreFinal, precioFinal);
+  };
+  cont.appendChild(btnAgregar);
 }
 
 function mostrarSaboresLicuado(esLitro) {
@@ -1558,10 +1660,7 @@ function mostrarSaboresLicuado(esLitro) {
     const nombreBase = prefijo + seleccionados[0];
     const conExtras = seleccionados.length > 1 ? " con " + seleccionados.slice(1).join(", ") : "";
     const nombreFinal = nombreBase + conExtras;
-    productos.push({ nombre: nombreFinal, precio: precioTotal, precioBase: precioTotal, cantidad: 1, nota: "" });
-    total += precioTotal;
-    renderizarLista();
-    cont.innerHTML = "";
+    mostrarNotas(nombreFinal, precioTotal, ["Sin Azúcar", "Poca Azúcar"]);
   };
   cont.appendChild(btnSig);
 }
