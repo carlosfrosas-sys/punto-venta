@@ -631,7 +631,7 @@ const notasTacosAlambre = ["Sin Papa", "Sin Nopales"];
 const notasBagels = ["Sin Mayonesa", "Sin Queso"];
 const notasBurritos = ["Sin Arroz", "Sin Frijoles", "Sin Queso"];
 const tacosSinNota = ["Pastor"];
-const tacosConNotas = ["Bistec", "Pechuga", "Chuleta", "Campechanos"];
+const tacosConNotas = ["Bistec", "Pechuga Empanizada", "Pechuga Asada", "Chuleta", "Campechanos"];
 
 const menu = {
 
@@ -639,7 +639,8 @@ const menu = {
     sabores: ["Horchata","Jamaica","Sandia","Melon","Papaya","Pina","Limon","Fresa","Guayaba","Avena"],
     tamanos: {
       "1/2 Litro": 20,
-      "1 Litro": 35
+      "1 Litro": 35,
+      "1.5 Litros": 50
     },
     extra: 4
   },
@@ -661,14 +662,15 @@ const menu = {
   "Bebidas": {
     items: [
       { nombre: "Agua", precio: 0, agua: true },
-      { nombre: "Coca Cola", precio: 25, sabores: ["Original 600ml", "Sin Azucar 600ml", {nombre: "Panzoncita", precio: 18}, {nombre: "Panzoncita Sin Azucar", precio: 18}, "Coca de Lata", {nombre: "Coca 3L", precio: 60}] },
-      { nombre: "Refresco de Sabor", precio: 24, sabores: ["Fanta", "Sprite", "Senzao", "Prisco", "Yoli", "Deliciosa", "Naranjada", "Toronjada", "Limonada", "Pinada", "Manzanada", "Delaware", "Sidral", "Topo Chico", "Penafiel Mineral", "Dr. Pepper", "Cream Soda", "Dr. Berry", "Dr. Cherry", "Fresada", "Fresca", "Squirt", "Orange"] },
+      { nombre: "Coca Cola", precio: 25, sabores: ["Original 600ml", "Sin Azucar 600ml", {nombre: "Panzoncita", precio: 18}, {nombre: "Panzoncita Sin Azucar", precio: 18}, "Coca de Lata", {nombre: "Coca 3L", precio: 60}, "Coca Light"] },
+      { nombre: "Refresco de Sabor", precio: 24, sabores: ["Fanta", "Sprite", "Senzao", "Prisco", "Yoli", "Deliciosa", "Naranjada", "Toronjada", "Limonada", "Pinada", "Manzanada", "Delaware", "Sidral", "Topo Chico", "Penafiel Mineral", "Dr. Pepper", "Cream Soda", "Dr. Berry", "Dr. Cherry", "Fresada", "Fresca", "Squirt", "Orange", "Twist"] },
       { nombre: "Yakult", precio: 10 },
       { nombre: "Penafielita", precio: 18, sabores: ["Limon", "Naranja", "Fresa", "Pina"] },
       { nombre: "Boing", precio: 20, sabores: ["Mango", "Guayaba", "Manzana", "Fresa", "Uva", "Naranja"] },
       { nombre: "Del Valle", precio: 24, sabores: ["Mango", "Durazno"] },
       { nombre: "Bonafont de Sabor", precio: 22, sabores: ["Naranja", "Guayaba", "Limon", "Frutos Rojos", "Pina Coco", "Pepino con Limon"] },
-      { nombre: "Santa Clara", precio: 22, sabores: ["Fresa", "Chocolate", "Choco Menta"] },
+      { nombre: "Santa Clara", precio: 22, sabores: ["Fresa", "Chocolate", "Choco Menta", {nombre: "Hersheys", precio: 20}] },
+      { nombre: "DanUp", precio: 20 },
       { nombre: "Fuze Tea", precio: 24, sabores: ["Te Negro", "Te Verde", "Durazno"] },
       { nombre: "Arizona", precio: 24, sabores: ["Mango", "Kiwi", "Sandia", "Te Verde"] },
       { nombre: "Jumex", precio: 24, sabores: ["Mango", "Manzana", "Durazno"] },
@@ -691,7 +693,7 @@ const menu = {
 
   "Burritos": {
     precio: 52,
-    proteinas: ["Pollo","Bistec","Pastor","Chorizo","Arrachera","Campechanos"]
+    proteinas: ["Pollo","Bistec","Pastor","Chorizo","Arrachera","Campechanos",{nombre:"Pechuga",precio:55}]
   },
 
   "Cafe": {
@@ -739,8 +741,12 @@ const menu = {
   },
 
   "Gringa": {
-    directo: true,
-    precio: 35
+    items: [
+      { nombre: "Pastor", precio: 35, nombreFinal: "Gringa" },
+      { nombre: "Bistec", precio: 35, nombreFinal: "Nortena" },
+      { nombre: "Campechana", precio: 38, nombreFinal: "Campechena" },
+      { nombre: "Arrachera", precio: 40, nombreFinal: "Arrachena" }
+    ]
   },
 
   "Licuados": {
@@ -777,11 +783,6 @@ const menu = {
       { nombre: "Campechanos", precio: 42 },
       { nombre: "Arrachera", precio: 47 }
     ]
-  },
-
-  "Nortena": {
-    directo: true,
-    precio: 35
   },
 
   "Desayunos": {
@@ -942,14 +943,15 @@ const menu = {
 
   "Tacos": {
     items: [
-      { nombre: "Pastor", precio: 50 },
-      { nombre: "Bistec", precio: 50 },
-      { nombre: "Chuleta", precio: 50 },
-      { nombre: "Campechanos", precio: 55 },
-      { nombre: "Pechuga", precio: 55 },
-      { nombre: "Alambre", precio: 55 },
+      { nombre: "Pastor", precio: 50, precioExtra: 25 },
+      { nombre: "Bistec", precio: 50, precioExtra: 25 },
+      { nombre: "Chuleta", precio: 50, precioExtra: 25 },
+      { nombre: "Campechanos", precio: 55, precioExtra: 28 },
+      { nombre: "Pechuga Empanizada", precio: 55, precioExtra: 28 },
+      { nombre: "Pechuga Asada", precio: 55, precioExtra: 28 },
+      { nombre: "Alambre", precio: 55, precioExtra: 28 },
       { nombre: "Tacos Dorados", precio: 55 },
-      { nombre: "Arrachera", precio: 60 }
+      { nombre: "Arrachera", precio: 60, precioExtra: 30 }
     ]
   },
 
@@ -1213,6 +1215,8 @@ function mostrarOpciones(categoria) {
           mostrarOpcionesEnsalada(item.nombre, item.precio);
         } else if (categoria === "Ensaladas") {
           agregarProductoSinNota("Ensalada de " + item.nombre, item.precio);
+        } else if (categoria === "Gringa") {
+          agregarProductoSinNota(item.nombreFinal || item.nombre, item.precio);
         } else {
           agregarProductoConNota(item.nombre, item.precio);
         }
@@ -1273,6 +1277,8 @@ function mostrarSubcategoria(categoria, sub) {
       btn.onclick = () => {
         if (categoria === "Quesadillas" || categoria === "Sopes" || categoria === "Tostadas") {
           mostrarNotas(sub + " de " + p.nombre, p.precio, notasAntojitos);
+        } else if (categoria === "Sandwiches" && p.nombre === "Huevo") {
+          mostrarOpcionesHuevoSandwich(sub, p.precio);
         } else if (categoria === "Sandwiches") {
           mostrarNotas(sub + " de " + p.nombre, p.precio, notasSandwiches);
         } else {
@@ -1423,11 +1429,7 @@ function mostrarSaboresLicuado() {
     const nombreBase = "Licuado de " + seleccionados[0];
     const conExtras = seleccionados.length > 1 ? " con " + seleccionados.slice(1).join(", ") : "";
     const nombreFinal = nombreBase + conExtras;
-    productos.push({ nombre: nombreFinal, precio: precioTotal, precioBase: precioTotal, cantidad: 1, nota: "" });
-    total += precioTotal;
-    renderizarLista();
-    cont.innerHTML = "";
-    scrollACategorias();
+    mostrarNotas(nombreFinal, precioTotal, ["Sin Azucar", "Poca Azucar"]);
   };
   cont.appendChild(btnSig);
 }
@@ -1458,6 +1460,31 @@ function mostrarPregunta(nombre, precio, pregunta, textoSi, textoNo) {
 
   cont.appendChild(btnSi);
   cont.appendChild(btnNo);
+}
+
+function mostrarOpcionesHuevoSandwich(sub, precio) {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>" + sub + " de Huevo</h3><p>Con que?</p>";
+
+  const opciones = [
+    { nombre: "Solo", extra: 0 },
+    { nombre: "con Salchicha", extra: 8 },
+    { nombre: "con Jamon", extra: 8 },
+    { nombre: "con Nopales", extra: 8 },
+    { nombre: "Huevo Extra", extra: 8 }
+  ];
+
+  opciones.forEach(op => {
+    const btn = document.createElement("button");
+    btn.innerText = op.nombre + (op.extra > 0 ? " +$" + op.extra : "");
+    btn.onclick = () => {
+      const nombreFinal = op.nombre === "Solo" ? sub + " de Huevo" :
+                          op.nombre === "Huevo Extra" ? sub + " de Huevo Extra" :
+                          sub + " de Huevo " + op.nombre;
+      mostrarNotas(nombreFinal, precio + op.extra, notasSandwiches);
+    };
+    cont.appendChild(btn);
+  });
 }
 
 function mostrarPicoDegallo(nombre, precio) {
