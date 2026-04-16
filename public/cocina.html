@@ -102,13 +102,11 @@
     }
 
     .nota-general {
+      display: inline;
       font-size: 28px;
       color: #fbbf24;
       font-weight: 600;
-      padding: 6px 12px;
-      background: #2a2200;
-      border-radius: 6px;
-      border-left: 4px solid #fbbf24;
+      margin-left: 8px;
     }
 
     .para-llevar {
@@ -392,15 +390,15 @@
       div.innerHTML = `
         <div class="pedido-body">
           <ul class="productos">
-            ${productosCocina.map(p =>
+            ${productosCocina.map((p, idx) =>
               `<li data-index="${p._index}">
                 <span class="punto">&#8226;</span> ${p.cantidad && p.cantidad > 1 ? `<span class="qty">${p.cantidad}</span> ` : ""}${p.nombre}
                 ${p.nota ? `<span class="nota">${p.nota.replace(/\s*\+\$\d+/g, "")}</span>` : ""}
+                ${idx === productosCocina.length - 1 && pedido.nota ? `<span class="nota-general">${pedido.nota}</span>` : ""}
               </li>`
             ).join("")}
           </ul>
         </div>
-        ${pedido.nota ? `<div class="nota-general">${pedido.nota}</div>` : ""}
         <div class="pedido-meta">
           ${pedido.paraLlevar ? `<span class="para-llevar">Para llevar</span>` : ""}
           <span class="hora-envio">${hora}</span>
