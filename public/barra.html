@@ -431,10 +431,8 @@
               </li>`
             ).join("")}
           </ul>
-          ${pedido.nota ? `<div class="pedido-lado">
-            <div class="nota-general">${pedido.nota}</div>
-          </div>` : ""}
         </div>
+        ${pedido.nota ? `<div class="nota-general">${pedido.nota}</div>` : ""}
         <div class="pedido-meta">
           ${pedido.paraLlevar ? `<span class="para-llevar">Para llevar</span>` : ""}
           <span class="hora-envio">${hora}</span>
