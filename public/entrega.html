@@ -545,7 +545,15 @@
     ocultarLoadingOverlay();
 
     // Polling cada 30s para no perder pedidos si el socket falla
-    setInterval(cargarPedidos, 30000);
+    setInterval(() => {
+      fetch("/pedidos")
+        .then(res => res.json())
+        .then(pedidos => {
+          pedidos.filter(p => p.estado === "pendiente").forEach(p => {
+            if (!pedidosMostrados.has(p.id)) mostrarPedido(p);
+          });
+        });
+    }, 30000);
 
     // Recargar al reconectar (siempre, para no perder pedidos)
     socket.on("connect", () => {
