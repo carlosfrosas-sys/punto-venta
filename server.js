@@ -966,6 +966,12 @@ app.post("/pedido/:id/producto/:index/regresar", async (req, res) => {
   const idx = pedido.productosEntregados.indexOf(index);
   if (idx >= 0) {
     pedido.productosEntregados.splice(idx, 1);
+    // Si estaba entregado, regresar a pendiente
+    if (pedido.estado === "Entregado") {
+      pedido.estado = "pendiente";
+      delete pedido.horaEntrega;
+      delete pedido.entregadoEn;
+    }
     await guardarPedido(pedido);
     io.emit("productoRegresado", { pedidoId: id, index });
   }
