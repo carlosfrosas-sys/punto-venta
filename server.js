@@ -223,7 +223,7 @@ async function eliminarPedidoPendiente(ref) {
 
 // Rutas de páginas
 app.get("/", (req, res) => {
-  res.sendFile(__dirname + "/public/caja.html");
+  res.sendFile(__dirname + "/public/index.html");
 });
 app.get("/caja", (req, res) => {
   res.sendFile(__dirname + "/public/caja.html");

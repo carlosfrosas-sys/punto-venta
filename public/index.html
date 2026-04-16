@@ -1,14 +1,130 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Punto de Venta</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1a1a1a">
+  <title>La Cabana - Sistema</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; touch-action: manipulation; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #faf8f5;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      max-width: 500px;
+      width: 90%;
+      text-align: center;
+      padding: 40px 20px;
+    }
+    .logo {
+      font-size: 32px;
+      font-weight: 300;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      color: #6b5b4f;
+      margin-bottom: 8px;
+    }
+    .subtitulo {
+      font-size: 13px;
+      color: #c0785a;
+      letter-spacing: 2px;
+      margin-bottom: 40px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #fff;
+      border: 2px solid #e8e4df;
+      border-radius: 16px;
+      padding: 28px 16px;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .card:hover {
+      border-color: #c0785a;
+      box-shadow: 0 4px 16px rgba(192,120,90,0.15);
+      transform: translateY(-2px);
+    }
+    .card-icon {
+      font-size: 36px;
+      margin-bottom: 12px;
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #6b5b4f;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+    .card-desc {
+      font-size: 11px;
+      color: #a89888;
+      margin-top: 4px;
+    }
+    .card-caja { border-color: #c0785a; background: #fdf8f5; }
+    .card-caja .card-title { color: #c0785a; }
+    .card-cocina .card-icon { color: #4ade80; }
+    .card-barra .card-icon { color: #60a5fa; }
+    .card-entrega .card-icon { color: #fbbf24; }
+    .card-ventas .card-icon { color: #a78bfa; }
+    .card-cliente .card-icon { color: #009ee3; }
+
+    @media (max-width: 400px) {
+      .grid { gap: 10px; }
+      .card { padding: 20px 12px; }
+      .card-icon { font-size: 28px; }
+      .card-title { font-size: 14px; }
+    }
+  </style>
 </head>
 <body>
-  <h1>Selecciona módulo</h1>
-  <a href="/caja">Caja</a>
-  <a href="/cocina">Cocina</a>
-  <a href="/entrega">Entrega</a>
-  <a href="/cliente">Pedido en Linea</a>
+  <div class="container">
+    <div class="logo">La Cabana</div>
+    <div class="subtitulo">Sistema de Punto de Venta</div>
+    <div class="grid">
+      <a href="/caja" class="card card-caja">
+        <div class="card-icon">&#9634;</div>
+        <div class="card-title">Caja</div>
+        <div class="card-desc">Tomar pedidos</div>
+      </a>
+      <a href="/cocina" class="card card-cocina">
+        <div class="card-icon">&#9832;</div>
+        <div class="card-title">Cocina</div>
+        <div class="card-desc">Preparar pedidos</div>
+      </a>
+      <a href="/barra" class="card card-barra">
+        <div class="card-icon">&#9749;</div>
+        <div class="card-title">Barra</div>
+        <div class="card-desc">Bebidas y snacks</div>
+      </a>
+      <a href="/entrega" class="card card-entrega">
+        <div class="card-icon">&#10004;</div>
+        <div class="card-title">Entrega</div>
+        <div class="card-desc">Entregar pedidos</div>
+      </a>
+      <a href="/ventas" class="card card-ventas">
+        <div class="card-icon">&#9783;</div>
+        <div class="card-title">Ventas</div>
+        <div class="card-desc">Reportes y corte</div>
+      </a>
+      <a href="/cliente" class="card card-cliente">
+        <div class="card-icon">&#9742;</div>
+        <div class="card-title">Cliente</div>
+        <div class="card-desc">Pedidos online</div>
+      </a>
+    </div>
+  </div>
 </body>
 </html>
