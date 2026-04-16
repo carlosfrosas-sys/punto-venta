@@ -783,7 +783,7 @@
             const hoy = fechaHoyMX();
             todosEntregados = pedidos.filter(p =>
               p.estado === "Entregado" && p.fecha === hoy
-            ).sort((a, b) => b.id - a.id);
+            ).sort((a, b) => (b.entregadoEn || b.id) - (a.entregadoEn || a.id));
             renderEntregados();
           });
       } else {

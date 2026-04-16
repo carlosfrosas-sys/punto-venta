@@ -931,6 +931,7 @@ app.post("/pedido/:id/producto/:index", async (req, res) => {
   if (pedido.productosEntregados.length >= pedido.productos.length) {
     pedido.estado = "Entregado";
     pedido.horaEntrega = new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" });
+    pedido.entregadoEn = Date.now();
     await guardarPedido(pedido);
     io.emit("pedidoEliminado", id);
   }
@@ -945,6 +946,7 @@ app.post("/pedido/entregado/:id", async (req, res) => {
   if (pedido) {
     pedido.estado = "Entregado";
     pedido.horaEntrega = new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" });
+    pedido.entregadoEn = Date.now();
     await guardarPedido(pedido);
     io.emit("pedidoEliminado", id);
   }
