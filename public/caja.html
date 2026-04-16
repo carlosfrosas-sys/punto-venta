@@ -869,12 +869,13 @@ const menu = {
   },
 
   "Gringa": {
-    items: [
-      { nombre: "Pastor", precio: 35, nombreFinal: "Gringa" },
-      { nombre: "Bistec", precio: 35, nombreFinal: "Norteña" },
-      { nombre: "Campechana", precio: 38, nombreFinal: "Campecheña" },
-      { nombre: "Arrachera", precio: 40, nombreFinal: "Arracheña" }
-    ]
+    directo: true,
+    precio: 35
+  },
+
+  "Norteña": {
+    directo: true,
+    precio: 35
   },
 
   "Licuados": {
@@ -1311,8 +1312,6 @@ if (categoria === "Licuados") {
           mostrarOpcionesEnsalada(item.nombre, item.precio);
         } else if (categoria === "Ensaladas") {
           agregarProductoSinNota("Ensalada de " + item.nombre, item.precio);
-        } else if (categoria === "Gringa") {
-          mostrarOpcionPapasGringa(item.nombreFinal || item.nombre, item.precio);
         } else if (categoria === "OTROS..") {
           agregarProductoSinNota("Otro", item.precio);
         } else {
