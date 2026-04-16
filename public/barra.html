@@ -297,11 +297,12 @@
     cargarPedidos();
     ocultarLoadingOverlay();
 
-    // Recargar al reconectar
+    // Polling cada 30s para no perder pedidos si el socket falla
+    setInterval(cargarPedidos, 30000);
+
+    // Recargar al reconectar (siempre, para no perder pedidos)
     socket.on("connect", () => {
-      if (pedidosMostrados.size > 0) {
-        cargarPedidos();
-      }
+      cargarPedidos();
     });
 
     socket.on("nuevoPedido", (pedido) => {
