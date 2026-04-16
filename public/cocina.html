@@ -102,14 +102,14 @@
     }
 
     .nota-general {
-      font-size: 28px;
+      font-size: 18px;
       color: #fbbf24;
       font-weight: 600;
-      padding: 6px 12px;
+      padding: 4px 10px;
       background: #2a2200;
       border-radius: 6px;
       border-left: 4px solid #fbbf24;
-      text-align: right;
+      margin-right: auto;
     }
 
     .para-llevar {
@@ -400,11 +400,9 @@
               </li>`
             ).join("")}
           </ul>
-          ${pedido.nota ? `<div class="pedido-lado">
-            <div class="nota-general">${pedido.nota}</div>
-          </div>` : ""}
         </div>
         <div class="pedido-meta">
+          ${pedido.nota ? `<span class="nota-general">${pedido.nota}</span>` : ""}
           ${pedido.paraLlevar ? `<span class="para-llevar">Para llevar</span>` : ""}
           <span class="hora-envio">${hora}</span>
           <span class="tiempo" data-hora="${hora}">${tiempoTranscurrido(hora)}</span>
