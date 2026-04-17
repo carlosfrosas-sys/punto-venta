@@ -298,16 +298,44 @@
     cargarPedidos();
     ocultarLoadingOverlay();
 
-    // Polling cada 30s para no perder pedidos si el socket falla
-    setInterval(() => {
+    // Polling cada 15s: agrega nuevos pedidos y sincroniza productos entregados
+    setInterval(sincronizar, 15000);
+
+    function sincronizar() {
       fetch("/pedidos")
         .then(res => res.json())
         .then(pedidos => {
-          pedidos.filter(p => p.estado === "pendiente").forEach(p => {
-            if (!pedidosMostrados.has(p.id)) mostrarPedido(p);
+          const pendientes = pedidos.filter(p => p.estado === "pendiente");
+          const idsPendientes = new Set(pendientes.map(p => p.id));
+
+          // Remover pedidos que ya no están pendientes
+          Array.from(pedidosMostrados).forEach(id => {
+            if (!idsPendientes.has(id)) {
+              const el = document.getElementById("pedido-" + id);
+              if (el) el.remove();
+              pedidosMostrados.delete(id);
+            }
+          });
+
+          // Sincronizar o agregar
+          pendientes.forEach(p => {
+            if (!pedidosMostrados.has(p.id)) {
+              mostrarPedido(p);
+              return;
+            }
+            const el = document.getElementById("pedido-" + p.id);
+            if (!el) return;
+            (p.productosEntregados || []).forEach(index => {
+              const li = el.querySelector(`li[data-index="${index}"]`);
+              if (li) li.remove();
+            });
+            if (el.querySelectorAll(".productos li").length === 0) {
+              el.remove();
+              pedidosMostrados.delete(p.id);
+            }
           });
         });
-    }, 30000);
+    }
 
     // Recargar al reconectar (siempre, para no perder pedidos)
     socket.on("connect", () => {
