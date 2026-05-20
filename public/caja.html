@@ -52,6 +52,10 @@
       padding: 8px 12px;
       border-bottom: 1px solid #e8e4df;
       flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
     }
 
     .panel-left-header h1 {
@@ -60,6 +64,150 @@
       letter-spacing: 4px;
       text-transform: uppercase;
       color: #6b5b4f;
+    }
+
+    .btn-agotados {
+      background: #fff;
+      color: #6b5b4f;
+      border: 1.5px solid #d9d0c7;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      cursor: pointer;
+      min-height: 0;
+    }
+
+    .btn-agotados.con-agotados {
+      background: #fee2e2;
+      border-color: #dc2626;
+      color: #991b1b;
+    }
+
+    /* ===== AGOTADOS (botón con producto agotado) ===== */
+    button.agotado-marca {
+      background: #fee2e2 !important;
+      color: #991b1b !important;
+      border-color: #dc2626 !important;
+      text-decoration: line-through;
+    }
+
+    /* ===== MODAL AGOTADOS ===== */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9000;
+    }
+
+    .modal-overlay.activo { display: flex; }
+
+    .modal-agotados {
+      background: #fff;
+      border-radius: 16px;
+      padding: 20px;
+      width: 90%;
+      max-width: 420px;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .modal-agotados h2 {
+      font-size: 18px;
+      font-weight: 300;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #6b5b4f;
+      text-align: center;
+    }
+
+    .modal-agotados .input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .modal-agotados input {
+      flex: 1;
+      padding: 10px 12px;
+      font-size: 16px;
+      border: 1.5px solid #d9d0c7;
+      border-radius: 8px;
+      outline: none;
+    }
+
+    .modal-agotados .btn-add {
+      background: #6b5b4f;
+      color: #fff;
+      border: none;
+      padding: 0 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      min-height: 0;
+    }
+
+    .modal-agotados .lista-agotados {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 50vh;
+    }
+
+    .modal-agotados .item-agotado {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fee2e2;
+      color: #991b1b;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 16px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .modal-agotados .item-agotado button {
+      background: #dc2626;
+      color: #fff;
+      border: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      padding: 0;
+      min-height: 0;
+    }
+
+    .modal-agotados .lista-vacia {
+      color: #a09080;
+      text-align: center;
+      font-size: 13px;
+      padding: 16px;
+    }
+
+    .modal-agotados .btn-cerrar {
+      background: #e5e7eb;
+      color: #6b5b4f;
+      border: none;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      min-height: 0;
     }
 
     .section-title {
@@ -646,6 +794,7 @@ function hacerLogin() {
   <div class="panel-left">
     <div class="panel-left-header">
       <h1>Caja</h1>
+      <button class="btn-agotados" id="btnAgotados" onclick="abrirAgotados()">Agotados</button>
     </div>
     <div class="categorias-wrap">
       <button id="btnVolver" onclick="volverACategorias()">&#8592; Categorías</button>
@@ -686,9 +835,189 @@ function hacerLogin() {
   </div>
 </div>
 
+<!-- Modal Agotados -->
+<div class="modal-overlay" id="modalAgotados" onclick="if(event.target===this)cerrarAgotados()">
+  <div class="modal-agotados">
+    <h2>Agotados</h2>
+    <div class="input-row">
+      <input type="text" id="inputAgotado" placeholder="Ej: pollo, arrachera..." onkeydown="if(event.key==='Enter')agregarAgotado()">
+      <button class="btn-add" onclick="agregarAgotado()">Agregar</button>
+    </div>
+    <div class="lista-agotados" id="listaAgotados"></div>
+    <button class="btn-cerrar" onclick="cerrarAgotados()">Cerrar</button>
+  </div>
+</div>
+
 <script>
 let productos = [];
 let total = 0;
+
+// ===== AGOTADOS =====
+const KEY_AGOTADOS = "agotados";
+
+function getAgotados() {
+  try { return JSON.parse(localStorage.getItem(KEY_AGOTADOS) || "[]"); }
+  catch { return []; }
+}
+
+function setAgotados(arr) {
+  localStorage.setItem(KEY_AGOTADOS, JSON.stringify(arr));
+  actualizarBotonAgotados();
+  reaplicarAgotados();
+}
+
+function actualizarBotonAgotados() {
+  const btn = document.getElementById("btnAgotados");
+  if (!btn) return;
+  const n = getAgotados().length;
+  btn.innerText = n > 0 ? "Agotados (" + n + ")" : "Agotados";
+  btn.classList.toggle("con-agotados", n > 0);
+}
+
+function abrirAgotados() {
+  renderListaAgotados();
+  document.getElementById("modalAgotados").classList.add("activo");
+  setTimeout(() => document.getElementById("inputAgotado").focus(), 50);
+}
+
+function cerrarAgotados() {
+  document.getElementById("modalAgotados").classList.remove("activo");
+}
+
+function agregarAgotado() {
+  const input = document.getElementById("inputAgotado");
+  const valor = input.value.trim().toLowerCase();
+  if (!valor) return;
+  const lista = getAgotados();
+  if (!lista.includes(valor)) {
+    lista.push(valor);
+    setAgotados(lista);
+  }
+  input.value = "";
+  renderListaAgotados();
+}
+
+function quitarAgotado(valor) {
+  setAgotados(getAgotados().filter(a => a !== valor));
+  renderListaAgotados();
+}
+
+function renderListaAgotados() {
+  const cont = document.getElementById("listaAgotados");
+  const lista = getAgotados();
+  if (lista.length === 0) {
+    cont.innerHTML = '<div class="lista-vacia">Sin productos agotados</div>';
+    return;
+  }
+  cont.innerHTML = "";
+  lista.forEach(a => {
+    const div = document.createElement("div");
+    div.className = "item-agotado";
+    div.innerHTML = '<span>' + a + '</span>';
+    const btn = document.createElement("button");
+    btn.innerText = "×";
+    btn.onclick = () => quitarAgotado(a);
+    div.appendChild(btn);
+    cont.appendChild(div);
+  });
+}
+
+// Productos compuestos: nombre del botón (lowercase) → ingredientes que usa
+// Si CUALQUIER ingrediente listado está agotado, el botón se marca.
+const ALIASES_AGOTADO = {
+  "tacos dorados": ["pollo"],
+  "campechanos": ["bistec", "chorizo"],
+  "campechanas": ["bistec", "chorizo"],
+  "ham. hawaiana": ["jamon", "jamón", "piña"],
+  "ham. hawaiana c/papas": ["jamon", "jamón", "piña"],
+  "hawaianas": ["jamon", "jamón", "piña"],
+  "hawaiana": ["jamon", "jamón", "piña"],
+  "mestizas": ["bistec", "pastor"],
+  "alambre": ["bistec"],
+  "arracheña": ["arrachera"]
+};
+
+function buscarAgotadoEnBoton(btn) {
+  const texto = (btn.innerText || "").trim().toLowerCase();
+  if (!texto) return null;
+
+  // Excluir contexto Maruchan (los sabores no son ingredientes)
+  const cont = btn.closest("#proteinas");
+  if (cont) {
+    const h3 = cont.querySelector("h3");
+    if (h3 && /maruchan/i.test(h3.innerText)) return null;
+  }
+
+  const agotados = getAgotados();
+  if (agotados.length === 0) return null;
+
+  // 1) Match por palabra, ignorando ocurrencias precedidas por "de"
+  const t = (" " + texto + " ").replace(/[.,;:()/]/g, " ").replace(/\s+/g, " ");
+  for (const a of agotados) {
+    const palabra = " " + a.toLowerCase() + " ";
+    let idx = t.indexOf(palabra);
+    while (idx >= 0) {
+      const antes = t.substring(0, idx).trimEnd();
+      if (!antes.endsWith(" de") && antes !== "de") return a;
+      idx = t.indexOf(palabra, idx + 1);
+    }
+  }
+
+  // 2) Match por alias (productos compuestos)
+  const aliases = ALIASES_AGOTADO[texto];
+  if (aliases) {
+    const agotadosSet = new Set(agotados.map(a => a.toLowerCase()));
+    const enc = aliases.find(ing => agotadosSet.has(ing));
+    if (enc) return enc;
+  }
+
+  return null;
+}
+
+function decorarBoton(btn) {
+  const ag = buscarAgotadoEnBoton(btn);
+  if (!ag) {
+    if (btn.dataset.agotadoAplicado) {
+      btn.classList.remove("agotado-marca");
+      delete btn.dataset.agotadoAplicado;
+    }
+    return;
+  }
+  if (btn.dataset.agotadoAplicado === ag) return;
+  btn.dataset.agotadoAplicado = ag;
+  btn.classList.add("agotado-marca");
+  if (!btn.dataset.agotadoHook) {
+    btn.dataset.agotadoHook = "1";
+    const original = btn.onclick;
+    btn.onclick = function(e) {
+      const actual = buscarAgotadoEnBoton(btn);
+      if (actual) {
+        if (!confirm("⚠️ " + actual.toUpperCase() + " AGOTADO\n\n¿Agregar de todas formas?")) return;
+      }
+      if (original) return original.call(btn, e);
+    };
+  }
+}
+
+function reaplicarAgotados() {
+  ["categorias", "proteinas"].forEach(id => {
+    const c = document.getElementById(id);
+    if (c) c.querySelectorAll("button").forEach(decorarBoton);
+  });
+}
+
+function iniciarObserverAgotados() {
+  ["categorias", "proteinas"].forEach(id => {
+    const c = document.getElementById(id);
+    if (!c) return;
+    new MutationObserver(() => {
+      c.querySelectorAll("button").forEach(decorarBoton);
+    }).observe(c, { childList: true, subtree: true });
+  });
+  actualizarBotonAgotados();
+}
+
+document.addEventListener("DOMContentLoaded", iniciarObserverAgotados);
 
 const notasTortas = ["Sin Mayonesa", "Sin Queso", "Sin Frijoles", "Sin Jitomate", "Sin Aguacate"];
 const notasHamburguesas = [{ nombre: "Carne Extra", precio: 25 }, "Sin Mayonesa", "Sin Catsup", "Sin Mostaza", "Sin Lechuga", "Sin Jitomate", "Sin Queso"];
