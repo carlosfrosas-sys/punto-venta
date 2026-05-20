@@ -762,14 +762,14 @@ const menu = {
     items: [
       { nombre: "Ham. Sencilla", precio: 55 },
       { nombre: "Ham. Senc. c/Papas", precio: 73 },
-      { nombre: "Ham. Hawaiana", precio: 60 },
-      { nombre: "Ham. Hawaiana c/Papas", precio: 78 }
+      { nombre: "Ham. Hawaiana", precio: 65 },
+      { nombre: "Ham. Hawaiana c/Papas", precio: 83 }
     ]
   },
 
   "Burritos": {
     precio: 52,
-    proteinas: ["Pollo","Bistec","Pastor","Chorizo","Arrachera","Campechanos",{nombre:"Pechuga",precio:55}]
+    proteinas: ["Pollo","Bistec","Pastor","Chorizo",{nombre:"Arrachera",precio:55},{nombre:"Campechanos",precio:55},{nombre:"Pechuga",precio:55}]
   },
 
   "Café": {
@@ -1002,7 +1002,8 @@ const menu = {
       { nombre: "Banderilla con Papas", precio: 45 },
       { nombre: "Papas a la Francesa", precio: 40 },
       { nombre: "Nachos", precio: 42, nachos: true },
-      { nombre: "Maruchan", precio: 25, maruchan: true }
+      { nombre: "Maruchan", precio: 25, maruchan: true },
+      { nombre: "Paletas", precio: 20, paletas: true }
     ]
   },
 
@@ -1286,6 +1287,8 @@ if (categoria === "Licuados") {
           mostrarNotas(item.nombre, item.precio, notasBanderilla);
         } else if (categoria === "Snacks" && item.nachos) {
           mostrarProteinasNachos(item.precio);
+        } else if (categoria === "Snacks" && item.paletas) {
+          mostrarSaboresPaletas();
         } else if (categoria === "Snacks") {
           agregarProductoSinNota(item.nombre, item.precio);
         } else if (categoria === "Sincro") {
@@ -2812,6 +2815,29 @@ function mostrarSaboresMaruchan(precio) {
       cont.innerHTML = "";
     };
     cont.appendChild(btn);
+  });
+}
+
+function mostrarSaboresPaletas() {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>Paletas</h3><p>Elige sabor:</p>";
+
+  const grupos = [
+    { precio: 20, sabores: ["Limón", "Limón con Chamoy", "Piña", "Fresa"] },
+    { precio: 25, sabores: ["Picafresa", "Pulparindo", "Chemisse Fresa", "Chemisse", "Chemisse de Piña", "Nuez", "Arroz con Leche"] },
+    { precio: 30, sabores: ["Yogurt", "Oreo", "Skwinkles", "Nutella", "Yakult", "Ferrero", "Bubulubu", "Gansito", "Chocorrol", "Mazapán", "Algodón de Azúcar", "Pingüino"] }
+  ];
+
+  grupos.forEach(g => {
+    g.sabores.forEach(sabor => {
+      const btn = document.createElement("button");
+      btn.innerText = sabor;
+      btn.onclick = () => {
+        agregarProductoSinNota("Paleta de " + sabor, g.precio);
+        cont.innerHTML = "";
+      };
+      cont.appendChild(btn);
+    });
   });
 }
 
