@@ -928,13 +928,15 @@ const ALIASES_AGOTADO = {
   "tacos dorados": ["pollo"],
   "campechanos": ["bistec", "chorizo"],
   "campechanas": ["bistec", "chorizo"],
-  "ham. hawaiana": ["jamon", "jamón", "piña"],
-  "ham. hawaiana c/papas": ["jamon", "jamón", "piña"],
-  "hawaianas": ["jamon", "jamón", "piña"],
-  "hawaiana": ["jamon", "jamón", "piña"],
+  "ham. hawaiana": ["jamon", "jamón", "piña en almibar"],
+  "ham. hawaiana c/papas": ["jamon", "jamón", "piña en almibar"],
+  "hawaianas": ["jamon", "jamón", "piña en almibar"],
+  "hawaiana": ["jamon", "jamón", "piña en almibar"],
   "mestizas": ["bistec", "pastor"],
   "alambre": ["bistec"],
-  "arracheña": ["arrachera"]
+  "arracheña": ["arrachera"],
+  "gringa": ["pastor"],
+  "norteña": ["bistec"]
 };
 
 function buscarAgotadoEnBoton(btn) {
@@ -950,6 +952,15 @@ function buscarAgotadoEnBoton(btn) {
 
   const agotados = getAgotados();
   if (agotados.length === 0) return null;
+  const agotadosSet = new Set(agotados.map(a => a.toLowerCase()));
+
+  // 0) Ingredientes declarados explícitamente en el botón (data-ingredientes)
+  if (btn.dataset.ingredientes) {
+    for (const ing of btn.dataset.ingredientes.split(",")) {
+      const k = ing.trim().toLowerCase();
+      if (k && agotadosSet.has(k)) return k;
+    }
+  }
 
   // 1) Match por palabra, ignorando ocurrencias precedidas por "de"
   const t = (" " + texto + " ").replace(/[.,;:()/]/g, " ").replace(/\s+/g, " ");
@@ -966,7 +977,6 @@ function buscarAgotadoEnBoton(btn) {
   // 2) Match por alias (productos compuestos)
   const aliases = ALIASES_AGOTADO[texto];
   if (aliases) {
-    const agotadosSet = new Set(agotados.map(a => a.toLowerCase()));
     const enc = aliases.find(ing => agotadosSet.has(ing));
     if (enc) return enc;
   }
@@ -1769,6 +1779,7 @@ function mostrarSaboresAgua() {
     btn.innerText = sabor;
     btn.style.background = "#e5e7eb";
     btn.style.color = "#111827";
+    if (sabor === "Piña") btn.dataset.ingredientes = "piña natural";
     btn.onclick = () => {
       const idx = seleccionados.indexOf(sabor);
       if (idx >= 0) {
@@ -2487,7 +2498,8 @@ function mostrarMultiItems(prefijo, items, max) {
     let precioFinal = Math.max(...Object.values(conteo).map(d => d.precio));
     const extras = Math.max(0, totalPiezas - max);
     precioFinal += extras * 17;
-    let nombreFinal = prefijo + partes.join(" y ");
+    const soloArracheña = Object.keys(conteo).length === 1 && conteo["Arracheña"];
+    let nombreFinal = soloArracheña ? partes[0] : prefijo + partes.join(" y ");
     if (conPapas) { nombreFinal += " con Papas"; precioFinal += 18; }
     productos.push({ nombre: nombreFinal, precio: precioFinal, precioBase: precioFinal, cantidad: 1, nota: "" });
     total += precioFinal;
@@ -3071,7 +3083,8 @@ function mostrar1PiezaItems(prefijo, items) {
     const btn = document.createElement("button");
     btn.innerText = item.nombre;
     btn.onclick = () => {
-      agregarProductoSinNota("1pza de Sincronizada de " + item.nombre, p1);
+      const nombre = item.nombre === "Arracheña" ? "1pza de Arracheña" : "1pza de Sincronizada de " + item.nombre;
+      agregarProductoSinNota(nombre, p1);
     };
     cont.appendChild(btn);
   });
