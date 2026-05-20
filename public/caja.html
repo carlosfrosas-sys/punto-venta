@@ -939,9 +939,23 @@ const ALIASES_AGOTADO = {
   "norteña": ["bistec"]
 };
 
+function sinAcentos(s) {
+  return (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+function nombreLimpioBoton(btn) {
+  let t = (btn.innerText || "").trim().toLowerCase();
+  // quita contador "(2)", "(10)" al final que aparece en botones con +/-
+  t = t.replace(/\s*\(\d+\)\s*$/, "");
+  // quita controles − + × ÷ y espacios en bordes
+  t = t.replace(/^[\s+\-−×÷*]+|[\s+\-−×÷*]+$/g, "").trim();
+  return t;
+}
+
 function buscarAgotadoEnBoton(btn) {
-  const texto = (btn.innerText || "").trim().toLowerCase();
-  if (!texto) return null;
+  const textoOrig = nombreLimpioBoton(btn);
+  if (!textoOrig) return null;
+  const texto = sinAcentos(textoOrig);
 
   // Excluir contexto Maruchan (los sabores no son ingredientes)
   const cont = btn.closest("#proteinas");
@@ -952,20 +966,20 @@ function buscarAgotadoEnBoton(btn) {
 
   const agotados = getAgotados();
   if (agotados.length === 0) return null;
-  const agotadosSet = new Set(agotados.map(a => a.toLowerCase()));
+  const agotadosSet = new Set(agotados.map(a => sinAcentos(a.toLowerCase())));
 
   // 0) Ingredientes declarados explícitamente en el botón (data-ingredientes)
   if (btn.dataset.ingredientes) {
     for (const ing of btn.dataset.ingredientes.split(",")) {
-      const k = ing.trim().toLowerCase();
-      if (k && agotadosSet.has(k)) return k;
+      const k = sinAcentos(ing.trim().toLowerCase());
+      if (k && agotadosSet.has(k)) return ing.trim();
     }
   }
 
   // 1) Match por palabra, ignorando ocurrencias precedidas por "de"
   const t = (" " + texto + " ").replace(/[.,;:()/]/g, " ").replace(/\s+/g, " ");
   for (const a of agotados) {
-    const palabra = " " + a.toLowerCase() + " ";
+    const palabra = " " + sinAcentos(a.toLowerCase()) + " ";
     let idx = t.indexOf(palabra);
     while (idx >= 0) {
       const antes = t.substring(0, idx).trimEnd();
@@ -975,9 +989,10 @@ function buscarAgotadoEnBoton(btn) {
   }
 
   // 2) Match por alias (productos compuestos)
-  const aliases = ALIASES_AGOTADO[texto];
-  if (aliases) {
-    const enc = aliases.find(ing => agotadosSet.has(ing));
+  // Las llaves del mapa pueden estar con acento (ej. "arracheña") — normalizamos ambos lados
+  const aliasKey = Object.keys(ALIASES_AGOTADO).find(k => sinAcentos(k) === texto);
+  if (aliasKey) {
+    const enc = ALIASES_AGOTADO[aliasKey].find(ing => agotadosSet.has(sinAcentos(ing.toLowerCase())));
     if (enc) return enc;
   }
 
