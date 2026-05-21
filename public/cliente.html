@@ -166,6 +166,30 @@
       opacity: 0.8;
     }
 
+    /* ===== BANNER AGOTADOS ===== */
+    .banner-agotados {
+      background: #fef3c7;
+      border-top: 1px solid #f59e0b;
+      border-bottom: 1px solid #f59e0b;
+      color: #92400e;
+      padding: 6px 14px;
+      font-size: 12px;
+      line-height: 1.4;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .banner-agotados .titulo {
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+    .banner-agotados .lista {
+      font-weight: 500;
+      text-transform: capitalize;
+    }
+
     /* ===== BOTONES AGOTADOS ===== */
     button.agotado-bloqueado {
       background: #fee2e2 !important;
@@ -558,6 +582,7 @@
     <div class="panel-left-header">
       <h1>La Cabaña</h1>
     </div>
+    <div id="bannerAgotados" class="banner-agotados" style="display:none;"></div>
     <div class="section-title">Menú</div>
     <div class="categorias-wrap">
       <button id="btnVolver" onclick="volverACategorias()" style="display:none;width:100%;margin-bottom:8px;background:#fff;color:#007bb5;border:1.5px solid #b8d8e8;border-radius:12px;font-size:16px;min-height:44px;cursor:pointer;">← Volver al menú</button>
@@ -735,9 +760,28 @@ function reaplicarAgotadosCli() {
   });
 }
 
+function renderBannerAgotados() {
+  const banner = document.getElementById("bannerAgotados");
+  if (!banner) return;
+  if (__agotados.length === 0) {
+    banner.style.display = "none";
+    banner.innerHTML = "";
+    return;
+  }
+  banner.style.display = "flex";
+  banner.innerHTML =
+    '<span class="titulo">Hoy no hay:</span> ' +
+    '<span class="lista">' + __agotados.join(", ") + '</span>';
+}
+
 function setAgotadosCli(arr) {
   __agotados = Array.isArray(arr) ? arr : [];
   reaplicarAgotadosCli();
+  renderBannerAgotados();
+}
+
+function refrescarAgotadosCli() {
+  fetch("/agotados").then(r => r.json()).then(setAgotadosCli).catch(() => {});
 }
 
 function iniciarAgotadosCliente() {
@@ -748,13 +792,14 @@ function iniciarAgotadosCliente() {
       c.querySelectorAll("button").forEach(bloquearBotonAgotado);
     }).observe(c, { childList: true, subtree: true });
   });
-  fetch("/agotados").then(r => r.json()).then(setAgotadosCli).catch(() => {});
+  refrescarAgotadosCli();
+  // Polling de respaldo: si el socket se cae (típico en móviles que se duermen),
+  // igual nos enteramos en 30s máximo.
+  setInterval(refrescarAgotadosCli, 30000);
   if (typeof io === "function") {
     const sck = io();
     sck.on("agotadosActualizados", setAgotadosCli);
-    sck.on("connect", () => {
-      fetch("/agotados").then(r => r.json()).then(setAgotadosCli).catch(() => {});
-    });
+    sck.on("connect", refrescarAgotadosCli);
   }
 }
 
