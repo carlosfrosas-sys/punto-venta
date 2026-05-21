@@ -64,11 +64,13 @@ let retiros = [];
 let retiroIdCounter = 1;
 let ventasTarjeta = [];
 let ventaTarjetaIdCounter = 1;
+let agotados = [];
 
 // Respaldo automático
 const BACKUP_DIR = path.join(__dirname, "backups");
 const BACKUP_PATH = path.join(BACKUP_DIR, "pedidos-backup.json");
 const BACKUP_GASTOS_PATH = path.join(BACKUP_DIR, "gastos-backup.json");
+const BACKUP_AGOTADOS_PATH = path.join(BACKUP_DIR, "agotados-backup.json");
 
 function respaldarDatos() {
   try {
@@ -161,6 +163,18 @@ async function cargarPedidos() {
       gastoIdCounter = gastos.length > 0 ? Math.max(...gastos.map(g => g.id)) + 1 : 1;
     }
   } catch(e) {}
+  try {
+    if (fs.existsSync(BACKUP_AGOTADOS_PATH)) {
+      agotados = JSON.parse(fs.readFileSync(BACKUP_AGOTADOS_PATH, "utf8"));
+    }
+  } catch(e) {}
+}
+
+function guardarAgotados() {
+  try {
+    if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR);
+    fs.writeFileSync(BACKUP_AGOTADOS_PATH, JSON.stringify(agotados, null, 2));
+  } catch(e) { console.error("Error guardando agotados:", e.message); }
 }
 
 async function guardarPedido(pedido) {
@@ -575,6 +589,22 @@ app.post("/pedido", async (req, res) => {
 
 app.get("/pedidos", (req, res) => {
   res.json(pedidos);
+});
+
+app.get("/agotados", (req, res) => {
+  res.json(agotados);
+});
+
+app.post("/agotados", (req, res) => {
+  if (!Array.isArray(req.body && req.body.agotados)) {
+    return res.status(400).json({ error: "agotados debe ser un array" });
+  }
+  agotados = req.body.agotados
+    .map(a => String(a).toLowerCase().trim())
+    .filter(Boolean);
+  guardarAgotados();
+  io.emit("agotadosActualizados", agotados);
+  res.json({ ok: true, agotados });
 });
 
 app.put("/pedido/:id", async (req, res) => {

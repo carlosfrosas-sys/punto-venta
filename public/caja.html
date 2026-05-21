@@ -8,6 +8,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Caja">
   <title>Caja</title>
+  <script src="/socket.io/socket.io.js"></script>
   <style>
     * {
       margin: 0;
@@ -864,6 +865,42 @@ function setAgotados(arr) {
   localStorage.setItem(KEY_AGOTADOS, JSON.stringify(arr));
   actualizarBotonAgotados();
   reaplicarAgotados();
+  // Sincronizar con servidor (sin bloquear UI si falla red)
+  fetch("/agotados", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ agotados: arr })
+  }).catch(() => {});
+}
+
+function aplicarAgotadosLocal(arr) {
+  localStorage.setItem(KEY_AGOTADOS, JSON.stringify(arr));
+  actualizarBotonAgotados();
+  reaplicarAgotados();
+  if (document.getElementById("modalAgotados") && document.getElementById("modalAgotados").classList.contains("activo")) {
+    renderListaAgotados();
+  }
+}
+
+function sincronizarAgotadosDesdeServidor() {
+  fetch("/agotados")
+    .then(r => r.json())
+    .then(arr => {
+      if (!Array.isArray(arr)) return;
+      const local = getAgotados();
+      // Si el servidor está vacío pero el local tiene cosas (primera vez tras deploy),
+      // sube el local al servidor para no perderlo.
+      if (arr.length === 0 && local.length > 0) {
+        fetch("/agotados", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ agotados: local })
+        }).catch(() => {});
+      } else {
+        aplicarAgotadosLocal(arr);
+      }
+    })
+    .catch(() => {});
 }
 
 function actualizarBotonAgotados() {
@@ -1044,6 +1081,16 @@ function iniciarObserverAgotados() {
     }).observe(c, { childList: true, subtree: true });
   });
   actualizarBotonAgotados();
+  // Cargar agotados desde servidor (gana sobre localStorage)
+  sincronizarAgotadosDesdeServidor();
+  // Escuchar cambios de otros dispositivos
+  if (typeof io === "function") {
+    const sckAgotados = io();
+    sckAgotados.on("agotadosActualizados", (arr) => {
+      if (Array.isArray(arr)) aplicarAgotadosLocal(arr);
+    });
+    sckAgotados.on("connect", () => sincronizarAgotadosDesdeServidor());
+  }
 }
 
 document.addEventListener("DOMContentLoaded", iniciarObserverAgotados);

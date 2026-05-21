@@ -8,6 +8,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Pedir">
   <title>Hacer Pedido</title>
+  <script src="/socket.io/socket.io.js"></script>
   <style>
     * {
       margin: 0;
@@ -163,6 +164,22 @@
       min-height: 36px !important;
       padding: 6px 12px !important;
       opacity: 0.8;
+    }
+
+    /* ===== BOTONES AGOTADOS ===== */
+    button.agotado-bloqueado {
+      background: #fee2e2 !important;
+      color: #991b1b !important;
+      border-color: #dc2626 !important;
+      text-decoration: line-through;
+      cursor: not-allowed !important;
+      opacity: 0.85;
+    }
+    button.agotado-bloqueado::after {
+      content: " · AGOTADO";
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
     }
 
     /* ===== PANEL DERECHO ===== */
@@ -605,6 +622,139 @@ let productos = [];
 let total = 0;
 let descuentoAplicado = 0;
 let cuponAplicado = "";
+
+// ===== SISTEMA DE AGOTADOS (sincroniza con servidor) =====
+let __agotados = [];
+
+const ALIASES_AGOTADO_CLIENTE = {
+  "tacos dorados": ["pollo"],
+  "campechanos": ["bistec", "chorizo"],
+  "campechanas": ["bistec", "chorizo"],
+  "ham. hawaiana": ["jamon", "jamón", "piña en almibar"],
+  "ham. hawaiana c/papas": ["jamon", "jamón", "piña en almibar"],
+  "hawaianas": ["jamon", "jamón", "piña en almibar"],
+  "hawaiana": ["jamon", "jamón", "piña en almibar"],
+  "mestizas": ["bistec", "pastor"],
+  "alambre": ["bistec"],
+  "arracheña": ["arrachera"],
+  "gringa": ["pastor"],
+  "norteña": ["bistec"],
+  "choriqueso": ["chorizo"],
+  "mollequiles": ["chilaquiles"],
+  "paquete 2": ["chilaquiles"],
+  "paquete 3": ["chilaquiles"]
+};
+
+function sinAcentosCli(s) {
+  return (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+function nombreLimpioBotonCli(btn) {
+  let t = (btn.innerText || "").trim().toLowerCase();
+  t = t.replace(/\s*\(\d+\)\s*$/, "");
+  // En cliente los botones suelen llevar precio: "Pollo - $50", "Chía +$4", "Mediana - $25"
+  t = t.replace(/\s*[-+]?\s*\$\d+(\.\d+)?\s*$/, "");
+  t = t.replace(/^[\s+\-−×÷*✓]+|[\s+\-−×÷*✓]+$/g, "").trim();
+  return t;
+}
+
+function buscarAgotadoEnBotonCli(btn) {
+  const textoOrig = nombreLimpioBotonCli(btn);
+  if (!textoOrig) return null;
+  const texto = sinAcentosCli(textoOrig);
+
+  const cont = btn.closest("#proteinas");
+  if (cont) {
+    const h3 = cont.querySelector("h3");
+    if (h3 && /maruchan/i.test(h3.innerText)) return null;
+  }
+
+  if (__agotados.length === 0) return null;
+  const setAg = new Set(__agotados.map(a => sinAcentosCli(a.toLowerCase())));
+
+  if (btn.dataset.ingredientes) {
+    for (const ing of btn.dataset.ingredientes.split(",")) {
+      const k = sinAcentosCli(ing.trim().toLowerCase());
+      if (k && setAg.has(k)) return ing.trim();
+    }
+  }
+
+  const t = (" " + texto + " ").replace(/[.,;:()/]/g, " ").replace(/\s+/g, " ");
+  for (const a of __agotados) {
+    const palabra = " " + sinAcentosCli(a.toLowerCase()) + " ";
+    let idx = t.indexOf(palabra);
+    while (idx >= 0) {
+      const antes = t.substring(0, idx).trimEnd();
+      if (!antes.endsWith(" de") && antes !== "de") return a;
+      idx = t.indexOf(palabra, idx + 1);
+    }
+  }
+
+  const aliasKey = Object.keys(ALIASES_AGOTADO_CLIENTE).find(k => sinAcentosCli(k) === texto);
+  if (aliasKey) {
+    const enc = ALIASES_AGOTADO_CLIENTE[aliasKey].find(ing => setAg.has(sinAcentosCli(ing.toLowerCase())));
+    if (enc) return enc;
+  }
+
+  return null;
+}
+
+function bloquearBotonAgotado(btn) {
+  const ag = buscarAgotadoEnBotonCli(btn);
+  if (!ag) {
+    if (btn.dataset.agotadoMarca) {
+      btn.classList.remove("agotado-bloqueado");
+      delete btn.dataset.agotadoMarca;
+    }
+    return;
+  }
+  if (btn.dataset.agotadoMarca === ag) return;
+  btn.dataset.agotadoMarca = ag;
+  btn.classList.add("agotado-bloqueado");
+  if (!btn.dataset.agotadoHook) {
+    btn.dataset.agotadoHook = "1";
+    btn.addEventListener("click", function(e) {
+      const actual = buscarAgotadoEnBotonCli(btn);
+      if (actual) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        alert("⚠️ Lo sentimos, " + actual.toUpperCase() + " no está disponible en este momento.");
+      }
+    }, true);
+  }
+}
+
+function reaplicarAgotadosCli() {
+  ["categorias", "proteinas"].forEach(id => {
+    const c = document.getElementById(id);
+    if (c) c.querySelectorAll("button").forEach(bloquearBotonAgotado);
+  });
+}
+
+function setAgotadosCli(arr) {
+  __agotados = Array.isArray(arr) ? arr : [];
+  reaplicarAgotadosCli();
+}
+
+function iniciarAgotadosCliente() {
+  ["categorias", "proteinas"].forEach(id => {
+    const c = document.getElementById(id);
+    if (!c) return;
+    new MutationObserver(() => {
+      c.querySelectorAll("button").forEach(bloquearBotonAgotado);
+    }).observe(c, { childList: true, subtree: true });
+  });
+  fetch("/agotados").then(r => r.json()).then(setAgotadosCli).catch(() => {});
+  if (typeof io === "function") {
+    const sck = io();
+    sck.on("agotadosActualizados", setAgotadosCli);
+    sck.on("connect", () => {
+      fetch("/agotados").then(r => r.json()).then(setAgotadosCli).catch(() => {});
+    });
+  }
+}
+
+document.addEventListener("DOMContentLoaded", iniciarAgotadosCliente);
 
 const CUPONES_VALIDOS = {
   "TESTCABA100": 100, "CABANA10": 10,
