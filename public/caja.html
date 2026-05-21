@@ -977,7 +977,11 @@ const ALIASES_AGOTADO = {
   "choriqueso": ["chorizo"],
   "mollequiles": ["chilaquiles"],
   "paquete 2": ["chilaquiles"],
-  "paquete 3": ["chilaquiles"]
+  "paquete 3": ["chilaquiles"],
+  "enchiladas": ["pollo"],
+  "enmoladas": ["pollo"],
+  "enfrijoladas": ["pollo"],
+  "club sandwich": ["pollo", "jamon", "jamón"]
 };
 
 function sinAcentos(s) {
@@ -988,6 +992,8 @@ function nombreLimpioBoton(btn) {
   let t = (btn.innerText || "").trim().toLowerCase();
   // quita contador "(2)", "(10)" al final que aparece en botones con +/-
   t = t.replace(/\s*\(\d+\)\s*$/, "");
+  // quita precio al final: " - $73", " +$4", " $18"
+  t = t.replace(/\s*[-+]?\s*\$\d+(\.\d+)?\s*$/, "");
   // quita controles − + × ÷ y espacios en bordes
   t = t.replace(/^[\s+\-−×÷*]+|[\s+\-−×÷*]+$/g, "").trim();
   return t;
