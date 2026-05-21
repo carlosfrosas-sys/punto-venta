@@ -9,6 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="Pedir">
   <title>Hacer Pedido</title>
   <script src="/socket.io/socket.io.js"></script>
+  <script src="https://sdk.mercadopago.com/js/v2"></script>
   <style>
     * {
       margin: 0;
@@ -639,6 +640,19 @@
         Una vez acreditado el pago, su pedido se enviará automáticamente a preparación. Tiempo estimado: hasta 10 min.
       </div>
     </div>
+  </div>
+</div>
+
+<!-- Modal de pago con Mercado Pago Bricks -->
+<div id="pagoModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:9500;align-items:center;justify-content:center;padding:16px;overflow-y:auto;">
+  <div style="background:#fff;border-radius:16px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:10px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <h2 style="font-size:18px;color:#0e3a5c;margin:0;">Pagar pedido</h2>
+      <button id="cerrarPagoModal" style="background:none;border:none;font-size:22px;cursor:pointer;color:#666;padding:0 6px;">×</button>
+    </div>
+    <div id="pagoBrickResumen" style="font-size:13px;color:#666;border-bottom:1px solid #e5e7eb;padding-bottom:8px;"></div>
+    <div id="pagoBrickContainer" style="min-height:200px;"></div>
+    <div id="pagoBrickStatus" style="display:none;text-align:center;padding:18px;font-size:14px;"></div>
   </div>
 </div>
 
@@ -2690,6 +2704,94 @@ function cancelarPedido() {
   document.getElementById("descuentoRow").style.display = "none";
 }
 
+let __brickController = null;
+
+function cerrarPagoModal() {
+  document.getElementById("pagoModal").style.display = "none";
+  if (__brickController && typeof __brickController.unmount === "function") {
+    try { __brickController.unmount(); } catch(e) {}
+    __brickController = null;
+  }
+  document.getElementById("pagoBrickContainer").innerHTML = "";
+  document.getElementById("pagoBrickStatus").style.display = "none";
+  document.getElementById("pagoBrickContainer").style.display = "block";
+  const btnPagar = document.getElementById("btnPagar");
+  if (btnPagar) {
+    btnPagar.disabled = false;
+    btnPagar.innerText = "Pagar";
+  }
+}
+document.addEventListener("click", (e) => {
+  if (e.target && e.target.id === "cerrarPagoModal") cerrarPagoModal();
+  if (e.target && e.target.id === "pagoModal") cerrarPagoModal();
+});
+
+function mostrarStatusBrick(html) {
+  document.getElementById("pagoBrickContainer").style.display = "none";
+  const s = document.getElementById("pagoBrickStatus");
+  s.style.display = "block";
+  s.innerHTML = html;
+}
+
+async function abrirBrickPago(preferenceId, publicKey, externalReference, totalMonto) {
+  document.getElementById("pagoBrickResumen").innerText =
+    "Total a pagar: $" + totalMonto.toFixed(2);
+  document.getElementById("pagoModal").style.display = "flex";
+
+  const mp = new MercadoPago(publicKey, { locale: "es-MX" });
+  const bricks = mp.bricks();
+  __brickController = await bricks.create("payment", "pagoBrickContainer", {
+    initialization: {
+      amount: totalMonto,
+      preferenceId: preferenceId
+    },
+    customization: {
+      paymentMethods: {
+        creditCard: "all",
+        debitCard: "all",
+        mercadoPago: "all",
+        // Apple Pay y Google Pay aparecen automáticamente cuando aplican
+        // (Safari iOS con tarjeta en Wallet, dominio verificado, etc.)
+      },
+      visual: {
+        style: { theme: "default" }
+      }
+    },
+    callbacks: {
+      onReady: () => {},
+      onSubmit: async ({ formData, selectedPaymentMethod }) => {
+        // El brick se encarga del cobro vía preferenceId.
+        // formData incluye payment_method_id / token. MP procesa con la preferencia.
+        // Después del cobro, Bricks llama onSubmit con formData; aquí confirmamos
+        // creando el pedido server-side.
+        mostrarStatusBrick("Procesando pago...");
+        try {
+          // Esperar 2s para dar tiempo a MP de registrar el pago
+          await new Promise(r => setTimeout(r, 2000));
+          // Pedirle al backend que verifique el último payment_id asociado al external_reference
+          const res = await fetch("/confirmar-pago-online", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ external_reference: externalReference, payment_id: formData.payment_id || formData.id || "" })
+          });
+          const data = await res.json();
+          if (data.ok) {
+            window.location.href = "/cliente-confirmado.html" + (data.nuevoRef ? "?ref=" + data.nuevoRef : "");
+          } else {
+            mostrarStatusBrick("⚠️ El pago no se pudo confirmar.<br><br><button onclick='cerrarPagoModal()' style='padding:10px 20px;border:none;background:#0e3a5c;color:white;border-radius:8px;cursor:pointer;'>Cerrar</button>");
+          }
+        } catch (e) {
+          mostrarStatusBrick("⚠️ Error de conexión.<br><br><button onclick='cerrarPagoModal()' style='padding:10px 20px;border:none;background:#0e3a5c;color:white;border-radius:8px;cursor:pointer;'>Cerrar</button>");
+        }
+      },
+      onError: (err) => {
+        console.error("Brick error:", err);
+        mostrarStatusBrick("⚠️ Error procesando el pago. Intenta de nuevo.<br><br><button onclick='cerrarPagoModal()' style='padding:10px 20px;border:none;background:#0e3a5c;color:white;border-radius:8px;cursor:pointer;'>Cerrar</button>");
+      }
+    }
+  });
+}
+
 async function iniciarPago() {
   if (productos.length === 0) {
     alert("Agrega productos a tu pedido");
@@ -2730,17 +2832,35 @@ async function iniciarPago() {
 
     if (data.directo) {
       window.location.href = "/cliente-confirmado.html" + (data.nuevoRef ? "?ref=" + data.nuevoRef : "");
-    } else if (data.init_point) {
-      window.location.href = data.init_point;
-    } else {
-      alert(data.error || "Error al crear el pago");
-      btnPagar.disabled = false;
-      btnPagar.innerText = "Pagar con Mercado Pago";
+      return;
     }
+
+    if (data.preference_id && data.public_key && typeof window.MercadoPago === "function") {
+      try {
+        await abrirBrickPago(data.preference_id, data.public_key, data.external_reference, totalConLlevar);
+        return;
+      } catch (e) {
+        console.error("Bricks falló, usando Checkout Pro:", e);
+        if (data.init_point) {
+          window.location.href = data.init_point;
+          return;
+        }
+      }
+    }
+
+    // Fallback: Checkout Pro tradicional (redirect)
+    if (data.init_point) {
+      window.location.href = data.init_point;
+      return;
+    }
+
+    alert(data.error || "Error al crear el pago");
+    btnPagar.disabled = false;
+    btnPagar.innerText = "Pagar";
   } catch (err) {
     alert("Error de conexion. Intenta de nuevo.");
     btnPagar.disabled = false;
-    btnPagar.innerText = "Pagar con Mercado Pago";
+    btnPagar.innerText = "Pagar";
   }
 }
 

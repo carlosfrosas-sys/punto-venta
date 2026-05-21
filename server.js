@@ -16,6 +16,7 @@ app.use(express.static(__dirname + "/public"));
 
 // Mercado Pago - Online (cliente.html checkout)
 const mpClient = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN_ONLINE || process.env.MERCADOPAGO_ACCESS_TOKEN || "" });
+const MP_PUBLIC_KEY = process.env.MERCADOPAGO_PUBLIC_KEY_ONLINE || process.env.MERCADOPAGO_PUBLIC_KEY || "";
 const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
 // Mercado Pago - Presencial (terminal Point Smart)
 const MP_TOKEN_PRESENCIAL = process.env.MERCADOPAGO_ACCESS_TOKEN_PRESENCIAL || process.env.MERCADOPAGO_ACCESS_TOKEN || "";
@@ -475,76 +476,123 @@ app.post("/crear-preferencia", async (req, res) => {
 
     await guardarPedidoPendiente(ref, { cliente, telefono, productos: prods, total: montoFinal, nota: notaConCupon, paraLlevar: paraLlevar || false, cupon: cuponUpper, esReferido });
 
-    res.json({ init_point: result.init_point });
+    res.json({
+      preference_id: result.id,
+      public_key: MP_PUBLIC_KEY,
+      external_reference: ref,
+      init_point: result.init_point  // fallback por si Bricks falla
+    });
   } catch (e) {
     console.error("Error creando preferencia MP:", e.message);
     res.status(500).json({ error: "Error al crear el pago" });
   }
 });
 
-// Mercado Pago: pago exitoso
-app.get("/pago-exitoso", async (req, res) => {
-  const { external_reference, payment_id } = req.query;
+// Buscar payment_id por external_reference (Bricks no siempre lo devuelve directo)
+async function buscarPaymentPorReferencia(external_reference) {
+  try {
+    const url = "https://api.mercadopago.com/v1/payments/search?external_reference=" +
+                encodeURIComponent(external_reference) +
+                "&sort=date_created&criteria=desc&limit=5";
+    const token = process.env.MERCADOPAGO_ACCESS_TOKEN_ONLINE || process.env.MERCADOPAGO_ACCESS_TOKEN || "";
+    const r = await fetch(url, { headers: { Authorization: "Bearer " + token } });
+    const data = await r.json();
+    if (!data.results || data.results.length === 0) return null;
+    // Preferir aprobado
+    const aprobado = data.results.find(p => p.status === "approved");
+    return aprobado || data.results[0];
+  } catch (e) {
+    console.error("Error buscando pago por referencia:", e.message);
+    return null;
+  }
+}
 
+// Lógica compartida: confirma pago MP y crea pedido real
+async function confirmarPagoOnline(external_reference, payment_id) {
   if (!external_reference) {
-    return res.redirect("/cliente-error.html");
+    return { ok: false, error: "datos_faltantes" };
   }
 
-  try {
-    // Verificar pago con API de MP
-    const payment = new Payment(mpClient);
-    const paymentData = await payment.get({ id: payment_id });
-
-    if (paymentData.status !== "approved") {
-      return res.redirect("/cliente-error.html");
+  let paymentData;
+  const payment = new Payment(mpClient);
+  if (payment_id) {
+    paymentData = await payment.get({ id: payment_id });
+  } else {
+    paymentData = await buscarPaymentPorReferencia(external_reference);
+    if (!paymentData) {
+      return { ok: false, error: "pago_no_encontrado" };
     }
+  }
 
-    const pendiente = await obtenerPedidoPendiente(external_reference);
-    if (!pendiente) {
-      return res.redirect("/cliente-error.html");
-    }
+  if (paymentData.status !== "approved") {
+    return { ok: false, error: "pago_no_aprobado", status: paymentData.status };
+  }
 
-    // Crear pedido real
-    const notaFinal = pendiente.nota
-      ? "[PAGO ONLINE] " + pendiente.nota
-      : "[PAGO ONLINE]";
+  const pendiente = await obtenerPedidoPendiente(external_reference);
+  if (!pendiente) {
+    return { ok: false, error: "pedido_pendiente_no_encontrado" };
+  }
 
-    const pedido = {
-      id: idCounter++,
-      cliente: pendiente.cliente + " (Tel: " + pendiente.telefono + ")",
-      productos: pendiente.productos,
-      total: pendiente.total,
-      nota: notaFinal,
-      paraLlevar: pendiente.paraLlevar || false,
-      origen: "cliente",
-      estado: "pendiente",
-      fecha: fechaHoy(),
-      horaEnvio: new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" })
-    };
+  const notaFinal = pendiente.nota
+    ? "[PAGO ONLINE] " + pendiente.nota
+    : "[PAGO ONLINE]";
 
-    pedidos.push(pedido);
-    await guardarPedido(pedido);
-    if (pendiente.cupon && CUPONES_1USO[pendiente.cupon]) await marcarCuponUsado(pendiente.cupon);
+  const pedido = {
+    id: idCounter++,
+    cliente: pendiente.cliente + " (Tel: " + pendiente.telefono + ")",
+    productos: pendiente.productos,
+    total: pendiente.total,
+    nota: notaFinal,
+    paraLlevar: pendiente.paraLlevar || false,
+    origen: "cliente",
+    estado: "pendiente",
+    fecha: fechaHoy(),
+    horaEnvio: new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" })
+  };
 
-    // Referido con Mercado Pago: marcar usado y generar nuevo
-    let nuevoRefMP = null;
-    if (pendiente.esReferido && pendiente.cupon && db) {
-      try {
-        const codigoUsado = pendiente.cupon.replace("REF-", "");
-        await db.collection("referidos").updateOne({ codigo: codigoUsado }, { $set: { usado: true, usadoPor: pendiente.telefono, fechaUso: new Date() } });
-        await db.collection("referidos_usados").insertOne({ telefono: pendiente.telefono, fecha: new Date() });
+  pedidos.push(pedido);
+  await guardarPedido(pedido);
+  if (pendiente.cupon && CUPONES_1USO[pendiente.cupon]) await marcarCuponUsado(pendiente.cupon);
+
+  let nuevoRefMP = null;
+  if (pendiente.esReferido && pendiente.cupon && db) {
+    try {
+      const codigoUsado = pendiente.cupon.replace("REF-", "");
+      await db.collection("referidos").updateOne({ codigo: codigoUsado }, { $set: { usado: true, usadoPor: pendiente.telefono, fechaUso: new Date() } });
+      await db.collection("referidos_usados").insertOne({ telefono: pendiente.telefono, fecha: new Date() });
+      nuevoRefMP = generarCodigoReferido();
+      while (await db.collection("referidos").findOne({ codigo: nuevoRefMP })) {
         nuevoRefMP = generarCodigoReferido();
-        while (await db.collection("referidos").findOne({ codigo: nuevoRefMP })) {
-          nuevoRefMP = generarCodigoReferido();
-        }
-        await db.collection("referidos").insertOne({ codigo: nuevoRefMP, origen: pendiente.telefono, usado: false, fecha: new Date() });
-      } catch(e) {}
-    }
-    io.emit("nuevoPedido", pedido);
+      }
+      await db.collection("referidos").insertOne({ codigo: nuevoRefMP, origen: pendiente.telefono, usado: false, fecha: new Date() });
+    } catch(e) {}
+  }
+  io.emit("nuevoPedido", pedido);
+  await eliminarPedidoPendiente(external_reference);
 
-    await eliminarPedidoPendiente(external_reference);
+  return { ok: true, pedidoId: pedido.id, nuevoRef: nuevoRefMP };
+}
 
-    res.redirect("/cliente-confirmado.html" + (nuevoRefMP ? "?ref=" + nuevoRefMP : ""));
+// Bricks: confirma pago desde el frontend (POST con JSON)
+app.post("/confirmar-pago-online", async (req, res) => {
+  const { external_reference, payment_id } = req.body;
+  try {
+    const result = await confirmarPagoOnline(external_reference, payment_id);
+    if (!result.ok) return res.status(400).json(result);
+    res.json(result);
+  } catch (e) {
+    console.error("Error confirmando pago online:", e.message);
+    res.status(500).json({ ok: false, error: "server_error" });
+  }
+});
+
+// Mercado Pago: pago exitoso (Checkout Pro / fallback)
+app.get("/pago-exitoso", async (req, res) => {
+  const { external_reference, payment_id } = req.query;
+  try {
+    const result = await confirmarPagoOnline(external_reference, payment_id);
+    if (!result.ok) return res.redirect("/cliente-error.html");
+    res.redirect("/cliente-confirmado.html" + (result.nuevoRef ? "?ref=" + result.nuevoRef : ""));
   } catch (e) {
     console.error("Error verificando pago:", e.message);
     res.redirect("/cliente-error.html");
