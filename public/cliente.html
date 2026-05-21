@@ -762,29 +762,27 @@ function reaplicarAgotadosCli() {
   });
 }
 
-// Bebidas: si están en esta lista, NO se muestran en el banner del cliente
-// (pero sí siguen bloqueando los botones correspondientes).
-const AGOTADOS_BEBIDA = [
-  "agua", "agua caliente", "piña natural", "piña aguas",
-  "horchata", "jamaica", "sandia", "melon", "papaya", "guayaba", "avena",
-  "cafe", "cafe de olla", "cafe con leche", "capuccino", "capuccino instantaneo",
-  "espumoso", "espumoso chocolate", "te",
-  "yakult", "peñafielita", "boing", "del valle", "bonafont", "bonafont de sabor",
-  "santa clara", "refresco", "refresco de sabor",
-  "fuze tea", "arizona", "jumex", "coca", "coca cola",
-  "volt", "electrolit", "gatorade", "monster", "redbull",
-  "licuado", "licuado litro"
+// Solo estos ingredientes de COMIDA se muestran en el banner del cliente.
+// Cualquier otro agotado (bebidas, refrescos, sabores) se filtra del banner
+// pero sigue bloqueando los botones correspondientes.
+const AGOTADOS_COMIDA = [
+  "pollo", "bistec", "pastor", "chorizo", "arrachera", "jamon", "jamón",
+  "pechuga", "champiñones", "champinones", "chuleta", "milanesa", "tinga",
+  "chicharron", "chicharrón", "picadillo", "huevo", "salchicha", "pierna",
+  "atun", "atún", "queso", "frijoles", "nopales", "papas",
+  "piña en almibar", "piña en almíbar",
+  "longaniza", "barbacoa", "birria", "cecina", "carnitas"
 ];
-const AGOTADOS_BEBIDA_NORM = new Set(AGOTADOS_BEBIDA.map(s => sinAcentosCli(s.toLowerCase())));
+const AGOTADOS_COMIDA_NORM = new Set(AGOTADOS_COMIDA.map(s => sinAcentosCli(s.toLowerCase())));
 
-function esAgotadoBebida(a) {
-  return AGOTADOS_BEBIDA_NORM.has(sinAcentosCli(a.toLowerCase()));
+function esAgotadoComida(a) {
+  return AGOTADOS_COMIDA_NORM.has(sinAcentosCli(a.toLowerCase()));
 }
 
 function renderBannerAgotados() {
   const banner = document.getElementById("bannerAgotados");
   if (!banner) return;
-  const visibles = __agotados.filter(a => !esAgotadoBebida(a));
+  const visibles = __agotados.filter(esAgotadoComida);
   if (visibles.length === 0) {
     banner.style.display = "none";
     banner.innerHTML = "";
