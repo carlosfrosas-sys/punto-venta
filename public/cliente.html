@@ -762,18 +762,38 @@ function reaplicarAgotadosCli() {
   });
 }
 
+// Bebidas: si están en esta lista, NO se muestran en el banner del cliente
+// (pero sí siguen bloqueando los botones correspondientes).
+const AGOTADOS_BEBIDA = [
+  "agua", "agua caliente", "piña natural", "piña aguas",
+  "horchata", "jamaica", "sandia", "melon", "papaya", "guayaba", "avena",
+  "cafe", "cafe de olla", "cafe con leche", "capuccino", "capuccino instantaneo",
+  "espumoso", "espumoso chocolate", "te",
+  "yakult", "peñafielita", "boing", "del valle", "bonafont", "bonafont de sabor",
+  "santa clara", "refresco", "refresco de sabor",
+  "fuze tea", "arizona", "jumex", "coca", "coca cola",
+  "volt", "electrolit", "gatorade", "monster", "redbull",
+  "licuado", "licuado litro"
+];
+const AGOTADOS_BEBIDA_NORM = new Set(AGOTADOS_BEBIDA.map(s => sinAcentosCli(s.toLowerCase())));
+
+function esAgotadoBebida(a) {
+  return AGOTADOS_BEBIDA_NORM.has(sinAcentosCli(a.toLowerCase()));
+}
+
 function renderBannerAgotados() {
   const banner = document.getElementById("bannerAgotados");
   if (!banner) return;
-  if (__agotados.length === 0) {
+  const visibles = __agotados.filter(a => !esAgotadoBebida(a));
+  if (visibles.length === 0) {
     banner.style.display = "none";
     banner.innerHTML = "";
     return;
   }
   banner.style.display = "flex";
   banner.innerHTML =
-    '<span class="titulo">Hoy no hay:</span> ' +
-    '<span class="lista">' + __agotados.join(", ") + '</span>';
+    '<span class="titulo">Por el momento no hay:</span> ' +
+    '<span class="lista">' + visibles.join(", ") + '</span>';
 }
 
 function setAgotadosCli(arr) {
