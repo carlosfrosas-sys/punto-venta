@@ -924,7 +924,7 @@ app.post("/pedido/listo/:id", async (req, res) => {
 // Mapa de categorías por palabra clave en nombre del producto
 function detectarCategoria(nombre) {
   const n = nombre.toLowerCase();
-  if (n.includes("paquete") || n.includes("hot cakes") || n.includes("hotcakes") || n.includes("orden de huevo") || n.includes("bisquet") || n.includes("corn flakes")) return "Desayunos";
+  if (n.includes("paquete") || n.includes("hot cakes") || n.includes("hotcakes") || n.includes("orden de huevo") || n.includes("bisquet") || n.includes("corn flakes") || n.includes("avocado")) return "Desayunos";
   if (n.includes("chilaquil")) return "Chilaquiles";
   if (n.includes("mollete") && !n.includes("mollequil")) return "Molletes";
   if (n.includes("mollequil")) return "Mollequiles";

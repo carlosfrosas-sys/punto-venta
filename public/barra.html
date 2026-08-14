@@ -419,8 +419,12 @@
       return false;
     }
 
+    // Platillos que traen bebida incluida: en barra se prepara solo la bebida
+    const conBebidaIncluida = ["Paquete", "Avocado Toast"];
+
     function esPaqueteConBebida(p) {
-      if (!p.nombre.startsWith("Paquete") || !p.nota) return false;
+      if (!p.nota) return false;
+      if (!conBebidaIncluida.some(n => p.nombre.startsWith(n))) return false;
       // Paquete 4 ya sale completo en barra, no crear virtual
       if (p.nombre.startsWith("Paquete 4")) return false;
       return bebidasPaquete.some(b => p.nota.includes(b));

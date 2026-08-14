@@ -409,6 +409,19 @@
 
     const bebidasCocina = ["Agua ", "Licuado de ", "Licuado Litro", "Café ", "Capuccino", "Espumoso", "Té", "Yakult", "Peñafielita", "Boing", "Del Valle", "Bonafont", "Santa Clara", "Refresco de Sabor", "Fuze Tea", "Arizona", "Jumex", "Coca", "Volt", "Electrolit", "Gatorade", "Monster", "Redbull", "Agua Caliente"];
 
+    // Platillos que traen bebida incluida: la bebida la prepara barra,
+    // así que en cocina no se muestra en la nota
+    const conBebidaIncluida = ["Avocado Toast"];
+    const bebidasPaquete = ["Té", "Café", "Jugo"];
+
+    function notaCocina(p) {
+      let nota = (p.nota || "").replace(/\s*\+\$\d+/g, "");
+      if (conBebidaIncluida.some(n => p.nombre.startsWith(n))) {
+        nota = nota.split(",").map(s => s.trim()).filter(s => s && !bebidasPaquete.includes(s)).join(", ");
+      }
+      return nota;
+    }
+
     function esBebida(nombre) {
       return bebidasCocina.some(b => nombre.startsWith(b)) || nombre.startsWith("Otro") || nombre.startsWith("Hot Cakes") || nombre.startsWith("HotCakes") || nombre === "Corn Flakes" || nombre.startsWith("Paleta");
     }
@@ -436,7 +449,7 @@
             ${productosCocina.map((p, idx) =>
               `<li data-index="${p._index}">
                 <span class="punto">&#8226;</span> ${p.cantidad && p.cantidad > 1 ? `<span class="qty">${p.cantidad}</span> ` : ""}${p.nombre}
-                ${p.nota ? `<span class="nota">${p.nota.replace(/\s*\+\$\d+/g, "")}</span>` : ""}
+                ${notaCocina(p) ? `<span class="nota">${notaCocina(p)}</span>` : ""}
                 ${idx === productosCocina.length - 1 && pedido.nota ? `<span class="nota-general">${pedido.nota}</span>` : ""}
               </li>`
             ).join("")}
