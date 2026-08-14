@@ -753,6 +753,36 @@
 </div>
 
 <script>
+// Adjunta el token de la sesión a toda petición al servidor.
+// Si el servidor la rechaza, vuelve a pedir la contraseña.
+(function() {
+  const fetchOriginal = window.fetch;
+  window.fetch = function(recurso, opciones) {
+    const url = typeof recurso === "string" ? recurso : (recurso && recurso.url) || "";
+    const esPropia = url.startsWith("/") || url.startsWith(window.location.origin);
+    const token = localStorage.getItem("token_admin");
+
+    if (esPropia && token) {
+      opciones = Object.assign({}, opciones);
+      if (opciones.headers instanceof Headers) {
+        const h = new Headers(opciones.headers);
+        h.set("X-Token", token);
+        opciones.headers = h;
+      } else {
+        opciones.headers = Object.assign({}, opciones.headers, { "X-Token": token });
+      }
+    }
+
+    return fetchOriginal(recurso, opciones).then(res => {
+      if (res.status === 401 && esPropia && url.indexOf("/login") === -1) {
+        const overlay = document.getElementById("loginOverlay");
+        if (overlay) overlay.style.display = "flex";
+      }
+      return res;
+    });
+  };
+})();
+
 function hacerLogin() {
   const usuario = document.getElementById("loginUsuario").value.trim();
   const password = document.getElementById("loginPassword").value;

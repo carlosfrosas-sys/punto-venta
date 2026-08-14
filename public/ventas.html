@@ -529,6 +529,36 @@
 </div>
 
 <script>
+// Adjunta el token de la sesión a toda petición al servidor.
+// Si el servidor la rechaza, vuelve a pedir la contraseña.
+(function() {
+  const fetchOriginal = window.fetch;
+  window.fetch = function(recurso, opciones) {
+    const url = typeof recurso === "string" ? recurso : (recurso && recurso.url) || "";
+    const esPropia = url.startsWith("/") || url.startsWith(window.location.origin);
+    const token = localStorage.getItem("token_admin");
+
+    if (esPropia && token) {
+      opciones = Object.assign({}, opciones);
+      if (opciones.headers instanceof Headers) {
+        const h = new Headers(opciones.headers);
+        h.set("X-Token", token);
+        opciones.headers = h;
+      } else {
+        opciones.headers = Object.assign({}, opciones.headers, { "X-Token": token });
+      }
+    }
+
+    return fetchOriginal(recurso, opciones).then(res => {
+      if (res.status === 401 && esPropia && url.indexOf("/login") === -1) {
+        const overlay = document.getElementById("loginOverlay");
+        if (overlay) overlay.style.display = "flex";
+      }
+      return res;
+    });
+  };
+})();
+
 function hacerLogin() {
   const usuario = document.getElementById("loginUsuario").value.trim();
   const password = document.getElementById("loginPassword").value;
@@ -539,7 +569,7 @@ function hacerLogin() {
     .then(r => r.json().then(d => ({ ok: r.ok, data: d })))
     .then(({ ok, data }) => {
       if (ok) {
-        localStorage.setItem("token_admin", data.token);
+        localStorage.setItem("token_admin", data.token); if (data.tokenExport) localStorage.setItem("token_export", data.tokenExport);
         if (recordar) { localStorage.setItem("rec_user", usuario); localStorage.setItem("rec_pass", password); }
         else { localStorage.removeItem("rec_user"); localStorage.removeItem("rec_pass"); }
         document.getElementById("loginOverlay").style.display = "none";
@@ -554,14 +584,19 @@ function hacerLogin() {
     fetch("/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ usuario: savedUser, password: savedPass }) })
       .then(r => r.json().then(d => ({ ok: r.ok, data: d })))
       .then(({ ok, data }) => {
-        if (ok) { localStorage.setItem("token_admin", data.token); document.getElementById("loginOverlay").style.display = "none"; }
+        if (ok) { localStorage.setItem("token_admin", data.token); if (data.tokenExport) localStorage.setItem("token_export", data.tokenExport); document.getElementById("loginOverlay").style.display = "none"; }
       });
     return;
   }
   const token = localStorage.getItem("token_admin");
   if (token) {
     fetch("/verificar-token", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token }) })
-      .then(r => { if (r.ok) document.getElementById("loginOverlay").style.display = "none"; });
+      .then(r => r.ok ? r.json().then(d => ({ ok: true, data: d })) : { ok: false, data: {} })
+      .then(({ ok, data }) => {
+        if (!ok) return;
+        if (data.tokenExport) localStorage.setItem("token_export", data.tokenExport);
+        document.getElementById("loginOverlay").style.display = "none";
+      });
   }
 })();
 </script>
@@ -1165,6 +1200,14 @@ function hacerLogin() {
       });
   }
 
+  // Las descargas van por URL (window.open y correo no admiten encabezados),
+  // así que llevan la llave de reportes, que caduca sola cada semana.
+  function llaveReportes(url) {
+    const t = localStorage.getItem("token_export");
+    if (!t) return url;
+    return url + (url.indexOf("?") === -1 ? "?" : "&") + "t=" + encodeURIComponent(t);
+  }
+
   function exportarExcel() {
     let url;
     if (tabActual === "dia") {
@@ -1175,18 +1218,18 @@ function hacerLogin() {
     } else {
       url = "/ventas/exportar/mes";
     }
-    window.open(url, "_blank");
+    window.open(llaveReportes(url), "_blank");
   }
 
   function enviarCorreo() {
     let url;
     if (tabActual === "dia") {
       if (!fechaActual) return;
-      url = window.location.origin + "/ventas/exportar/dia?fecha=" + encodeURIComponent(fechaActual);
+      url = llaveReportes(window.location.origin + "/ventas/exportar/dia?fecha=" + encodeURIComponent(fechaActual));
     } else if (tabActual === "semana") {
-      url = window.location.origin + "/ventas/exportar/semana";
+      url = llaveReportes(window.location.origin + "/ventas/exportar/semana");
     } else {
-      url = window.location.origin + "/ventas/exportar/mes";
+      url = llaveReportes(window.location.origin + "/ventas/exportar/mes");
     }
 
     const totalTxt = document.getElementById("metricTotal").innerText;
@@ -1496,7 +1539,7 @@ function hacerLogin() {
   }
 
   function descargarCorte() {
-    window.open("/corte/exportar/" + encodeURIComponent(corteFecha), "_blank");
+    window.open(llaveReportes("/corte/exportar/" + encodeURIComponent(corteFecha)), "_blank");
   }
 
   // Eliminados

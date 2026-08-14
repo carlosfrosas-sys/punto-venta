@@ -294,7 +294,7 @@ app.post("/crear-referido-inicial", async (req, res) => {
 });
 
 // Consultar estado de referidos
-app.get("/referidos-status", async (req, res) => {
+app.get("/referidos-status", soloAdmin, async (req, res) => {
   if (!db) return res.json({ referidos: [] });
   try {
     const referidos = await db.collection("referidos").find().sort({ fecha: -1 }).toArray();
@@ -306,7 +306,7 @@ app.get("/referidos-status", async (req, res) => {
 });
 
 // Eliminar cupón de referido
-app.delete("/eliminar-referido/:codigo", async (req, res) => {
+app.delete("/eliminar-referido/:codigo", soloAdmin, async (req, res) => {
   const codigo = req.params.codigo.toUpperCase();
   if (!db) return res.status(500).json({ error: "Sin base de datos" });
   try {
@@ -613,7 +613,7 @@ function fechaHoy() {
   return new Date().toLocaleDateString("es-MX", { timeZone: "America/Mexico_City", year: "numeric", month: "2-digit", day: "2-digit" });
 }
 
-app.post("/pedido", async (req, res) => {
+app.post("/pedido", soloAdmin, async (req, res) => {
   const pedido = {
     id: idCounter++,
     cliente: req.body.cliente,
@@ -635,7 +635,7 @@ app.post("/pedido", async (req, res) => {
   res.json(pedido);
 });
 
-app.get("/pedidos", (req, res) => {
+app.get("/pedidos", soloAdmin, (req, res) => {
   res.json(pedidos);
 });
 
@@ -655,7 +655,7 @@ app.get("/agotados", (req, res) => {
   res.json(agotados);
 });
 
-app.post("/agotados", (req, res) => {
+app.post("/agotados", soloAdmin, (req, res) => {
   if (!Array.isArray(req.body && req.body.agotados)) {
     return res.status(400).json({ error: "agotados debe ser un array" });
   }
@@ -667,7 +667,7 @@ app.post("/agotados", (req, res) => {
   res.json({ ok: true, agotados });
 });
 
-app.put("/pedido/:id", async (req, res) => {
+app.put("/pedido/:id", soloAdmin, async (req, res) => {
   const pedido = pedidos.find(p => p.id == req.params.id);
   if (pedido) {
     pedido.estado = req.body.estado;
@@ -684,7 +684,7 @@ const MP_DEVICE_ID = process.env.MP_DEVICE_ID || "NEWLAND_N950__N950NCCB05482252
 
 let lastOrderId = null;
 
-app.post("/cobrar-terminal", async (req, res) => {
+app.post("/cobrar-terminal", soloAdmin, async (req, res) => {
   const { amount, reference } = req.body;
   if (!amount || amount < 5) return res.status(400).json({ error: "Monto mínimo $5" });
   if (!MP_TOKEN_PRESENCIAL) return res.status(500).json({ error: "Mercado Pago presencial no configurado" });
@@ -725,7 +725,7 @@ app.post("/cobrar-terminal", async (req, res) => {
   }
 });
 
-app.get("/cobrar-terminal/:orderId", async (req, res) => {
+app.get("/cobrar-terminal/:orderId", soloAdmin, async (req, res) => {
   if (!MP_TOKEN_PRESENCIAL) return res.status(500).json({ error: "No configurado" });
   try {
     const resp = await fetch(`https://api.mercadopago.com/v1/orders/${req.params.orderId}`, {
@@ -738,7 +738,7 @@ app.get("/cobrar-terminal/:orderId", async (req, res) => {
   }
 });
 
-app.delete("/cobrar-terminal/:orderId", async (req, res) => {
+app.delete("/cobrar-terminal/:orderId", soloAdmin, async (req, res) => {
   if (!MP_TOKEN_PRESENCIAL) return res.status(500).json({ error: "No configurado" });
   try {
     const resp = await fetch(`https://api.mercadopago.com/v1/orders/${req.params.orderId}/cancel`, {
@@ -754,22 +754,62 @@ app.delete("/cobrar-terminal/:orderId", async (req, res) => {
 });
 
 // Login para caja y ventas
+const crypto = require("crypto");
 const USUARIO_ADMIN = process.env.USUARIO_ADMIN || "admin";
 const PASS_ADMIN = process.env.PASS_ADMIN || "1234";
-const TOKEN_ADMIN = require("crypto").randomBytes(32).toString("hex");
+// Token derivado de la contraseña: sobrevive a los reinicios del servidor
+// (si fuera aleatorio, cada deploy cerraría la sesión de caja y ventas)
+const TOKEN_ADMIN = crypto.createHash("sha256").update("pdv:" + USUARIO_ADMIN + ":" + PASS_ADMIN).digest("hex");
+
+// Token solo para descargar reportes. Va en la URL (window.open y correo
+// no permiten mandar encabezados) y rota cada semana, así un enlace
+// reenviado por correo deja de servir y no da acceso a nada más.
+function tokenExport(semanasAtras) {
+  const semana = Math.floor(Date.now() / (7 * 24 * 60 * 60 * 1000)) - (semanasAtras || 0);
+  return crypto.createHash("sha256").update("export:" + PASS_ADMIN + ":" + semana).digest("hex").slice(0, 24);
+}
+
+function soloAdmin(req, res, next) {
+  if (req.get("X-Token") === TOKEN_ADMIN) return next();
+  res.status(401).json({ error: "No autorizado" });
+}
+
+function soloAdminOExport(req, res, next) {
+  if (req.get("X-Token") === TOKEN_ADMIN) return next();
+  const t = req.query.t;
+  if (t && (t === tokenExport(0) || t === tokenExport(1))) return next();
+  res.status(401).send("No autorizado");
+}
+
+// Retraso ante intentos fallidos seguidos desde la misma IP
+const intentosLogin = new Map();
 
 app.post("/login", (req, res) => {
-  const { usuario, password } = req.body;
-  if (usuario.normalize("NFC") === USUARIO_ADMIN.normalize("NFC") && password === PASS_ADMIN) {
-    res.json({ token: TOKEN_ADMIN });
+  const { usuario, password } = req.body || {};
+  const ip = req.ip;
+  const fallos = intentosLogin.get(ip) || 0;
+
+  if (fallos >= 5) {
+    return res.status(429).json({ error: "Demasiados intentos, espera un momento" });
+  }
+
+  if (typeof usuario === "string" && typeof password === "string" &&
+      usuario.normalize("NFC") === USUARIO_ADMIN.normalize("NFC") && password === PASS_ADMIN) {
+    intentosLogin.delete(ip);
+    res.json({ token: TOKEN_ADMIN, tokenExport: tokenExport(0) });
   } else {
+    intentosLogin.set(ip, fallos + 1);
+    setTimeout(() => {
+      const n = (intentosLogin.get(ip) || 1) - 1;
+      if (n > 0) intentosLogin.set(ip, n); else intentosLogin.delete(ip);
+    }, 60000);
     res.status(401).json({ error: "Usuario o contraseña incorrectos" });
   }
 });
 
 app.post("/verificar-token", (req, res) => {
-  if (req.body.token === TOKEN_ADMIN) {
-    res.json({ ok: true });
+  if (req.body && req.body.token === TOKEN_ADMIN) {
+    res.json({ ok: true, tokenExport: tokenExport(0) });
   } else {
     res.status(401).json({ error: "Token inválido" });
   }
@@ -777,7 +817,7 @@ app.post("/verificar-token", (req, res) => {
 
 const PASS_ELIMINAR = process.env.PASS_ELIMINAR || "1234";
 
-app.delete("/pedido/:id", async (req, res) => {
+app.delete("/pedido/:id", soloAdmin, async (req, res) => {
   if (req.body.password !== PASS_ELIMINAR) {
     return res.status(401).json({ error: "Contraseña incorrecta" });
   }
@@ -804,12 +844,12 @@ app.delete("/pedido/:id", async (req, res) => {
   res.json({ ok: true });
 });
 
-app.get("/ventas/fechas", (req, res) => {
+app.get("/ventas/fechas", soloAdmin, (req, res) => {
   const fechas = [...new Set(pedidos.filter(p => p.estado === "Entregado" && p.fecha).map(p => p.fecha))];
   res.json(fechas);
 });
 
-app.get("/ventas/fecha/:fecha", (req, res) => {
+app.get("/ventas/fecha/:fecha", soloAdmin, (req, res) => {
   const entregados = pedidos.filter(p => p.estado === "Entregado" && p.fecha === req.params.fecha);
   const total = entregados.reduce((acc, p) => acc + p.total, 0);
 
@@ -861,7 +901,7 @@ app.get("/ventas/fecha/:fecha", (req, res) => {
   res.json({ pedidos: entregados, total, categorias, porHora, totalEfectivo, totalTarjeta, totalAnterior, productoEstrella });
 });
 
-app.get("/total", (req, res) => {
+app.get("/total", soloAdmin, (req, res) => {
   const total = pedidos
     .filter(p => p.estado === "Entregado")
     .reduce((acc, p) => acc + p.total, 0);
@@ -914,7 +954,7 @@ function detectarCategoria(nombre) {
   return "Otros";
 }
 
-app.get("/ventas/productos-vendidos", (req, res) => {
+app.get("/ventas/productos-vendidos", soloAdmin, (req, res) => {
   const periodo = req.query.periodo || "dia";
   const fecha = req.query.fecha;
   const ahora = fechaMXAhora();
@@ -1095,7 +1135,7 @@ function fechaMXAhora() {
   return new Date(new Date().toLocaleString("en-US", { timeZone: "America/Mexico_City" }));
 }
 
-app.get("/ventas/semanal", async (req, res) => {
+app.get("/ventas/semanal", soloAdmin, async (req, res) => {
   const ahora = fechaMXAhora();
   const hace7dias = new Date(ahora);
   hace7dias.setDate(hace7dias.getDate() - 6);
@@ -1153,7 +1193,7 @@ app.get("/ventas/semanal", async (req, res) => {
   res.json({ pedidos: entregados, total, porDia, totalEfectivo, totalTarjeta, totalAnterior });
 });
 
-app.get("/ventas/mensual", async (req, res) => {
+app.get("/ventas/mensual", soloAdmin, async (req, res) => {
   const ahora = fechaMXAhora();
   const mesActual = (ahora.getMonth() + 1).toString().padStart(2, "0");
   const anioActual = ahora.getFullYear().toString();
@@ -1207,13 +1247,13 @@ app.get("/ventas/mensual", async (req, res) => {
 });
 
 // Historial de eliminados
-app.get("/ventas/eliminados/:fecha", (req, res) => {
+app.get("/ventas/eliminados/:fecha", soloAdmin, (req, res) => {
   const elim = pedidosEliminados.filter(p => p.fecha === req.params.fecha);
   res.json(elim);
 });
 
 // Gastos
-app.post("/gasto", async (req, res) => {
+app.post("/gasto", soloAdmin, async (req, res) => {
   const { concepto, monto } = req.body;
   if (!concepto || !monto) return res.status(400).json({ error: "Faltan datos" });
   const ahora = fechaMXAhora();
@@ -1231,13 +1271,13 @@ app.post("/gasto", async (req, res) => {
   res.json(gasto);
 });
 
-app.get("/gastos/:fecha", (req, res) => {
+app.get("/gastos/:fecha", soloAdmin, (req, res) => {
   const del_dia = gastos.filter(g => g.fecha === req.params.fecha);
   const totalGastos = del_dia.reduce((acc, g) => acc + g.monto, 0);
   res.json({ gastos: del_dia, totalGastos });
 });
 
-app.delete("/gasto/:id", async (req, res) => {
+app.delete("/gasto/:id", soloAdmin, async (req, res) => {
   if (req.body.password !== PASS_ELIMINAR) {
     return res.status(401).json({ error: "Contraseña incorrecta" });
   }
@@ -1252,7 +1292,7 @@ app.delete("/gasto/:id", async (req, res) => {
 });
 
 // Fondo de caja
-app.post("/fondo-caja", async (req, res) => {
+app.post("/fondo-caja", soloAdmin, async (req, res) => {
   const { monto } = req.body;
   if (monto === undefined) return res.status(400).json({ error: "Falta monto" });
   const ahora = fechaMXAhora();
@@ -1269,13 +1309,13 @@ app.post("/fondo-caja", async (req, res) => {
   res.json({ ok: true });
 });
 
-app.get("/fondo-caja/:fecha", (req, res) => {
+app.get("/fondo-caja/:fecha", soloAdmin, (req, res) => {
   const fondo = fondosCaja.find(f => f.fecha === req.params.fecha);
   res.json({ monto: fondo ? fondo.monto : 0 });
 });
 
 // Retiros de dinero
-app.post("/retiro", async (req, res) => {
+app.post("/retiro", soloAdmin, async (req, res) => {
   const { concepto, monto } = req.body;
   if (!monto) return res.status(400).json({ error: "Falta monto" });
   const ahora = fechaMXAhora();
@@ -1291,13 +1331,13 @@ app.post("/retiro", async (req, res) => {
   res.json(retiro);
 });
 
-app.get("/retiros/:fecha", (req, res) => {
+app.get("/retiros/:fecha", soloAdmin, (req, res) => {
   const del_dia = retiros.filter(r => r.fecha === req.params.fecha);
   const totalRetiros = del_dia.reduce((acc, r) => acc + r.monto, 0);
   res.json({ retiros: del_dia, totalRetiros });
 });
 
-app.delete("/retiro/:id", async (req, res) => {
+app.delete("/retiro/:id", soloAdmin, async (req, res) => {
   if (req.body.password !== PASS_ELIMINAR) {
     return res.status(401).json({ error: "Contraseña incorrecta" });
   }
@@ -1310,7 +1350,7 @@ app.delete("/retiro/:id", async (req, res) => {
 });
 
 // Ventas tarjeta manuales
-app.post("/venta-tarjeta", async (req, res) => {
+app.post("/venta-tarjeta", soloAdmin, async (req, res) => {
   const { concepto, monto } = req.body;
   if (!monto) return res.status(400).json({ error: "Falta monto" });
   const ahora = fechaMXAhora();
@@ -1326,13 +1366,13 @@ app.post("/venta-tarjeta", async (req, res) => {
   res.json(venta);
 });
 
-app.get("/ventas-tarjeta/:fecha", (req, res) => {
+app.get("/ventas-tarjeta/:fecha", soloAdmin, (req, res) => {
   const del_dia = ventasTarjeta.filter(v => v.fecha === req.params.fecha);
   const totalVentasTarjeta = del_dia.reduce((acc, v) => acc + v.monto, 0);
   res.json({ ventas: del_dia, totalVentasTarjeta });
 });
 
-app.delete("/venta-tarjeta/:id", async (req, res) => {
+app.delete("/venta-tarjeta/:id", soloAdmin, async (req, res) => {
   if (req.body.password !== PASS_ELIMINAR) {
     return res.status(401).json({ error: "Contraseña incorrecta" });
   }
@@ -1345,7 +1385,7 @@ app.delete("/venta-tarjeta/:id", async (req, res) => {
 });
 
 // Exportar corte de caja como CSV (Excel)
-app.get("/corte/exportar/:fecha", (req, res) => {
+app.get("/corte/exportar/:fecha", soloAdminOExport, (req, res) => {
   const fecha = req.params.fecha;
   const entregados = pedidos.filter(p => p.estado === "Entregado" && p.fecha === fecha);
   const totalVentas = entregados.reduce((a, p) => a + p.total, 0);
@@ -1404,7 +1444,7 @@ app.get("/corte/exportar/:fecha", (req, res) => {
   res.send(csv);
 });
 
-app.get("/ventas/exportar/:tipo", (req, res) => {
+app.get("/ventas/exportar/:tipo", soloAdminOExport, (req, res) => {
   const tipo = req.params.tipo;
   let entregados = [];
 
