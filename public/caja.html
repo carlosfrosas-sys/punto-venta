@@ -3293,6 +3293,7 @@ function mostrarPersonalizado() {
   const inputNombre = document.createElement("input");
   inputNombre.type = "text";
   inputNombre.placeholder = "Ej: Torta de milanesa";
+  inputNombre.autocapitalize = "sentences";
   inputNombre.style.cssText = "width:100%;padding:10px;font-size:16px;border:1.5px solid #d4c8bc;border-radius:8px;margin-bottom:8px;font-family:inherit;";
 
   const inputNota = document.createElement("input");
@@ -3314,8 +3315,13 @@ function mostrarPersonalizado() {
   btnAgregar.innerText = "Agregar al pedido";
   btnAgregar.style.cssText = "background:#16a34a;color:white;font-size:16px;width:100%;padding:10px;border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:600;";
 
+  // Primera letra en mayúscula, el resto tal cual se escribió
+  function conMayusculaInicial(texto) {
+    return texto ? texto.charAt(0).toUpperCase() + texto.slice(1) : texto;
+  }
+
   function hacerAgregar() {
-    const nombre = inputNombre.value.trim();
+    const nombre = conMayusculaInicial(inputNombre.value.trim());
     const precio = parseFloat(inputPrecio.value);
 
     if (!nombre) {
@@ -3331,7 +3337,7 @@ function mostrarPersonalizado() {
       return;
     }
 
-    productos.push({ nombre, precio, precioBase: precio, cantidad: 1, nota: inputNota.value.trim() });
+    productos.push({ nombre, precio, precioBase: precio, cantidad: 1, nota: conMayusculaInicial(inputNota.value.trim()) });
     total += precio;
     renderizarLista();
     cont.innerHTML = "";
