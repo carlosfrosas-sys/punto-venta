@@ -1486,6 +1486,7 @@ const menu = {
 
   "OTROS..": {
     items: [
+      { nombre: "✏️ Personalizado", personalizado: true },
       { nombre: "$5", precio: 5 },
       { nombre: "$7", precio: 7 },
       { nombre: "$8", precio: 8 },
@@ -1691,6 +1692,10 @@ if (categoria === "Licuados") {
 
       const btn = document.createElement("button");
       btn.innerText = item.nombre;
+      if (item.personalizado) {
+        btn.style.background = "#f59e0b";
+        btn.style.color = "white";
+      }
       btn.onclick = () => {
         if (categoria === "Burguers") {
           mostrarNotas(item.nombre, item.precio, notasHamburguesas);
@@ -1730,6 +1735,8 @@ if (categoria === "Licuados") {
           mostrarOpcionesEnsalada(item.nombre, item.precio);
         } else if (categoria === "Ensaladas") {
           agregarProductoSinNota("Ensalada de " + item.nombre, item.precio);
+        } else if (categoria === "OTROS.." && item.personalizado) {
+          mostrarPersonalizado();
         } else if (categoria === "OTROS..") {
           agregarProductoSinNota("Otro", item.precio);
         } else {
@@ -3277,6 +3284,70 @@ function agregarProductoSinNota(nombre, precio) {
   productos.push({ nombre, precio, precioBase: precio, cantidad: 1, nota: "" });
   total += precio;
   renderizarLista();
+}
+
+function mostrarPersonalizado() {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>Producto personalizado</h3><p>Escribe lo que debe salir en cocina:</p>";
+
+  const inputNombre = document.createElement("input");
+  inputNombre.type = "text";
+  inputNombre.placeholder = "Ej: Torta de milanesa";
+  inputNombre.style.cssText = "width:100%;padding:10px;font-size:16px;border:1.5px solid #d4c8bc;border-radius:8px;margin-bottom:8px;font-family:inherit;";
+
+  const inputNota = document.createElement("input");
+  inputNota.type = "text";
+  inputNota.placeholder = "Indicación (opcional). Ej: sin cebolla";
+  inputNota.style.cssText = inputNombre.style.cssText;
+
+  const inputPrecio = document.createElement("input");
+  inputPrecio.type = "number";
+  inputPrecio.inputMode = "decimal";
+  inputPrecio.min = "0";
+  inputPrecio.placeholder = "Precio $";
+  inputPrecio.style.cssText = inputNombre.style.cssText;
+
+  const aviso = document.createElement("p");
+  aviso.style.cssText = "color:#dc2626;font-size:14px;margin:0 0 8px;display:none;";
+
+  const btnAgregar = document.createElement("button");
+  btnAgregar.innerText = "Agregar al pedido";
+  btnAgregar.style.cssText = "background:#16a34a;color:white;font-size:16px;width:100%;padding:10px;border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:600;";
+
+  function hacerAgregar() {
+    const nombre = inputNombre.value.trim();
+    const precio = parseFloat(inputPrecio.value);
+
+    if (!nombre) {
+      aviso.innerText = "Escribe qué es el producto.";
+      aviso.style.display = "block";
+      inputNombre.focus();
+      return;
+    }
+    if (isNaN(precio) || precio < 0) {
+      aviso.innerText = "Escribe un precio válido.";
+      aviso.style.display = "block";
+      inputPrecio.focus();
+      return;
+    }
+
+    productos.push({ nombre, precio, precioBase: precio, cantidad: 1, nota: inputNota.value.trim() });
+    total += precio;
+    renderizarLista();
+    cont.innerHTML = "";
+  }
+
+  btnAgregar.onclick = hacerAgregar;
+  inputNombre.onkeydown = (e) => { if (e.key === "Enter") inputPrecio.focus(); };
+  inputNota.onkeydown = (e) => { if (e.key === "Enter") inputPrecio.focus(); };
+  inputPrecio.onkeydown = (e) => { if (e.key === "Enter") hacerAgregar(); };
+
+  cont.appendChild(inputNombre);
+  cont.appendChild(inputNota);
+  cont.appendChild(inputPrecio);
+  cont.appendChild(aviso);
+  cont.appendChild(btnAgregar);
+  inputNombre.focus();
 }
 
 function agregarProducto(nombre, precio) {

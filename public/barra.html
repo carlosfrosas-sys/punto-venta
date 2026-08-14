@@ -341,6 +341,11 @@
       cargarPedidos();
     });
 
+    // Al despertar la tablet o volver a la pestaña, sincronizar de inmediato
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) sincronizar();
+    });
+
     socket.on("nuevoPedido", (pedido) => {
       if (!pedidosMostrados.has(pedido.id)) {
         playNotification();

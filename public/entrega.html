@@ -544,20 +544,70 @@
     cargarPedidos();
     ocultarLoadingOverlay();
 
-    // Polling cada 30s para no perder pedidos si el socket falla
-    setInterval(() => {
+    // Productos con POST en vuelo: no tocarlos al sincronizar (evita parpadeo)
+    const enVuelo = new Set();
+
+    // Polling cada 10s: agrega pedidos nuevos, quita los ya entregados
+    // y sincroniza los productos tachados (por si falló el socket)
+    setInterval(sincronizar, 10000);
+
+    function sincronizar() {
       fetch("/pedidos")
         .then(res => res.json())
         .then(pedidos => {
-          pedidos.filter(p => p.estado === "pendiente").forEach(p => {
-            if (!pedidosMostrados.has(p.id)) mostrarPedido(p);
+          const activos = pedidos.filter(p => p.estado === "pendiente" || p.estado === "Listo");
+          const idsActivos = new Set(activos.map(p => p.id));
+
+          // Quitar pedidos que ya no están activos (entregados en otra tablet)
+          Array.from(pedidosMostrados).forEach(id => {
+            if (!idsActivos.has(id)) {
+              const el = document.getElementById("pedido-" + id);
+              if (el) el.remove();
+              pedidosMostrados.delete(id);
+            }
           });
-        });
-    }, 30000);
+
+          // Agregar o sincronizar
+          activos.forEach(p => {
+            if (!pedidosMostrados.has(p.id)) {
+              mostrarPedido(p);
+              return;
+            }
+            const el = document.getElementById("pedido-" + p.id);
+            if (!el) {
+              pedidosMostrados.delete(p.id);
+              return;
+            }
+
+            const entregados = p.productosEntregados || [];
+            el.querySelectorAll(".productos li").forEach(li => {
+              const index = parseInt(li.dataset.index);
+              if (enVuelo.has(p.id + ":" + index)) return;
+              li.classList.toggle("entregado", entregados.includes(index));
+            });
+
+            // Botón "Listo" de pedidos online
+            if (p.estado === "Listo") {
+              const btnListo = el.querySelector(".btn-listo");
+              if (btnListo && !btnListo.disabled) {
+                btnListo.disabled = true;
+                btnListo.innerText = "Listo";
+                btnListo.style.opacity = "0.5";
+              }
+            }
+          });
+        })
+        .catch(() => {});
+    }
 
     // Recargar al reconectar (siempre, para no perder pedidos)
     socket.on("connect", () => {
       cargarPedidos();
+    });
+
+    // Al despertar la tablet o volver a la pestaña, sincronizar de inmediato
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) sincronizar();
     });
 
     socket.on("nuevoPedido", (pedido) => {
@@ -707,14 +757,28 @@
     };
 
     window.entregarProducto = function(pedidoId, index, li) {
-      if (li.classList.contains("entregado")) {
-        // Regresar producto a cocina
-        li.classList.remove("entregado");
-        fetch("/pedido/" + pedidoId + "/producto/" + index + "/regresar", { method: "POST" });
-        return;
-      }
-      li.classList.add("entregado");
-      fetch("/pedido/" + pedidoId + "/producto/" + index, { method: "POST" });
+      const clave = pedidoId + ":" + index;
+      if (enVuelo.has(clave)) return;
+      enVuelo.add(clave);
+
+      const regresar = li.classList.contains("entregado");
+      const url = regresar
+        ? "/pedido/" + pedidoId + "/producto/" + index + "/regresar"
+        : "/pedido/" + pedidoId + "/producto/" + index;
+
+      li.classList.toggle("entregado", !regresar);
+
+      fetch(url, { method: "POST" })
+        .then(res => {
+          // Si el servidor rechaza, deshacer el tachado
+          if (!res.ok) li.classList.toggle("entregado", regresar);
+        })
+        .catch(() => {
+          li.classList.toggle("entregado", regresar);
+        })
+        .finally(() => {
+          enVuelo.delete(clave);
+        });
     };
 
     socket.on("productoEntregado", ({ pedidoId, index }) => {
