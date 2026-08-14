@@ -530,7 +530,7 @@
     function cargarPedidos() {
       contenedor.innerHTML = "";
       pedidosMostrados.clear();
-      fetch("/pedidos")
+      fetch("/pedidos/activos")
         .then(res => res.json())
         .then(pedidos => {
           pedidos.filter(p => p.estado === "pendiente" || p.estado === "Listo").forEach(mostrarPedido);
@@ -552,7 +552,7 @@
     setInterval(sincronizar, 10000);
 
     function sincronizar() {
-      fetch("/pedidos")
+      fetch("/pedidos/activos")
         .then(res => res.json())
         .then(pedidos => {
           const activos = pedidos.filter(p => p.estado === "pendiente" || p.estado === "Listo");
@@ -836,10 +836,6 @@
     let mostrandoEntregados = false;
     let todosEntregados = [];
 
-    function fechaHoyMX() {
-      return new Date().toLocaleDateString("es-MX", { timeZone: "America/Mexico_City", year: "numeric", month: "2-digit", day: "2-digit" });
-    }
-
     function toggleEntregados() {
       const lista = document.getElementById("entregados-lista");
       const btn = document.querySelector(".btn-entregados");
@@ -850,13 +846,10 @@
         lista.style.display = "block";
         lista.style.marginBottom = "20px";
 
-        fetch("/pedidos")
+        fetch("/pedidos/entregados-hoy")
           .then(res => res.json())
           .then(pedidos => {
-            const hoy = fechaHoyMX();
-            todosEntregados = pedidos.filter(p =>
-              p.estado === "Entregado" && p.fecha === hoy
-            ).sort((a, b) => (b.entregadoEn || b.id) - (a.entregadoEn || a.id));
+            todosEntregados = pedidos.sort((a, b) => (b.entregadoEn || b.id) - (a.entregadoEn || a.id));
             renderEntregados();
           });
       } else {

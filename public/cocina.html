@@ -284,7 +284,7 @@
     function cargarPedidos() {
       contenedor.innerHTML = "";
       pedidosMostrados.clear();
-      fetch("/pedidos")
+      fetch("/pedidos/activos")
         .then(res => res.json())
         .then(pedidos => {
           pedidos.filter(p => p.estado === "pendiente").forEach(mostrarPedido);
@@ -302,7 +302,7 @@
     setInterval(sincronizar, 15000);
 
     function sincronizar() {
-      fetch("/pedidos")
+      fetch("/pedidos/activos")
         .then(res => res.json())
         .then(pedidos => {
           const pendientes = pedidos.filter(p => p.estado === "pendiente");
@@ -385,7 +385,7 @@
     // Producto regresado desde entrega → recargar pedido en cocina
     socket.on("productoRegresado", ({ pedidoId, index }) => {
       // Recargar el pedido completo para mostrar el producto regresado
-      fetch("/pedidos")
+      fetch("/pedidos/activos")
         .then(res => res.json())
         .then(pedidos => {
           const pedido = pedidos.find(p => p.id === pedidoId && p.estado === "pendiente");

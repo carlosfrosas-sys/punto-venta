@@ -639,6 +639,18 @@ app.get("/pedidos", (req, res) => {
   res.json(pedidos);
 });
 
+// Solo los pedidos activos (cocina, barra y entrega).
+// Evita mandar el historial completo en cada sincronización.
+app.get("/pedidos/activos", (req, res) => {
+  res.json(pedidos.filter(p => p.estado === "pendiente" || p.estado === "Listo"));
+});
+
+// Pedidos entregados del día (panel de entregados en entrega.html)
+app.get("/pedidos/entregados-hoy", (req, res) => {
+  const hoy = fechaHoy();
+  res.json(pedidos.filter(p => p.estado === "Entregado" && p.fecha === hoy));
+});
+
 app.get("/agotados", (req, res) => {
   res.json(agotados);
 });

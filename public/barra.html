@@ -283,7 +283,7 @@
     function cargarPedidos() {
       contenedor.innerHTML = "";
       pedidosMostrados.clear();
-      fetch("/pedidos")
+      fetch("/pedidos/activos")
         .then(res => res.json())
         .then(pedidos => {
           pedidos.filter(p => p.estado === "pendiente").forEach(mostrarPedido);
@@ -301,7 +301,7 @@
     setInterval(sincronizar, 15000);
 
     function sincronizar() {
-      fetch("/pedidos")
+      fetch("/pedidos/activos")
         .then(res => res.json())
         .then(pedidos => {
           const pendientes = pedidos.filter(p => p.estado === "pendiente");
@@ -381,7 +381,7 @@
     });
 
     socket.on("productoRegresado", ({ pedidoId, index }) => {
-      fetch("/pedidos")
+      fetch("/pedidos/activos")
         .then(res => res.json())
         .then(pedidos => {
           const pedido = pedidos.find(p => p.id === pedidoId && p.estado === "pendiente");
