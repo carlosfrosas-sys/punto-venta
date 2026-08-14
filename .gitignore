@@ -1,3 +1,9 @@
 node_modules
 pedidos.json
 .env
+
+# Datos de operación (no van al repo)
+backups/
+
+# Archivos de macOS
+.DS_Store
