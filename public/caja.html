@@ -842,7 +842,7 @@ function hacerLogin() {
     <div class="pedido-header">
       <div class="section-title">Pedido</div>
       <label class="para-llevar-label">
-        <input type="checkbox" id="paraLlevar"> Para llevar
+        <input type="checkbox" id="paraLlevar" onchange="renderizarLista()"> Para llevar
       </label>
     </div>
     <div class="lista-wrap">
@@ -3422,6 +3422,22 @@ function agregarProducto(nombre, precio) {
 
 let _prevProductCount = 0;
 
+// Los pedidos para llevar llevan un cargo fijo sobre el pedido completo
+const CARGO_PARA_LLEVAR = 8;
+
+function esParaLlevar() {
+  const chk = document.getElementById("paraLlevar");
+  return !!(chk && chk.checked);
+}
+
+function cargoParaLlevar() {
+  return (esParaLlevar() && productos.length > 0) ? CARGO_PARA_LLEVAR : 0;
+}
+
+function totalConCargo() {
+  return total + cargoParaLlevar();
+}
+
 function renderizarLista() {
   if (productos.length > _prevProductCount) {
     if (navigator.vibrate) navigator.vibrate(50);
@@ -3454,7 +3470,17 @@ function renderizarLista() {
     lista.appendChild(li);
   });
 
-  document.getElementById("total").innerText = total;
+  if (cargoParaLlevar() > 0) {
+    const liLlevar = document.createElement("li");
+    liLlevar.innerHTML = `
+      <div class="producto-info">
+        <strong>Para llevar</strong> - $${CARGO_PARA_LLEVAR}
+      </div>
+    `;
+    lista.appendChild(liLlevar);
+  }
+
+  document.getElementById("total").innerText = totalConCargo();
 }
 
 
@@ -3502,9 +3528,9 @@ function enviarPedido() {
   const datos = {
     cliente: nombreCliente,
     productos,
-    total,
+    total: totalConCargo(),
     nota,
-    paraLlevar: document.getElementById("paraLlevar").checked,
+    paraLlevar: esParaLlevar(),
     metodoPago: "efectivo"
   };
 
@@ -3571,7 +3597,7 @@ function cobrarTarjeta() {
   if (productos.length === 0) return;
   const nombreCliente = obtenerCliente();
   if (!nombreCliente) { alert("Escribe el nombre del cliente"); return; }
-  if (total < 5) { alert("El monto mínimo para tarjeta es $5"); return; }
+  if (totalConCargo() < 5) { alert("El monto mínimo para tarjeta es $5"); return; }
 
   const btn = document.getElementById("btnTarjeta");
   const btnEnviar = document.querySelector(".btn-enviar");
@@ -3580,13 +3606,14 @@ function cobrarTarjeta() {
   btn.innerText = "Enviando...";
   btnEnviar.disabled = true;
 
-  const pedidoData = { cliente: nombreCliente, productos: [...productos], total, nota: document.getElementById("notaPedido").value.trim(), paraLlevar: document.getElementById("paraLlevar").checked, metodoPago: "tarjeta" };
+  const totalCobro = totalConCargo();
+  const pedidoData = { cliente: nombreCliente, productos: [...productos], total: totalCobro, nota: document.getElementById("notaPedido").value.trim(), paraLlevar: esParaLlevar(), metodoPago: "tarjeta" };
   const ref = "caja-" + Date.now();
 
   fetch("/cobrar-terminal", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ amount: total, reference: ref })
+    body: JSON.stringify({ amount: totalCobro, reference: ref })
   })
   .then(r => r.json().then(d => ({ ok: r.ok, data: d })))
   .then(({ ok, data }) => {
