@@ -489,6 +489,7 @@
       .app-layout { display: block; }
       .main-content { padding: 0; overflow: visible; }
       #corteImprimir { break-inside: avoid; }
+      #selectorCorte { display: none !important; }
       button { display: none !important; }
     }
 
@@ -1267,6 +1268,92 @@ function hacerLogin() {
 
   // Corte de Caja
   let corteFecha = "";
+  let corteMes = "";  // "MM/YYYY" del mes que se está viendo en el calendario
+
+  function mesDeFecha(f) {
+    const [, m, y] = f.split("/");
+    return m + "/" + y;
+  }
+
+  // Meses que tienen ventas registradas, del más viejo al más nuevo
+  function mesesConVentas() {
+    const meses = new Set(todasLasFechas.map(mesDeFecha));
+    meses.add(mesDeFecha(fechaHoyStr()));
+    return Array.from(meses).sort((a, b) => {
+      const [ma, ya] = a.split("/"), [mb, yb] = b.split("/");
+      return (parseInt(ya) - parseInt(yb)) || (parseInt(ma) - parseInt(mb));
+    });
+  }
+
+  window.cambiarMesCorte = function(delta) {
+    const meses = mesesConVentas();
+    const i = meses.indexOf(corteMes);
+    const destino = meses[i + delta];
+    if (!destino) return;
+    corteMes = destino;
+    renderCalendarioCorte();
+  };
+
+  function renderCalendarioCorte() {
+    const meses = mesesConVentas();
+    if (!corteMes || meses.indexOf(corteMes) === -1) corteMes = meses[meses.length - 1];
+
+    const [mesStr, anioStr] = corteMes.split("/");
+    const mes = parseInt(mesStr), anio = parseInt(anioStr);
+    const hoy = fechaHoyStr();
+    const i = meses.indexOf(corteMes);
+    const hayAnterior = i > 0, haySiguiente = i < meses.length - 1;
+
+    const flecha = (delta, simbolo, activa) =>
+      '<button onclick="cambiarMesCorte(' + delta + ')" ' + (activa ? '' : 'disabled ') +
+      'style="width:32px;height:32px;border:1px solid #e5e5e5;background:#fff;color:' + (activa ? '#333' : '#ccc') +
+      ';border-radius:8px;cursor:' + (activa ? 'pointer' : 'default') + ';font-family:inherit;font-size:14px;">' + simbolo + '</button>';
+
+    let html = '<div id="selectorCorte" style="border:1px solid #eee;border-radius:12px;padding:14px;margin-bottom:16px;max-width:340px;">';
+
+    // Encabezado con el mes y las flechas
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">';
+    html += flecha(-1, "&#8249;", hayAnterior);
+    html += '<div style="font-size:14px;font-weight:600;">' + MESES[mes - 1] + ' ' + anio + '</div>';
+    html += flecha(1, "&#8250;", haySiguiente);
+    html += '</div>';
+
+    // Días de la semana (inicia en lunes)
+    html += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px;">';
+    ["Lun", "Mar", "Mie", "Jue", "Vie", "Sab", "Dom"].forEach(d => {
+      html += '<div style="text-align:center;font-size:11px;color:#999;padding:2px 0;">' + d + '</div>';
+    });
+    html += '</div>';
+
+    // Cuadrícula de días
+    html += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;">';
+    const primero = new Date(anio, mes - 1, 1);
+    const huecos = (primero.getDay() + 6) % 7;  // lunes = 0
+    for (let h = 0; h < huecos; h++) html += '<div></div>';
+
+    const diasDelMes = new Date(anio, mes, 0).getDate();
+    for (let d = 1; d <= diasDelMes; d++) {
+      const fecha = String(d).padStart(2, "0") + "/" + String(mes).padStart(2, "0") + "/" + anio;
+      const tieneVentas = todasLasFechas.includes(fecha);
+      const esHoyDia = fecha === hoy;
+      const activo = fecha === corteFecha;
+
+      if (!tieneVentas && !esHoyDia) {
+        html += '<div style="text-align:center;padding:7px 0;font-size:13px;color:#ddd;">' + d + '</div>';
+        continue;
+      }
+
+      const fondo = activo ? '#3b82f6' : (esHoyDia ? '#eff6ff' : '#fff');
+      const texto = activo ? '#fff' : '#333';
+      const borde = activo ? '#3b82f6' : (esHoyDia ? '#bfdbfe' : '#e5e5e5');
+      html += '<button onclick="navCorte(null,\'' + fecha + '\')" style="padding:7px 0;font-size:13px;font-weight:' +
+        (activo ? '600' : '400') + ';border:1px solid ' + borde + ';background:' + fondo + ';color:' + texto +
+        ';border-radius:8px;cursor:pointer;font-family:inherit;">' + d + '</button>';
+    }
+    html += '</div></div>';
+
+    document.getElementById("contenidoExtra").innerHTML = html;
+  }
 
   function navCorte(btn, fecha) {
     if (btn) setActiveNav(btn);
@@ -1281,17 +1368,9 @@ function hacerLogin() {
     const esHoy = corteFecha === hoy;
     setTitulo("Corte de Caja", corteFecha);
 
-    // Selector de fecha
-    let selectorHtml = '<div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap;">';
-    todasLasFechas.slice().reverse().forEach(f => {
-      const [d, m] = f.split("/");
-      const dateObj = new Date(parseInt(f.split("/")[2]), parseInt(m) - 1, parseInt(d));
-      const diaSemana = DIAS_SEMANA[dateObj.getDay()];
-      const activo = f === corteFecha;
-      selectorHtml += '<button onclick="navCorte(null,\'' + f + '\')" style="padding:6px 12px;font-size:12px;border:1px solid ' + (activo ? '#3b82f6' : '#e5e5e5') + ';background:' + (activo ? '#3b82f6' : '#fff') + ';color:' + (activo ? '#fff' : '#666') + ';border-radius:20px;cursor:pointer;font-family:inherit;">' + diaSemana + ' ' + d + '/' + m + '</button>';
-    });
-    selectorHtml += '</div>';
-    document.getElementById("contenidoExtra").innerHTML = selectorHtml;
+    // Selector de fecha: calendario del mes
+    corteMes = mesDeFecha(corteFecha);
+    renderCalendarioCorte();
 
     Promise.all([
       fetch("/ventas/fecha/" + encodeURIComponent(corteFecha)).then(r => r.json()),
