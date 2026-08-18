@@ -151,6 +151,22 @@
       letter-spacing: 1px;
     }
 
+    /* Codigo que el cliente muestra al recoger su pedido en linea */
+    .codigo-pedido {
+      display: inline-block;
+      background: #1e3a5f;
+      border: 1px solid #60a5fa;
+      color: #dbeafe;
+      font-family: 'Courier New', monospace;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      padding: 1px 8px;
+      border-radius: 6px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
     .total-amount {
       font-size: 18px;
       font-weight: 700;
@@ -640,6 +656,15 @@
       }
     });
 
+    // En entrega se muestra el codigo del pedido en lugar del telefono:
+    // es lo que el cliente enseña al recoger. El telefono sigue guardado
+    // en el pedido para el mensaje de WhatsApp y para la pagina de ventas.
+    function nombreParaEntrega(p) {
+      if (!p.codigo) return p.cliente;
+      const nombre = (p.cliente || "").replace(/\s*\(Tel:.*$/, "");
+      return nombre + '<span class="codigo-pedido">' + p.codigo + '</span>';
+    }
+
     function mostrarPedido(pedido) {
       if (pedidosMostrados.has(pedido.id)) return;
       pedidosMostrados.add(pedido.id);
@@ -669,7 +694,7 @@
       div.innerHTML = `
         <div class="pedido-contenido">
           <div class="pedido-top">
-            <span class="cliente">${pedido.cliente}</span>
+            <span class="cliente">${nombreParaEntrega(pedido)}</span>
             <span class="total-amount">$${pedido.total}</span>
           </div>
           <ul class="productos">
@@ -880,7 +905,7 @@
         div.innerHTML = `
           <div class="pedido-contenido">
             <div class="pedido-top">
-              <span class="cliente">${p.cliente}</span>
+              <span class="cliente">${nombreParaEntrega(p)}</span>
               <span class="total-amount">$${p.total}</span>
             </div>
             <ul class="productos">
