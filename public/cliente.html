@@ -917,6 +917,7 @@ function iniciarAgotadosCliente() {
   if (typeof io === "function") {
     const sck = io();
     sck.on("agotadosActualizados", setAgotadosCli);
+    sck.on("preciosActualizados", () => { __preciosPendientes = true; revisarPreciosPendientes(); });
     sck.on("connect", refrescarAgotadosCli);
   }
 }
@@ -2339,6 +2340,15 @@ function deshacerUltimo() {
   renderizarLista();
 }
 
+
+// Si cambian los precios desde la pagina de ventas, esta pantalla se
+// actualiza sola en cuanto el pedido en curso este vacio, para no
+// interrumpir una venta a la mitad.
+let __preciosPendientes = false;
+function revisarPreciosPendientes() {
+  if (__preciosPendientes && productos.length === 0) location.reload();
+}
+
 function renderizarLista() {
   if (productos.length > _prevProductCount && navigator.vibrate) navigator.vibrate(50);
   _prevProductCount = productos.length;
@@ -2369,6 +2379,7 @@ function renderizarLista() {
 
   actualizarTotalConDescuento();
   document.getElementById("btnDeshacer").style.display = productos.length > 0 ? "block" : "none";
+  revisarPreciosPendientes();
 }
 
 function cambiarCantidad(index, delta) {

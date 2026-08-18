@@ -1125,6 +1125,7 @@ function iniciarObserverAgotados() {
   // Escuchar cambios de otros dispositivos
   if (typeof io === "function") {
     const sckAgotados = io();
+  sckAgotados.on("preciosActualizados", () => { __preciosPendientes = true; revisarPreciosPendientes(); });
     sckAgotados.on("agotadosActualizados", (arr) => {
       if (Array.isArray(arr)) aplicarAgotadosLocal(arr);
     });
@@ -1153,7 +1154,7 @@ const notasTacosAlambre = ["Sin Papa", "Sin Nopales"];
 const notasBagels = ["Sin Mayonesa", "Sin Queso"];
 const notasBurritos = ["Sin Arroz", "Sin Frijoles", "Sin Queso"];
 const tacosSinNota = ["Pastor"];
-const tacosConNotas = ["Bistec", "Pechuga", "Pechuga Empanizada", "Pechuga Asada", "Chuleta", "Campechanos"];
+const tacosConNotas = ["Bistec", "Pechuga Empanizada", "Pechuga Asada", "Chuleta", "Campechanos"];
 
 // El menu vive en /menu.js, compartido con la otra pantalla
 const menu = MENU.paraCaja({ notasSandwiches });
@@ -3056,6 +3057,15 @@ function totalConCargo() {
   return total + cargoParaLlevar();
 }
 
+
+// Si cambian los precios desde la pagina de ventas, esta pantalla se
+// actualiza sola en cuanto el pedido en curso este vacio, para no
+// interrumpir una venta a la mitad.
+let __preciosPendientes = false;
+function revisarPreciosPendientes() {
+  if (__preciosPendientes && productos.length === 0) location.reload();
+}
+
 function renderizarLista() {
   if (productos.length > _prevProductCount) {
     if (navigator.vibrate) navigator.vibrate(50);
@@ -3099,6 +3109,7 @@ function renderizarLista() {
   }
 
   document.getElementById("total").innerText = totalConCargo();
+  revisarPreciosPendientes();
 }
 
 

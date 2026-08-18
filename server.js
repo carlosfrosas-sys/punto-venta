@@ -12,6 +12,24 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 app.use(express.json());
+
+// El menú se sirve con los precios editados ya aplicados, así las pantallas
+// no tienen que pedirlos aparte. Va antes de express.static para ganarle
+// al archivo tal cual está en disco.
+app.get("/menu.js", (req, res) => {
+  let base;
+  try {
+    base = fs.readFileSync(path.join(__dirname, "public", "menu.js"), "utf8");
+  } catch (e) {
+    return res.status(500).type("application/javascript").send("// menu.js no disponible");
+  }
+  const inyeccion = "\n// Precios editados desde la página de ventas\n" +
+    "if (window.MENU && window.MENU.usarPrecios) window.MENU.usarPrecios(" +
+    JSON.stringify(menuPrecios) + ");\n";
+  res.set("Cache-Control", "no-store");
+  res.type("application/javascript").send(base + inyeccion);
+});
+
 app.use(express.static(__dirname + "/public"));
 
 // Mercado Pago - Online (cliente.html checkout)
@@ -160,6 +178,13 @@ async function cargarPedidos() {
       usados.forEach(c => cuponesUsados.add(c.codigo));
       console.log("Cupones usados cargados:", cuponesUsados.size);
     } catch(e) {}
+    try {
+      const doc = await db.collection("menu_precios").findOne({ _id: "precios" });
+      if (doc && doc.valores) {
+        menuPrecios = doc.valores;
+        console.log("Precios editados cargados:", Object.keys(menuPrecios).length);
+      }
+    } catch(e) {}
     if (pedidos.length > 0) return;
   }
   // Fallback: cargar de backup
@@ -181,6 +206,7 @@ async function cargarPedidos() {
       agotados = JSON.parse(fs.readFileSync(BACKUP_AGOTADOS_PATH, "utf8"));
     }
   } catch(e) {}
+  cargarPreciosBackup();
 }
 
 function guardarAgotados() {
@@ -188,6 +214,37 @@ function guardarAgotados() {
     if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR);
     fs.writeFileSync(BACKUP_AGOTADOS_PATH, JSON.stringify(agotados, null, 2));
   } catch(e) { console.error("Error guardando agotados:", e.message); }
+}
+
+// ---- Precios editados desde la página de ventas ----
+// Solo se guardan los precios que se cambiaron; la estructura del menú
+// sigue viviendo en public/menu.js
+const BACKUP_PRECIOS_PATH = path.join(BACKUP_DIR, "precios-backup.json");
+let menuPrecios = {};
+
+function cargarPreciosBackup() {
+  try {
+    if (fs.existsSync(BACKUP_PRECIOS_PATH)) {
+      menuPrecios = JSON.parse(fs.readFileSync(BACKUP_PRECIOS_PATH, "utf8"));
+    }
+  } catch(e) { console.error("Error cargando precios:", e.message); }
+}
+
+async function guardarPrecios() {
+  try {
+    if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR);
+    fs.writeFileSync(BACKUP_PRECIOS_PATH, JSON.stringify(menuPrecios, null, 2));
+  } catch(e) { console.error("Error guardando precios en disco:", e.message); }
+
+  if (db) {
+    try {
+      await db.collection("menu_precios").updateOne(
+        { _id: "precios" },
+        { $set: { valores: menuPrecios, actualizado: new Date() } },
+        { upsert: true }
+      );
+    } catch (e) { console.error("Error guardando precios en MongoDB:", e.message); }
+  }
 }
 
 async function guardarPedido(pedido) {
@@ -769,6 +826,68 @@ app.post("/agotados", soloAdmin, (req, res) => {
   guardarAgotados();
   io.emit("agotadosActualizados", agotados);
   res.json({ ok: true, agotados });
+});
+
+// ---- Clientes frecuentes (para mandarles cupones por WhatsApp) ----
+app.get("/clientes-frecuentes", soloAdmin, (req, res) => {
+  const porTelefono = {};
+
+  pedidos.forEach(p => {
+    const match = (p.cliente || "").match(/^(.+?)\s*\(Tel:\s*(\d+)\)/);
+    if (!match) return;                       // pedidos de caja, sin teléfono
+    if (p.estado !== "Entregado") return;     // solo pedidos que sí se cobraron
+
+    const nombre = match[1].trim();
+    const telefono = match[2];
+
+    if (!porTelefono[telefono]) {
+      porTelefono[telefono] = { telefono, nombre, pedidos: 0, total: 0, ultimo: 0, ultimaFecha: p.fecha || "" };
+    }
+    const c = porTelefono[telefono];
+    c.pedidos += 1;
+    c.total += p.total || 0;
+    c.nombre = nombre;  // el nombre más reciente
+
+    const cuando = p.entregadoEn || p.creadoEn || 0;
+    if (cuando >= c.ultimo) {
+      c.ultimo = cuando;
+      c.ultimaFecha = p.fecha || c.ultimaFecha;
+    }
+  });
+
+  const clientes = Object.values(porTelefono)
+    .sort((a, b) => b.pedidos - a.pedidos || b.total - a.total)
+    .slice(0, 300);
+
+  res.json({ clientes });
+});
+
+// ---- Precios del menú (editor de la página de ventas) ----
+app.get("/menu/precios", soloAdmin, (req, res) => {
+  res.json({ precios: menuPrecios });
+});
+
+// Guardar o restaurar un precio. precio: null restaura el original de menu.js
+app.post("/menu/precios", soloAdmin, async (req, res) => {
+  const { ruta, precio } = req.body || {};
+
+  if (!ruta || typeof ruta !== "string") {
+    return res.status(400).json({ error: "falta la ruta del precio" });
+  }
+
+  if (precio === null) {
+    delete menuPrecios[ruta];
+  } else {
+    const valor = Number(precio);
+    if (!isFinite(valor) || valor < 0 || valor > 100000) {
+      return res.status(400).json({ error: "precio inválido" });
+    }
+    menuPrecios[ruta] = Math.round(valor * 100) / 100;
+  }
+
+  await guardarPrecios();
+  io.emit("preciosActualizados");
+  res.json({ ok: true, precios: menuPrecios });
 });
 
 app.put("/pedido/:id", soloAdmin, async (req, res) => {

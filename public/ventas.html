@@ -616,6 +616,8 @@ function hacerLogin() {
       <button onclick="navCorte(this)">Corte de Caja</button>
       <button onclick="navEliminados(this)">Eliminados</button>
       <button onclick="navReferidos(this)">Referidos</button>
+      <button onclick="navClientes(this)">Clientes</button>
+      <button onclick="navPrecios(this)">Precios</button>
     </div>
     <div id="arbolFechas"></div>
   </div>
@@ -673,6 +675,7 @@ function hacerLogin() {
   </div>
 </div>
 
+<script src="/menu.js"></script>
 <script src="/socket.io/socket.io.js"></script>
 <script>
   const socket = io();
@@ -1680,6 +1683,167 @@ function hacerLogin() {
         }
       });
   }
+
+  // ===== CLIENTES FRECUENTES =====
+  function navClientes(btn) {
+    setActiveNav(btn);
+    tabActual = "clientes";
+    limpiarContenido();
+    mostrarGraficas(false);
+    mostrarMetricas(false);
+    mostrarAcciones(false);
+    setTitulo("Clientes", "");
+
+    contenedor.innerHTML = '<div class="sin-datos">Cargando...</div>';
+
+    fetch("/clientes-frecuentes")
+      .then(res => res.json())
+      .then(data => {
+        const clientes = data.clientes || [];
+        if (clientes.length === 0) {
+          contenedor.innerHTML = '<div class="sin-datos">Todavía no hay clientes con teléfono registrado</div>';
+          return;
+        }
+
+        let html = '<div style="background:#f8f8f8;border-radius:12px;padding:16px;margin-bottom:12px;display:flex;justify-content:space-around;text-align:center;">';
+        html += '<div><div style="font-size:24px;font-weight:700;color:#333;">' + clientes.length + '</div><div style="font-size:11px;color:#999;">Clientes</div></div>';
+        html += '<div><div style="font-size:24px;font-weight:700;color:#4caf50;">' + clientes.filter(c => c.pedidos > 1).length + '</div><div style="font-size:11px;color:#999;">Repitieron</div></div>';
+        html += '<div><div style="font-size:24px;font-weight:700;color:#3b82f6;">$' + clientes.reduce((a, c) => a + c.total, 0).toLocaleString() + '</div><div style="font-size:11px;color:#999;">Han gastado</div></div>';
+        html += '</div>';
+
+        html += '<div style="font-size:12px;color:#999;margin-bottom:10px;">Ordenados por número de pedidos. Toca el botón verde para escribirle por WhatsApp.</div>';
+
+        clientes.forEach(c => {
+          const mensaje = encodeURIComponent("Hola " + c.nombre + ", te escribimos de La Cabaña. ");
+          html += '<div style="background:#fff;border:1px solid #eee;border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">';
+          html += '<div style="min-width:0;flex:1;">';
+          html += '<div style="font-size:15px;font-weight:700;">' + c.nombre + '</div>';
+          html += '<div style="font-size:12px;color:#999;">' + c.telefono + ' · última vez ' + c.ultimaFecha + '</div>';
+          html += '</div>';
+          html += '<div style="text-align:right;font-variant-numeric:tabular-nums;">';
+          html += '<div style="font-size:15px;font-weight:700;color:#4caf50;">$' + c.total.toLocaleString() + '</div>';
+          html += '<div style="font-size:11px;color:#999;">' + c.pedidos + (c.pedidos === 1 ? ' pedido' : ' pedidos') + '</div>';
+          html += '</div>';
+          html += '<a href="https://wa.me/52' + c.telefono + '?text=' + mensaje + '" target="_blank" style="background:#25d366;color:#fff;text-decoration:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;white-space:nowrap;">WhatsApp</a>';
+          html += '</div>';
+        });
+
+        contenedor.innerHTML = html;
+      })
+      .catch(() => {
+        contenedor.innerHTML = '<div class="sin-datos">No se pudieron cargar los clientes</div>';
+      });
+  }
+
+  // ===== PRECIOS DEL MENU =====
+  let _preciosFiltro = "";
+
+  function navPrecios(btn) {
+    setActiveNav(btn);
+    tabActual = "precios";
+    limpiarContenido();
+    mostrarGraficas(false);
+    mostrarMetricas(false);
+    mostrarAcciones(false);
+    setTitulo("Precios del Menú", "");
+    pintarPrecios();
+  }
+
+  function pintarPrecios() {
+    if (typeof MENU === "undefined") {
+      contenedor.innerHTML = '<div class="sin-datos">No se pudo cargar el menú</div>';
+      return;
+    }
+
+    const lista = MENU.listarPrecios({ notasSandwiches: [] });
+    const filtro = _preciosFiltro.trim().toLowerCase();
+    const visibles = filtro
+      ? lista.filter(p => p.etiqueta.toLowerCase().includes(filtro))
+      : lista;
+    const editados = lista.filter(p => p.editado).length;
+
+    let html = '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:13px;color:#1e40af;">';
+    html += 'Cambia un precio y se aplica en caja y en los pedidos en línea. Las pantallas lo toman al recargarlas.';
+    if (editados > 0) html += '<br><b>' + editados + '</b> precio' + (editados === 1 ? '' : 's') + ' con cambios. El botón <b>↺</b> regresa al original.';
+    html += '</div>';
+
+    html += '<input id="filtroPrecios" type="text" placeholder="Buscar producto..." value="' + _preciosFiltro.replace(/"/g, "&quot;") + '" ';
+    html += 'style="width:100%;max-width:340px;padding:10px 12px;font-size:14px;border:1px solid #ddd;border-radius:8px;margin-bottom:14px;font-family:inherit;">';
+
+    html += '<div style="font-size:12px;color:#999;margin-bottom:8px;">' + visibles.length + ' de ' + lista.length + ' productos</div>';
+
+    visibles.forEach(p => {
+      html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid #f0f0f0;">';
+      html += '<div style="flex:1;min-width:0;font-size:14px;' + (p.editado ? 'font-weight:600;' : '') + '">' + p.etiqueta;
+      if (p.editado) html += ' <span style="font-size:11px;color:#3b82f6;">(cambiado)</span>';
+      html += '</div>';
+      html += '<span style="color:#999;">$</span>';
+      html += '<input type="number" min="0" step="1" value="' + p.precio + '" data-ruta="' + p.ruta.replace(/"/g, "&quot;") + '" ';
+      html += 'onchange="guardarPrecio(this)" style="width:80px;padding:7px 8px;font-size:14px;border:1px solid #ddd;border-radius:8px;text-align:right;font-family:inherit;">';
+      if (p.editado) {
+        html += '<button onclick="restaurarPrecio(\'' + p.ruta.replace(/'/g, "\\'") + '\')" title="Regresar al precio original" ';
+        html += 'style="background:#f3f4f6;border:1px solid #ddd;color:#666;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:14px;min-height:auto;padding:0;">↺</button>';
+      } else {
+        html += '<span style="width:32px;"></span>';
+      }
+      html += '</div>';
+    });
+
+    contenedor.innerHTML = html;
+
+    const input = document.getElementById("filtroPrecios");
+    input.oninput = () => { _preciosFiltro = input.value; };
+    input.onkeyup = (e) => {
+      if (e.key === "Enter" || _preciosFiltro !== input.value) return;
+    };
+    // Redibujar al dejar de escribir, conservando el foco
+    let temporizador;
+    input.addEventListener("input", () => {
+      clearTimeout(temporizador);
+      temporizador = setTimeout(() => {
+        const pos = input.selectionStart;
+        pintarPrecios();
+        const nuevo = document.getElementById("filtroPrecios");
+        nuevo.focus();
+        nuevo.setSelectionRange(pos, pos);
+      }, 350);
+    });
+  }
+
+  window.guardarPrecio = function(input) {
+    const ruta = input.dataset.ruta;
+    const precio = parseFloat(input.value);
+    if (isNaN(precio) || precio < 0) { alert("Precio inválido"); return; }
+
+    input.disabled = true;
+    fetch("/menu/precios", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ruta, precio })
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (!d.ok) { alert("No se pudo guardar"); input.disabled = false; return; }
+        MENU.usarPrecios(d.precios);
+        pintarPrecios();
+      })
+      .catch(() => { alert("Error de conexión"); input.disabled = false; });
+  };
+
+  window.restaurarPrecio = function(ruta) {
+    fetch("/menu/precios", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ruta, precio: null })
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (!d.ok) return alert("No se pudo restaurar");
+        MENU.usarPrecios(d.precios);
+        pintarPrecios();
+      })
+      .catch(() => alert("Error de conexión"));
+  };
 
   function navReferidos(btn) {
     setActiveNav(btn);

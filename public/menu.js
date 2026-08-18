@@ -455,9 +455,96 @@
     return salida;
   }
 
+  // ---- Precios editables desde la pagina de ventas ----
+  // El servidor guarda solo los precios que se cambiaron, como
+  // { "Café/items/Café de Medio/precio": 27 }. Aqui se aplican encima
+  // del menu base, asi este archivo sigue siendo la estructura del menu
+  // y los precios del dia viven en la base de datos.
+
+  var preciosGuardados = {};
+
+  var CLAVES_PRECIO = ["precio", "precioConPapas", "sencillo", "extra"];
+
+  function esClavePrecio(clave) {
+    return CLAVES_PRECIO.indexOf(clave) !== -1;
+  }
+
+  // Recorre cada precio del menu entregando su ruta (identificador estable),
+  // una etiqueta legible, el valor actual y como cambiarlo.
+  function recorrerPrecios(menu, fn) {
+    function recorrer(nodo, ruta, partes) {
+      if (Array.isArray(nodo)) {
+        nodo.forEach(function (hijo, i) {
+          if (hijo && typeof hijo === "object") {
+            recorrer(hijo, ruta + "/" + (hijo.nombre || i), partes.concat(hijo.nombre || String(i + 1)));
+          }
+        });
+        return;
+      }
+      if (!nodo || typeof nodo !== "object") return;
+
+      Object.keys(nodo).forEach(function (clave) {
+        var valor = nodo[clave];
+
+        if (typeof valor === "number") {
+          var enTamanos = /\/tamanos$/.test(ruta);
+          if (!esClavePrecio(clave) && !enTamanos) return;
+          var nombresClave = { precioConPapas: "con papas", sencillo: "sencillo", extra: "extra por sabor" };
+          var etiqueta = partes.join(" · ");
+          if (enTamanos) etiqueta += " · " + clave;
+          else if (clave !== "precio") etiqueta += " · " + (nombresClave[clave] || clave);
+          fn({
+            ruta: ruta + "/" + clave,
+            etiqueta: etiqueta,
+            precio: valor,
+            asignar: function (nuevo) { nodo[clave] = nuevo; }
+          });
+          return;
+        }
+
+        if (valor && typeof valor === "object") {
+          var saltar = clave === "items" || clave === "proteinas" || clave === "subcategorias";
+          recorrer(valor, ruta + "/" + clave, saltar ? partes : partes.concat(clave));
+        }
+      });
+    }
+
+    Object.keys(menu).forEach(function (categoria) {
+      recorrer(menu[categoria], categoria, [categoria]);
+    });
+  }
+
+  function aplicarPrecios(menu) {
+    recorrerPrecios(menu, function (p) {
+      if (Object.prototype.hasOwnProperty.call(preciosGuardados, p.ruta)) {
+        p.asignar(preciosGuardados[p.ruta]);
+      }
+    });
+    return menu;
+  }
+
   global.MENU = {
-    paraCaja: function (listas) { return filtrar(construir(listas), "caja"); },
-    paraCliente: function (listas) { return filtrar(construir(listas), "cliente"); }
+    paraCaja: function (listas) { return filtrar(aplicarPrecios(construir(listas)), "caja"); },
+    paraCliente: function (listas) { return filtrar(aplicarPrecios(construir(listas)), "cliente"); },
+
+    // El servidor inyecta aqui los precios guardados al servir este archivo
+    usarPrecios: function (precios) { preciosGuardados = precios || {}; },
+
+    // Para el editor de la pagina de ventas: todos los precios del menu
+    // completo (caja y linea), ya con los cambios aplicados
+    listarPrecios: function (listas) {
+      var menu = aplicarPrecios(construir(listas));
+      var lista = [];
+      recorrerPrecios(menu, function (p) {
+        lista.push({
+          ruta: p.ruta,
+          etiqueta: p.etiqueta,
+          precio: p.precio,
+          editado: Object.prototype.hasOwnProperty.call(preciosGuardados, p.ruta)
+        });
+      });
+      return lista;
+    }
   };
 
 })(window);
