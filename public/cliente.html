@@ -932,7 +932,7 @@ const CUPONES_VALIDOS = {
 };
 
 const notasTortas = ["Sin Mayonesa", "Sin Queso", "Sin Frijoles", "Sin Jitomate", "Sin Aguacate"];
-const notasHamburguesas = ["Sin Mayonesa", "Sin Catsup", "Sin Mostaza", "Sin Lechuga", "Sin Jitomate", "Sin Queso"];
+const notasHamburguesas = [{ nombre: "Carne Extra", precio: 25 }, "Sin Mayonesa", "Sin Catsup", "Sin Mostaza", "Sin Lechuga", "Sin Jitomate", "Sin Queso"];
 const notasHotDog = ["Sin Mayonesa", "Sin Catsup", "Sin Mostaza", "Sin Jitomate"];
 const notasBanderilla = ["Sin Mayonesa", "Sin Catsup", "Sin Mostaza"];
 const hotDogs = ["Hot Dog", "2 Hot Dogs"];
@@ -940,6 +940,8 @@ const banderillas = ["Banderilla", "Banderilla con Papas"];
 const notasChilaquiles = ["Sin Crema", "Sin Queso"];
 const notasEnchiladas = ["Sin Lechuga", "Sin Queso", "Sin Crema"];
 const notasSandwiches = ["Sin Mayonesa", "Sin Queso", "Sin Aguacate", "Sin Jitomate", "Sin Lechuga"];
+const notasTostadas = ["Sin Lechuga", "Sin Queso", "Sin Crema", { nombre: "Con Queso", precio: 5 }];
+const notasSopes = ["Sin Lechuga", "Sin Queso", { nombre: "Con Queso", precio: 10 }];
 const notasAntojitos = ["Sin Lechuga", "Sin Queso", { nombre: "Con Queso", precio: 5 }];
 const notasTacosDorados = ["Sin Crema", "Sin Queso", "Sin Lechuga"];
 const notasTacos = ["Sin Papa", "Sin Nopales", { nombre: "Con Queso", precio: 10 }];
@@ -1094,7 +1096,7 @@ function mostrarOpciones(categoria) {
           } else if (categoria === "Quesadillas") {
             mostrarNotas("Quesadilla de " + p.nombre, p.precio, notasAntojitos);
           } else if (categoria === "Tostadas") {
-            mostrarNotas("Tostada de " + p.nombre, p.precio, notasAntojitos);
+            mostrarNotas("Tostada de " + p.nombre, p.precio, notasTostadas);
           } else {
             agregarProductoConNota(categoria + " de " + p.nombre, p.precio);
           }
@@ -1116,7 +1118,7 @@ function mostrarOpciones(categoria) {
           } else if (categoria === "Quesadillas") {
             mostrarNotas("Quesadilla de " + p, datos.precio, notasAntojitos);
           } else if (categoria === "Tostadas") {
-            mostrarNotas("Tostada de " + p, datos.precio, notasAntojitos);
+            mostrarNotas("Tostada de " + p, datos.precio, notasTostadas);
           } else {
             agregarProductoConNota(categoria + " de " + p, datos.precio);
           }
@@ -1175,7 +1177,7 @@ function mostrarOpciones(categoria) {
         } else if (categoria === "Bebidas" && item.sabores) {
           mostrarSaboresBebida(item.nombre, item.precio, item.sabores);
         } else if (categoria === "Café" && item.capuccino) {
-          mostrarPregunta("Capuccino Instantaneo", item.precio, "Que sabor?", "Moka", "Vainilla");
+          mostrarPregunta(item.nombre, item.precio, "¿Qué sabor?", "Moka", "Vainilla");
         } else if (categoria === "Bebidas" || categoria === "Café") {
           agregarProductoSinNota(item.nombre, item.precio);
         } else if (categoria === "Ensaladas" && item.economico) {
@@ -1244,7 +1246,9 @@ function mostrarSubcategoria(categoria, sub) {
     if (typeof p === "object") {
       btn.innerText = p.nombre + " - $" + p.precio;
       btn.onclick = () => {
-        if (categoria === "Quesadillas" || categoria === "Sopes" || categoria === "Tostadas") {
+        if (categoria === "Tostadas") {
+          mostrarNotas(sub + " de " + p.nombre, p.precio, notasTostadas);
+          } else if (categoria === "Quesadillas" || categoria === "Sopes") {
           mostrarNotas(sub + " de " + p.nombre, p.precio, notasAntojitos);
         } else if (categoria === "Sandwiches" && p.nombre === "Huevo") {
           mostrarOpcionesHuevoSandwich(sub, p.precio);
@@ -1257,7 +1261,9 @@ function mostrarSubcategoria(categoria, sub) {
     } else {
       btn.innerText = p + " - $" + datos.precio;
       btn.onclick = () => {
-        if (categoria === "Quesadillas" || categoria === "Sopes" || categoria === "Tostadas") {
+        if (categoria === "Tostadas") {
+          mostrarNotas(sub + " de " + p, datos.precio, notasTostadas);
+          } else if (categoria === "Quesadillas" || categoria === "Sopes") {
           mostrarNotas(sub + " de " + p, datos.precio, notasAntojitos);
         } else if (datos.notas && datos.bebida) {
           mostrarNotas(sub + " de " + p, datos.precio, datos.notas, mostrarBebidaPaquete);
@@ -1593,7 +1599,7 @@ function mostrarMultiSopes(datos, max) {
     const btnSencillo = document.createElement("button");
     btnSencillo.innerText = "Sencillos - $" + datos.sencillo;
     btnSencillo.onclick = () => {
-      mostrarNotas("Sopes Sencillos", datos.sencillo, notasAntojitos);
+      mostrarNotas("Sopes Sencillos", datos.sencillo, notasSopes);
     };
     cont.appendChild(btnSencillo);
   }

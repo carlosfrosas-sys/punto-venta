@@ -90,6 +90,7 @@
       { nombre: "Café con Leche", precio: 20 },
       { nombre: "Café con Leche de Medio", precio: 30 },
       { nombre: "Capuccino Instantáneo", precio: 28, capuccino: true },
+      { nombre: "Capuccino de Medio", precio: 40, capuccino: true },
       { nombre: "Espumoso Chocolate", precio: 25 },
       { nombre: "Té", precio: 18 },
       { nombre: "Agua Caliente", precio: 18 }

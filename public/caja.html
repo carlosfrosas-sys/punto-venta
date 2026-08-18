@@ -1378,7 +1378,7 @@ if (categoria === "Licuados") {
         } else if (categoria === "Bebidas" && item.sabores) {
           mostrarSaboresBebida(item.nombre, item.precio, item.sabores);
         } else if (categoria === "Café" && item.capuccino) {
-          mostrarPregunta("Capuccino Instantáneo", item.precio, "¿Qué sabor?", "Moka", "Vainilla");
+          mostrarPregunta(item.nombre, item.precio, "¿Qué sabor?", "Moka", "Vainilla");
         } else if (categoria === "Bebidas" || categoria === "Café") {
           agregarProductoSinNota(item.nombre, item.precio);
         } else if (categoria === "Ensaladas" && item.economico) {
