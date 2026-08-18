@@ -45,6 +45,18 @@ async function marcarCuponUsado(codigo) {
   }
 }
 
+// Código corto que el cliente muestra al recoger su pedido.
+// Sin letras ni números que se confundan (0/O, 1/I) para dictarlo sin errores.
+function generarCodigoPedido() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let codigo;
+  do {
+    codigo = "";
+    for (let i = 0; i < 5; i++) codigo += chars[Math.floor(Math.random() * chars.length)];
+  } while (pedidos.some(p => p.codigo === codigo));
+  return codigo;
+}
+
 // Generar código de referido único
 function generarCodigoReferido() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -375,6 +387,8 @@ app.post("/crear-preferencia", async (req, res) => {
         paraLlevar: paraLlevar || false,
         origen: "cliente",
         estado: "pendiente",
+        codigo: generarCodigoPedido(),
+        creadoEn: Date.now(),
         fecha: fechaHoy(),
         horaEnvio: new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" })
       };
@@ -399,7 +413,7 @@ app.post("/crear-preferencia", async (req, res) => {
       }
       io.emit("nuevoPedido", pedido);
 
-      return res.json({ directo: true, nuevoRef: nuevoCodigoRef });
+      return res.json({ directo: true, nuevoRef: nuevoCodigoRef, codigo: pedido.codigo });
     } catch (e) {
       console.error("Error creando pedido directo:", e.message);
       return res.status(500).json({ error: "Error al crear el pedido" });
@@ -418,6 +432,8 @@ app.post("/crear-preferencia", async (req, res) => {
         paraLlevar: paraLlevar || false,
         origen: "cliente",
         estado: "pendiente",
+        codigo: generarCodigoPedido(),
+        creadoEn: Date.now(),
         fecha: fechaHoy(),
         horaEnvio: new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" })
       };
@@ -438,7 +454,7 @@ app.post("/crear-preferencia", async (req, res) => {
         } catch(e) {}
       }
       io.emit("nuevoPedido", pedido);
-      return res.json({ directo: true, nuevoRef: nuevoCodigoRef2 });
+      return res.json({ directo: true, nuevoRef: nuevoCodigoRef2, codigo: pedido.codigo });
     } catch (e) {
       return res.status(500).json({ error: "Error al crear el pedido" });
     }
@@ -546,6 +562,9 @@ async function confirmarPagoOnline(external_reference, payment_id) {
     paraLlevar: pendiente.paraLlevar || false,
     origen: "cliente",
     estado: "pendiente",
+    codigo: generarCodigoPedido(),
+    creadoEn: Date.now(),
+    folioPago: paymentData.id ? String(paymentData.id) : "",
     fecha: fechaHoy(),
     horaEnvio: new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" })
   };
@@ -570,7 +589,7 @@ async function confirmarPagoOnline(external_reference, payment_id) {
   io.emit("nuevoPedido", pedido);
   await eliminarPedidoPendiente(external_reference);
 
-  return { ok: true, pedidoId: pedido.id, nuevoRef: nuevoRefMP };
+  return { ok: true, pedidoId: pedido.id, nuevoRef: nuevoRefMP, codigo: pedido.codigo };
 }
 
 // Bricks con tarjeta: el brick solo tokeniza, el cobro se crea aquí.
@@ -691,6 +710,37 @@ app.post("/pedido", soloAdmin, async (req, res) => {
 
 app.get("/pedidos", soloAdmin, (req, res) => {
   res.json(pedidos);
+});
+
+// Comprobante del cliente: se consulta con el código del pedido, que solo
+// tiene quien lo hizo. No devuelve el teléfono ni datos de pago del cliente.
+app.get("/comprobante/:codigo", (req, res) => {
+  const codigo = String(req.params.codigo || "").toUpperCase();
+  const pedido = pedidos.find(p => p.codigo === codigo);
+
+  if (!pedido) return res.status(404).json({ error: "no_encontrado" });
+
+  // El nombre viene como "Nombre (Tel: 55...)": se recorta el teléfono
+  const nombre = pedido.cliente.replace(/\s*\(Tel:.*$/, "");
+
+  res.json({
+    codigo: pedido.codigo,
+    numero: pedido.id,
+    cliente: nombre,
+    productos: pedido.productos,
+    total: pedido.total,
+    paraLlevar: pedido.paraLlevar || false,
+    // Se quitan las marcas internas ([PAGO ONLINE], [CUPON ...]) que no le
+    // dicen nada al cliente; solo queda su indicación
+    nota: (pedido.nota || "").replace(/^\[PAGO ONLINE\]\s*/, "").replace(/^\[CUPON[^\]]*\]\s*/, "").trim(),
+    estado: pedido.estado,
+    fecha: pedido.fecha,
+    horaEnvio: pedido.horaEnvio,
+    creadoEn: pedido.creadoEn || null,
+    folioPago: pedido.folioPago || "",
+    entregado: pedido.estado === "Entregado",
+    horaEntrega: pedido.horaEntrega || ""
+  });
 });
 
 // Solo los pedidos activos (cocina, barra y entrega).

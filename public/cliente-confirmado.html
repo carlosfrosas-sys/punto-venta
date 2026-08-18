@@ -131,16 +131,128 @@
       justify-content: center;
       flex-wrap: wrap;
     }
+    .codigo-box {
+      background: #0e3a5c;
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 16px;
+      color: #fff;
+    }
+    .codigo-label {
+      font-size: 12px;
+      color: #b8d8e8;
+      margin: 0 0 6px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .codigo-valor {
+      font-size: 38px;
+      font-weight: 700;
+      letter-spacing: 6px;
+      line-height: 1.1;
+      font-family: 'Courier New', monospace;
+    }
+    .codigo-sub {
+      font-size: 12px;
+      color: #b8d8e8;
+      margin: 6px 0 0;
+    }
+    .transcurrido {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed #ffcc80;
+      font-size: 13px;
+      color: #bf360c;
+    }
+    .transcurrido strong { font-size: 15px; }
+    .detalle-box {
+      background: #fafafa;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    .detalle-titulo {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0e3a5c;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+    .detalle-lista { list-style: none; }
+    .detalle-lista li {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 14px;
+      color: #444;
+      padding: 5px 0;
+      border-bottom: 1px solid #efefef;
+    }
+    .detalle-lista .nota-prod {
+      display: block;
+      font-size: 12px;
+      color: #888;
+    }
+    .detalle-lista .precio { white-space: nowrap; color: #666; }
+    .detalle-total {
+      display: flex;
+      justify-content: space-between;
+      font-size: 16px;
+      font-weight: 700;
+      color: #0e3a5c;
+      padding-top: 10px;
+    }
+    .detalle-meta {
+      font-size: 12px;
+      color: #888;
+      margin-top: 10px;
+      line-height: 1.6;
+      border-top: 1px solid #efefef;
+      padding-top: 10px;
+    }
+    .estado-listo {
+      background: #e8f5e9;
+      border: 2px solid #4caf50;
+      color: #2e7d32;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 16px;
+      font-size: 15px;
+      font-weight: 700;
+    }
   </style>
 </head>
 <body>
   <div class="card">
     <div class="icon">&#10003;</div>
     <h1>Tu pedido ha sido recibido</h1>
+
+    <!-- Codigo para recoger -->
+    <div id="codigoBox" class="codigo-box" style="display:none;">
+      <p class="codigo-label">Muestra este codigo al recoger</p>
+      <div id="codigoValor" class="codigo-valor"></div>
+      <p id="pedidoNumero" class="codigo-sub"></p>
+    </div>
+
     <div class="tiempo-box">
       <div class="reloj">&#9201;</div>
-      <div class="tiempo-texto">Tiempo estimado: 10 - 15 min</div>
-      <p class="tiempo-sub">Tu pedido ya esta en preparacion</p>
+      <div class="tiempo-texto">Tiempo estimado: 5 - 10 min</div>
+      <p class="tiempo-sub">Tu pedido ya esta en preparacion. Te mandaremos un mensaje por WhatsApp cuando este listo para que pases a recogerlo.</p>
+      <div id="transcurrido" class="transcurrido" style="display:none;"></div>
+    </div>
+
+    <!-- Detalle del pedido -->
+    <div id="detalleBox" class="detalle-box" style="display:none;">
+      <div class="detalle-titulo">Tu pedido</div>
+      <ul id="detalleLista" class="detalle-lista"></ul>
+      <div class="detalle-total">
+        <span>Total pagado</span>
+        <span id="detalleTotal"></span>
+      </div>
+      <div id="detalleMeta" class="detalle-meta"></div>
     </div>
     <div id="refBox" class="ref-box" style="display:none;">
       <p>Comparte este link con tus amigos y ellos recibiran 10% de descuento en su primer pedido:</p>
@@ -164,6 +276,107 @@
         document.getElementById("btnWhatsapp").href = "https://wa.me/?text=" + encodeURIComponent(mensaje);
       }
     })();
+    // ---- Comprobante del pedido ----
+    let datosPedido = null;
+
+    function textoTranscurrido(desde) {
+      const min = Math.floor((Date.now() - desde) / 60000);
+      if (min < 1) return "Recien hecho";
+      if (min === 1) return "Hace 1 minuto";
+      if (min < 60) return "Hace " + min + " minutos";
+      const h = Math.floor(min / 60);
+      return "Hace " + h + "h " + (min % 60) + "m";
+    }
+
+    // El celular del cliente recuerda su pedido, para que pueda volver
+    // al comprobante aunque salga de esta pantalla
+    function recordarPedido(p) {
+      try {
+        if (p.entregado) {
+          localStorage.removeItem("mi_pedido");
+        } else {
+          localStorage.setItem("mi_pedido", JSON.stringify({ codigo: p.codigo, creadoEn: p.creadoEn || Date.now() }));
+        }
+      } catch (e) {}
+    }
+
+    function pintarComprobante(p) {
+      datosPedido = p;
+      recordarPedido(p);
+
+      document.getElementById("codigoValor").innerText = p.codigo;
+      document.getElementById("pedidoNumero").innerText = "Pedido #" + p.numero + " - " + p.cliente;
+      document.getElementById("codigoBox").style.display = "block";
+
+      const lista = document.getElementById("detalleLista");
+      lista.innerHTML = "";
+      (p.productos || []).forEach(prod => {
+        const li = document.createElement("li");
+        const cant = prod.cantidad && prod.cantidad > 1 ? prod.cantidad + "x " : "";
+        li.innerHTML = "<span>" + cant + prod.nombre +
+          (prod.nota ? "<span class='nota-prod'>" + prod.nota + "</span>" : "") +
+          "</span><span class='precio'>$" + prod.precio + "</span>";
+        lista.appendChild(li);
+      });
+
+      document.getElementById("detalleTotal").innerText = "$" + p.total;
+
+      let meta = "Hecho el " + p.fecha + " a las " + p.horaEnvio;
+      if (p.paraLlevar) meta += "<br>Para llevar";
+      if (p.nota) meta += "<br>Nota: " + p.nota;
+      if (p.folioPago) meta += "<br>Folio de pago: " + p.folioPago;
+      document.getElementById("detalleMeta").innerHTML = meta;
+      document.getElementById("detalleBox").style.display = "block";
+
+      actualizarTiempo();
+    }
+
+    function actualizarTiempo() {
+      if (!datosPedido) return;
+      const caja = document.getElementById("transcurrido");
+
+      if (datosPedido.entregado) {
+        caja.innerHTML = "Pedido entregado" + (datosPedido.horaEntrega ? " a las " + datosPedido.horaEntrega : "");
+        caja.style.display = "block";
+        return;
+      }
+
+      if (datosPedido.creadoEn) {
+        caja.innerHTML = "Tiempo transcurrido: <strong>" + textoTranscurrido(datosPedido.creadoEn) + "</strong>";
+        caja.style.display = "block";
+      }
+    }
+
+    function mostrarListo() {
+      if (document.getElementById("avisoListo")) return;
+      const aviso = document.createElement("div");
+      aviso.id = "avisoListo";
+      aviso.className = "estado-listo";
+      aviso.innerHTML = "&#127881; Tu pedido esta listo, pasa a recogerlo";
+      const card = document.querySelector(".card");
+      card.insertBefore(aviso, document.getElementById("codigoBox"));
+    }
+
+    (function cargarComprobante() {
+      const codigo = new URLSearchParams(window.location.search).get("c");
+      if (!codigo) return;
+
+      function consultar() {
+        fetch("/comprobante/" + encodeURIComponent(codigo))
+          .then(r => r.ok ? r.json() : null)
+          .then(p => {
+            if (!p) return;
+            pintarComprobante(p);
+            if (p.estado === "Listo") mostrarListo();
+          })
+          .catch(() => {});
+      }
+
+      consultar();
+      setInterval(actualizarTiempo, 30000);  // el contador de minutos
+      setInterval(consultar, 60000);         // por si ya quedo listo o entregado
+    })();
+
     function copiarLink() {
       const link = document.getElementById("refLink").innerText;
       navigator.clipboard.writeText(link).then(() => {

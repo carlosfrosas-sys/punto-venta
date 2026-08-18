@@ -570,6 +570,12 @@
 </head>
 <body>
 
+<!-- Aviso para volver al comprobante del último pedido (se llena por JS) -->
+<a id="barraPedidoActivo" href="#" style="display:none;position:sticky;top:0;z-index:9000;background:#0e3a5c;color:#fff;text-decoration:none;padding:10px 14px;align-items:center;justify-content:space-between;gap:10px;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,0.15);">
+  <span id="barraPedidoTexto"></span>
+  <span style="background:rgba(255,255,255,0.18);padding:5px 11px;border-radius:20px;white-space:nowrap;font-weight:600;">Ver comprobante</span>
+</a>
+
 <div id="loadingOverlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#faf8f5;z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column;transition:opacity 0.5s ease;">
   <style>#loadingSpinner{width:36px;height:36px;border:3px solid #e8e4df;border-top:3px solid #c0785a;border-radius:50%;animation:lcSpin 0.8s linear infinite;margin-top:18px;}@keyframes lcSpin{to{transform:rotate(360deg)}}</style>
   <div style="font-size:24px;font-weight:300;letter-spacing:4px;text-transform:uppercase;color:#6b5b4f;font-family:'Segoe UI',Arial,sans-serif;">La Cabaña</div>
@@ -637,22 +643,58 @@
         <button class="btn-cancelar" onclick="cancelarPedido()">Cancelar</button>
       </div>
       <div class="info-box">
-        Una vez acreditado el pago, su pedido se enviará automáticamente a preparación. Tiempo estimado: hasta 10 min.
+        Una vez acreditado el pago, su pedido se enviará automáticamente a preparación. Tiempo estimado: 5 - 10 min. Le enviaremos un mensaje por WhatsApp cuando esté listo para recoger.
       </div>
     </div>
   </div>
 </div>
 
+<style>
+  .marca-tarjeta { display:inline-flex; align-items:center; justify-content:center; width:44px; height:28px; border:1px solid #e5e7eb; border-radius:6px; background:#fff; }
+  .marca-tarjeta svg { width:100%; height:100%; }
+</style>
 <!-- Modal de pago con Mercado Pago Bricks -->
-<div id="pagoModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:9500;align-items:center;justify-content:center;padding:16px;overflow-y:auto;">
-  <div style="background:#fff;border-radius:16px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:10px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;">
-      <h2 style="font-size:18px;color:#0e3a5c;margin:0;">Pagar pedido</h2>
-      <button id="cerrarPagoModal" style="background:none;border:none;font-size:22px;cursor:pointer;color:#666;padding:0 6px;">×</button>
+<div id="pagoModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,0.72);z-index:9500;align-items:center;justify-content:center;padding:16px;overflow-y:auto;">
+  <div style="background:#fff;border-radius:18px;width:100%;max-width:480px;max-height:92vh;overflow-y:auto;box-shadow:0 20px 50px rgba(0,0,0,0.3);">
+
+    <!-- Encabezado -->
+    <div style="background:linear-gradient(135deg,#0e3a5c 0%,#175a86 100%);padding:16px 18px;border-radius:18px 18px 0 0;display:flex;justify-content:space-between;align-items:flex-start;">
+      <div>
+        <div style="display:flex;align-items:center;gap:7px;color:#fff;font-size:16px;font-weight:700;">
+          <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:#7dd3a0;flex-shrink:0;"><path d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+          Pago seguro
+        </div>
+        <div style="color:#b8d8e8;font-size:12px;margin-top:3px;">La Cabaña</div>
+      </div>
+      <button id="cerrarPagoModal" style="background:rgba(255,255,255,0.15);border:none;width:28px;height:28px;border-radius:50%;font-size:18px;line-height:1;cursor:pointer;color:#fff;flex-shrink:0;">×</button>
     </div>
-    <div id="pagoBrickResumen" style="font-size:13px;color:#666;border-bottom:1px solid #e5e7eb;padding-bottom:8px;"></div>
-    <div id="pagoBrickContainer" style="min-height:200px;"></div>
-    <div id="pagoBrickStatus" style="display:none;text-align:center;padding:18px;font-size:14px;"></div>
+
+    <!-- Total -->
+    <div style="padding:14px 18px;background:#f8fafc;border-bottom:1px solid #e5e7eb;">
+      <div style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;">Total a pagar</div>
+      <div id="pagoBrickResumen" style="font-size:26px;font-weight:700;color:#0e3a5c;line-height:1.2;"></div>
+    </div>
+
+    <!-- Formulario de Mercado Pago -->
+    <div style="padding:14px 18px 4px;">
+      <div id="pagoBrickContainer" style="min-height:200px;"></div>
+      <div id="pagoBrickStatus" style="display:none;text-align:center;padding:24px 8px;font-size:14px;line-height:1.5;"></div>
+    </div>
+
+    <!-- Sellos de confianza -->
+    <div style="padding:12px 18px 16px;border-top:1px solid #f1f5f9;">
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+        <span style="font-size:11px;color:#94a3b8;">Aceptamos</span>
+        <span class="marca-tarjeta" style="padding:5px;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 324.68"><path fill="#1434cb" d="m651.19.5c-70.93,0-134.32,36.77-134.32,104.69,0,77.9,112.42,83.28,112.42,122.42,0,16.48-18.88,31.23-51.14,31.23-45.77,0-79.98-20.61-79.98-20.61l-14.64,68.55s39.41,17.41,91.73,17.41c77.55,0,138.58-38.57,138.58-107.66,0-82.32-112.89-87.54-112.89-123.86,0-12.91,15.5-27.05,47.66-27.05,36.29,0,65.89,14.99,65.89,14.99l14.33-66.2S696.61.5,651.18.5h0ZM2.22,5.5L.5,15.49s29.84,5.46,56.72,16.36c34.61,12.49,37.07,19.77,42.9,42.35l63.51,244.83h85.14L379.93,5.5h-84.94l-84.28,213.17-34.39-180.7c-3.15-20.68-19.13-32.48-38.68-32.48,0,0-135.41,0-135.41,0Zm411.87,0l-66.63,313.53h81L494.85,5.5h-80.76Zm451.76,0c-19.53,0-29.88,10.46-37.47,28.73l-118.67,284.8h84.94l16.43-47.47h103.48l9.99,47.47h74.95L934.12,5.5h-68.27Zm11.05,84.71l25.18,117.65h-67.45l42.28-117.65h0Z"/></svg></span>
+        <span class="marca-tarjeta" style="padding:3px;"><svg version="1.1" inkscape:version="0.91 r13725" sodipodi:docname="MasterCard 2016.svg" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 999.2 776" enable-background="new 0 0 999.2 776" xml:space="preserve"> <path id="XMLID_1775_" inkscape:connector-curvature="0" d="M181.1,774.3v-51.5c0-19.7-12-32.6-32.6-32.6 c-10.3,0-21.5,3.4-29.2,14.6c-6-9.4-14.6-14.6-27.5-14.6c-8.6,0-17.2,2.6-24,12v-10.3h-18v82.4h18v-45.5c0-14.6,7.7-21.5,19.7-21.5 s18,7.7,18,21.5v45.5h18v-45.5c0-14.6,8.6-21.5,19.7-21.5c12,0,18,7.7,18,21.5v45.5H181.1z M448.1,691.9h-29.2V667h-18v24.9h-16.3 v16.3h16.3v37.8c0,18.9,7.7,30,28.3,30c7.7,0,16.3-2.6,22.3-6l-5.2-15.5c-5.2,3.4-11.2,4.3-15.5,4.3c-8.6,0-12-5.2-12-13.7v-36.9 h29.2V691.9z M600.9,690.1c-10.3,0-17.2,5.2-21.5,12v-10.3h-18v82.4h18v-46.4c0-13.7,6-21.5,17.2-21.5c3.4,0,7.7,0.9,11.2,1.7 l5.2-17.2C609.4,690.1,604.3,690.1,600.9,690.1L600.9,690.1z M370,698.7c-8.6-6-20.6-8.6-33.5-8.6c-20.6,0-34.3,10.3-34.3,26.6 c0,13.7,10.3,21.5,28.3,24l8.6,0.9c9.4,1.7,14.6,4.3,14.6,8.6c0,6-6.9,10.3-18.9,10.3c-12,0-21.5-4.3-27.5-8.6l-8.6,13.7 c9.4,6.9,22.3,10.3,35.2,10.3c24,0,37.8-11.2,37.8-26.6c0-14.6-11.2-22.3-28.3-24.9l-8.6-0.9c-7.7-0.9-13.7-2.6-13.7-7.7 c0-6,6-9.4,15.5-9.4c10.3,0,20.6,4.3,25.8,6.9L370,698.7L370,698.7z M848.9,690.1c-10.3,0-17.2,5.2-21.5,12v-10.3h-18v82.4h18v-46.4 c0-13.7,6-21.5,17.2-21.5c3.4,0,7.7,0.9,11.2,1.7L861,691C857.5,690.1,852.4,690.1,848.9,690.1L848.9,690.1z M618.9,733.1 c0,24.9,17.2,42.9,43.8,42.9c12,0,20.6-2.6,29.2-9.4l-8.6-14.6c-6.9,5.2-13.7,7.7-21.5,7.7c-14.6,0-24.9-10.3-24.9-26.6 c0-15.5,10.3-25.8,24.9-26.6c7.7,0,14.6,2.6,21.5,7.7l8.6-14.6c-8.6-6.9-17.2-9.4-29.2-9.4C636.1,690.1,618.9,708.2,618.9,733.1 L618.9,733.1L618.9,733.1z M785.4,733.1v-41.2h-18v10.3c-6-7.7-14.6-12-25.8-12c-23.2,0-41.2,18-41.2,42.9c0,24.9,18,42.9,41.2,42.9 c12,0,20.6-4.3,25.8-12v10.3h18V733.1L785.4,733.1z M719.3,733.1c0-14.6,9.4-26.6,24.9-26.6c14.6,0,24.9,11.2,24.9,26.6 c0,14.6-10.3,26.6-24.9,26.6C728.8,758.8,719.3,747.6,719.3,733.1L719.3,733.1z M503.9,690.1c-24,0-41.2,17.2-41.2,42.9 c0,25.8,17.2,42.9,42.1,42.9c12,0,24-3.4,33.5-11.2l-8.6-12.9c-6.9,5.2-15.5,8.6-24,8.6c-11.2,0-22.3-5.2-24.9-19.7h60.9 c0-2.6,0-4.3,0-6.9C542.5,707.3,527,690.1,503.9,690.1L503.9,690.1L503.9,690.1z M503.9,705.6c11.2,0,18.9,6.9,20.6,19.7h-42.9 C483.3,714.2,491,705.6,503.9,705.6L503.9,705.6z M951.1,733.1v-73.8h-18v42.9c-6-7.7-14.6-12-25.8-12c-23.2,0-41.2,18-41.2,42.9 c0,24.9,18,42.9,41.2,42.9c12,0,20.6-4.3,25.8-12v10.3h18V733.1L951.1,733.1z M885,733.1c0-14.6,9.4-26.6,24.9-26.6 c14.6,0,24.9,11.2,24.9,26.6c0,14.6-10.3,26.6-24.9,26.6C894.4,758.8,885,747.6,885,733.1L885,733.1z M282.4,733.1v-41.2h-18v10.3 c-6-7.7-14.6-12-25.8-12c-23.2,0-41.2,18-41.2,42.9c0,24.9,18,42.9,41.2,42.9c12,0,20.6-4.3,25.8-12v10.3h18V733.1L282.4,733.1z M215.5,733.1c0-14.6,9.4-26.6,24.9-26.6c14.6,0,24.9,11.2,24.9,26.6c0,14.6-10.3,26.6-24.9,26.6 C224.9,758.8,215.5,747.6,215.5,733.1z"/> <g> <rect id="rect19" x="364" y="66.1" fill="#FF5A00" width="270.4" height="485.8"/> <path id="XMLID_330_" inkscape:connector-curvature="0" fill="#EB001B" d="M382,309c0-98.7,46.4-186.3,117.6-242.9 C447.2,24.9,381.1,0,309,0C138.2,0,0,138.2,0,309s138.2,309,309,309c72.1,0,138.2-24.9,190.6-66.1C428.3,496.1,382,407.7,382,309z" /> <path id="path22" inkscape:connector-curvature="0" fill="#F79E1B" d="M999.2,309c0,170.8-138.2,309-309,309 c-72.1,0-138.2-24.9-190.6-66.1c72.1-56.7,117.6-144.2,117.6-242.9S570.8,122.7,499.6,66.1C551.9,24.9,618,0,690.1,0 C861,0,999.2,139.1,999.2,309z"/> </g> </svg></span>
+        <span class="marca-tarjeta" style="padding:2px;"><svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 300 300" enable-background="new 0 0 300 300" xml:space="preserve"> <radialGradient id="SVGID_1_" cx="57.3882" cy="57.021" r="264.5797" gradientUnits="userSpaceOnUse"> <stop offset="0" style="stop-color:#9DD5F6"/> <stop offset="0.0711" style="stop-color:#98D3F5"/> <stop offset="0.1575" style="stop-color:#89CEF3"/> <stop offset="0.2516" style="stop-color:#70C6EF"/> <stop offset="0.3514" style="stop-color:#4EBBEA"/> <stop offset="0.4546" style="stop-color:#23ADE3"/> <stop offset="0.5" style="stop-color:#0DA6E0"/> <stop offset="1" style="stop-color:#2E77BC"/> </radialGradient> <path fill="url(#SVGID_1_)" d="M289.584,7.598H7.639v282.966h281.945v-93.386c1.12-1.619,1.673-3.69,1.673-6.222 c0-2.898-0.553-4.693-1.673-6.205"/> <g> <defs> <path id="SVGID_2_" d="M289.584,7.598H7.639v282.966h281.945v-93.386c1.12-1.619,1.673-3.69,1.673-6.222 c0-2.898-0.553-4.693-1.673-6.205"/> </defs> <clipPath id="SVGID_3_"> <use xlink:href="#SVGID_2_" overflow="visible"/> </clipPath> </g> <path fill="#FFFFFF" d="M33.053,130.042l-5.424-13.217l-5.393,13.217 M152.543,124.779c-1.089,0.661-2.377,0.683-3.92,0.683h-9.627 v-7.364h9.758c1.381,0,2.822,0.062,3.758,0.598c1.028,0.483,1.664,1.511,1.664,2.931 C154.176,123.076,153.571,124.242,152.543,124.779z M221.221,130.042l-5.484-13.217l-5.454,13.217H221.221z M93.201,144.348h-8.124 l-0.03-25.966l-11.491,25.966h-6.958l-11.521-25.989v25.989H38.959l-3.045-7.395h-16.5l-3.076,7.395H7.731l14.191-33.154h11.774 l13.478,31.39v-31.39h12.934l10.371,22.491l9.527-22.491h13.194V144.348z M125.58,144.348H99.107v-33.154h26.473v6.904h-18.548 v5.976h18.103v6.796h-18.103v6.621h18.548V144.348z M162.906,120.123c0,5.286-3.528,8.017-5.584,8.837 c1.734,0.66,3.215,1.826,3.92,2.792c1.119,1.649,1.312,3.122,1.312,6.083v6.513h-7.993l-0.03-4.181c0-1.995,0.191-4.864-1.251-6.459 c-1.158-1.166-2.923-1.419-5.776-1.419h-8.507v12.059h-7.924v-33.154h18.227c4.05,0,7.034,0.107,9.596,1.588 C161.403,114.263,162.906,116.425,162.906,120.123z M175.588,144.348h-8.086v-33.154h8.086V144.348z M269.396,144.348h-11.23 l-15.021-24.884v24.884h-16.139l-3.084-7.395H207.46l-2.992,7.395h-9.273c-3.852,0-8.729-0.852-11.491-3.667 c-2.785-2.815-4.234-6.628-4.234-12.657c0-4.917,0.866-9.412,4.272-12.964c2.562-2.646,6.574-3.866,12.035-3.866h7.672v7.104h-7.511 c-2.892,0-4.525,0.43-6.098,1.964c-1.351,1.396-2.278,4.035-2.278,7.51c0,3.552,0.706,6.113,2.179,7.786 c1.22,1.312,3.437,1.71,5.523,1.71h3.559l11.169-26.073h11.874l13.417,31.359v-31.359h12.066l13.93,23.09v-23.09h8.117V144.348z M7.639,150.86h13.54l3.053-7.364h6.835l3.045,7.364h26.641v-5.63l2.378,5.654h13.83l2.378-5.738v5.714h66.208l-0.031-12.088h1.281 c0.897,0.031,1.159,0.114,1.159,1.595v10.493h34.243v-2.814c2.762,1.48,7.058,2.814,12.711,2.814h14.406l3.083-7.364h6.835 l3.015,7.364h27.761v-6.995l4.204,6.995h22.246v-46.24h-22.016v5.461l-3.083-5.461H228.77v5.461l-2.831-5.461h-30.515 c-5.108,0-9.598,0.713-13.225,2.7v-2.7h-21.058v2.7c-2.308-2.048-5.453-2.7-8.95-2.7H75.258l-5.162,11.943l-5.301-11.943H40.563 v5.461l-2.662-5.461H17.235l-9.597,21.985V150.86z"/> <path fill="#FFFFFF" d="M289.584,175.315h-14.443c-1.442,0-2.4,0.054-3.207,0.599c-0.836,0.537-1.158,1.334-1.158,2.386 c0,1.251,0.706,2.102,1.733,2.47c0.836,0.291,1.734,0.376,3.054,0.376l4.295,0.115c4.334,0.107,7.227,0.852,8.991,2.669 c0.321,0.253,0.514,0.537,0.735,0.821 M289.584,197.178c-1.925,2.815-5.676,4.242-10.754,4.242h-15.304v-7.111h15.242 c1.512,0,2.57-0.199,3.207-0.821c0.552-0.513,0.937-1.258,0.937-2.163c0-0.966-0.385-1.733-0.968-2.193 c-0.575-0.506-1.412-0.736-2.792-0.736c-7.441-0.253-16.724,0.23-16.724-10.264c0-4.81,3.054-9.873,11.37-9.873h15.785v-6.598 h-14.666c-4.426,0-7.641,1.06-9.918,2.708v-2.708h-21.693c-3.469,0-7.541,0.86-9.467,2.708v-2.708h-38.738v2.708 c-3.083-2.224-8.285-2.708-10.686-2.708h-25.552v2.708c-2.439-2.362-7.863-2.708-11.169-2.708h-28.597l-6.544,7.082l-6.129-7.082 H63.706v46.272h41.914l6.743-7.194l6.352,7.194l25.836,0.023v-10.885h2.54c3.428,0.053,7.471-0.085,11.038-1.627v12.488h21.31 v-12.06h1.028c1.312,0,1.441,0.054,1.441,1.365v10.694h64.736c4.11,0,8.406-1.052,10.785-2.961v2.961h20.534 c4.273,0,8.446-0.599,11.621-2.133V197.178z M257.973,183.93c1.543,1.597,2.37,3.613,2.37,7.026c0,7.134-4.457,10.464-12.449,10.464 h-15.435v-7.111h15.373c1.503,0,2.569-0.199,3.237-0.821c0.545-0.513,0.936-1.258,0.936-2.163c0-0.966-0.423-1.733-0.967-2.193 c-0.606-0.506-1.442-0.736-2.822-0.736c-7.411-0.253-16.692,0.23-16.692-10.264c0-4.81,3.022-9.873,11.33-9.873h15.887v7.058 h-14.537c-1.441,0-2.378,0.054-3.175,0.599c-0.868,0.537-1.19,1.334-1.19,2.386c0,1.251,0.737,2.102,1.734,2.47 c0.836,0.291,1.734,0.376,3.084,0.376l4.266,0.115C253.225,181.368,256.178,182.112,257.973,183.93z M186.465,181.882 c-1.06,0.629-2.371,0.683-3.913,0.683h-9.627v-7.448h9.758c1.411,0,2.823,0.03,3.782,0.599c1.027,0.537,1.641,1.564,1.641,2.983 S187.492,181.261,186.465,181.882z M191.251,186.009c1.764,0.651,3.206,1.818,3.882,2.784c1.119,1.619,1.281,3.13,1.313,6.053v6.574 h-7.956v-4.149c0-1.995,0.192-4.949-1.281-6.491c-1.158-1.188-2.923-1.472-5.814-1.472h-8.469v12.112h-7.963v-33.162h18.296 c4.012,0,6.934,0.177,9.535,1.565c2.501,1.511,4.074,3.581,4.074,7.364C196.867,182.48,193.337,185.181,191.251,186.009z M201.262,168.258h26.449v6.858h-18.557v6.029h18.104v6.766h-18.104v6.598l18.557,0.03v6.881h-26.449V168.258z M147.795,183.562 h-10.241v-8.445h10.333c2.861,0,4.847,1.166,4.847,4.066C152.734,182.051,150.84,183.562,147.795,183.562z M129.661,198.404 l-12.167-13.508l12.167-13.079V198.404z M98.24,194.509H78.756v-6.598h17.398v-6.766H78.756v-6.029h19.868l8.668,9.664 L98.24,194.509z M161.242,179.183c0,9.212-6.873,11.114-13.8,11.114h-9.888v11.123h-15.403l-9.758-10.978l-10.141,10.978h-31.39 v-33.162h31.873l9.75,10.87l10.08-10.87h25.322C154.176,168.258,161.242,169.999,161.242,179.183z"/> </svg></span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:5px;color:#64748b;font-size:11px;text-align:center;line-height:1.4;">
+        <svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:#22c55e;flex-shrink:0;"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm3 12c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
+        Tus datos viajan cifrados. Procesado por Mercado Pago.
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -661,6 +703,38 @@ let productos = [];
 let total = 0;
 let descuentoAplicado = 0;
 let cuponAplicado = "";
+
+// ===== VOLVER AL COMPROBANTE DEL ULTIMO PEDIDO =====
+// El pedido queda guardado en este celular al terminar de pagar, así el
+// cliente puede salir de la pantalla y regresar a ver cómo va.
+(function mostrarPedidoActivo() {
+  let guardado;
+  try { guardado = JSON.parse(localStorage.getItem("mi_pedido") || "null"); } catch (e) { return; }
+  if (!guardado || !guardado.codigo) return;
+
+  // Después de 6 horas ya no tiene caso seguir mostrándolo
+  if (guardado.creadoEn && Date.now() - guardado.creadoEn > 6 * 60 * 60 * 1000) {
+    localStorage.removeItem("mi_pedido");
+    return;
+  }
+
+  fetch("/comprobante/" + encodeURIComponent(guardado.codigo))
+    .then(r => r.ok ? r.json() : null)
+    .then(p => {
+      if (!p) { localStorage.removeItem("mi_pedido"); return; }
+      if (p.entregado) { localStorage.removeItem("mi_pedido"); return; }
+
+      const barra = document.getElementById("barraPedidoActivo");
+      const texto = p.estado === "Listo"
+        ? "Tu pedido " + p.codigo + " esta listo"
+        : "Tu pedido " + p.codigo + " esta en preparacion";
+      document.getElementById("barraPedidoTexto").innerText = texto;
+      if (p.estado === "Listo") barra.style.background = "#16a34a";
+      barra.href = "/cliente-confirmado.html?c=" + encodeURIComponent(p.codigo);
+      barra.style.display = "flex";
+    })
+    .catch(() => {});
+})();
 
 // ===== SISTEMA DE AGOTADOS (sincroniza con servidor) =====
 let __agotados = [];
@@ -2772,9 +2846,18 @@ function mensajePagoRechazado(data) {
   return botonesFalloPago("⚠️ El pago fue rechazado. Prueba con otra tarjeta o paga con Mercado Pago.");
 }
 
+// Arma la URL del comprobante con el código del pedido y el link de referido
+function urlConfirmacion(data) {
+  const params = new URLSearchParams();
+  if (data.codigo) params.set("c", data.codigo);
+  if (data.nuevoRef) params.set("ref", data.nuevoRef);
+  const query = params.toString();
+  return "/cliente-confirmado.html" + (query ? "?" + query : "");
+}
+
 async function abrirBrickPago(preferenceId, publicKey, externalReference, totalMonto) {
-  document.getElementById("pagoBrickResumen").innerText =
-    "Total a pagar: $" + totalMonto.toFixed(2);
+  // El rótulo "Total a pagar" ya está en el modal, aquí solo va el monto
+  document.getElementById("pagoBrickResumen").innerText = "$" + totalMonto.toFixed(2);
   document.getElementById("pagoModal").style.display = "flex";
 
   const mp = new MercadoPago(publicKey, { locale: "es-MX" });
@@ -2793,7 +2876,14 @@ async function abrirBrickPago(preferenceId, publicKey, externalReference, totalM
         // (Safari iOS con tarjeta en Wallet, dominio verificado, etc.)
       },
       visual: {
-        style: { theme: "default" }
+        style: {
+          theme: "default",
+          // Solo color y bordes, para que el formulario combine con la página
+          customVariables: {
+            baseColor: "#0e3a5c",
+            borderRadiusMedium: "8px"
+          }
+        }
       }
     },
     callbacks: {
@@ -2817,7 +2907,7 @@ async function abrirBrickPago(preferenceId, publicKey, externalReference, totalM
             const data = await res.json();
 
             if (data.ok) {
-              window.location.href = "/cliente-confirmado.html" + (data.nuevoRef ? "?ref=" + data.nuevoRef : "");
+              window.location.href = urlConfirmacion(data);
               return;
             }
             fallo = mensajePagoRechazado(data);
@@ -2832,7 +2922,7 @@ async function abrirBrickPago(preferenceId, publicKey, externalReference, totalM
             });
             const data = await res.json();
             if (data.ok) {
-              window.location.href = "/cliente-confirmado.html" + (data.nuevoRef ? "?ref=" + data.nuevoRef : "");
+              window.location.href = urlConfirmacion(data);
               return;
             }
             fallo = botonesFalloPago("⚠️ El pago no se pudo confirmar.");
@@ -2892,7 +2982,7 @@ async function iniciarPago() {
     const data = await res.json();
 
     if (data.directo) {
-      window.location.href = "/cliente-confirmado.html" + (data.nuevoRef ? "?ref=" + data.nuevoRef : "");
+      window.location.href = urlConfirmacion(data);
       return;
     }
 
