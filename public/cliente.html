@@ -1187,8 +1187,6 @@ function mostrarOpciones(categoria) {
           mostrarOpcionesEnsalada(item.nombre, item.precio);
         } else if (categoria === "Ensaladas") {
           agregarProductoSinNota("Ensalada de " + item.nombre, item.precio);
-        } else if (categoria === "Gringa") {
-          agregarProductoSinNota(item.nombreFinal || item.nombre, item.precio);
         } else {
           agregarProductoConNota(item.nombre, item.precio);
         }
@@ -1344,9 +1342,9 @@ function mostrarTamanosAgua(sabores, conChia) {
   const conExtras = sabores.length > 1 ? " con " + sabores.slice(1).join(", ") : "";
   const chiaTxt = conChia ? " con Chia" : "";
 
-  cont.innerHTML = "<h3>" + nombreBase + conExtras + chiaTxt + "</h3><p>Elige tamano:</p>";
+  cont.innerHTML = "<h3>" + nombreBase + conExtras + chiaTxt + "</h3><p>Elige tamaño:</p>";
 
-  const tamanos = menu["Aguas"].tamanos;
+  const tamanos = menu["Aguas"].tamaños;
 
   for (let tamano in tamanos) {
     const precioBase = tamanos[tamano];
