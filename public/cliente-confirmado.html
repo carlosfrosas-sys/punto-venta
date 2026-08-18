@@ -292,11 +292,10 @@
     // al comprobante aunque salga de esta pantalla
     function recordarPedido(p) {
       try {
-        if (p.entregado) {
-          localStorage.removeItem("mi_pedido");
-        } else {
-          localStorage.setItem("mi_pedido", JSON.stringify({ codigo: p.codigo, creadoEn: p.creadoEn || Date.now() }));
-        }
+        // Se guarda siempre, incluso ya entregado: el comprobante sirve de
+        // recibo despues de recoger. La pagina de pedidos lo deja de mostrar
+        // cuando pasa el tiempo suficiente.
+        localStorage.setItem("mi_pedido", JSON.stringify({ codigo: p.codigo, creadoEn: p.creadoEn || Date.now() }));
       } catch (e) {}
     }
 

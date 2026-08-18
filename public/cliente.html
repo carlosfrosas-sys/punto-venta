@@ -712,8 +712,9 @@ let cuponAplicado = "";
   try { guardado = JSON.parse(localStorage.getItem("mi_pedido") || "null"); } catch (e) { return; }
   if (!guardado || !guardado.codigo) return;
 
-  // Después de 6 horas ya no tiene caso seguir mostrándolo
-  if (guardado.creadoEn && Date.now() - guardado.creadoEn > 6 * 60 * 60 * 1000) {
+  // Una hora: los clientes vuelven a pedir en el siguiente cambio de clase
+  // y una barra del pedido anterior estorbaría
+  if (guardado.creadoEn && Date.now() - guardado.creadoEn > 60 * 60 * 1000) {
     localStorage.removeItem("mi_pedido");
     return;
   }
@@ -722,14 +723,22 @@ let cuponAplicado = "";
     .then(r => r.ok ? r.json() : null)
     .then(p => {
       if (!p) { localStorage.removeItem("mi_pedido"); return; }
-      if (p.entregado) { localStorage.removeItem("mi_pedido"); return; }
 
       const barra = document.getElementById("barraPedidoActivo");
-      const texto = p.estado === "Listo"
-        ? "Tu pedido " + p.codigo + " esta listo"
-        : "Tu pedido " + p.codigo + " esta en preparacion";
+      let texto;
+
+      if (p.entregado) {
+        // Ya lo recogio: el comprobante sigue disponible, pero discreto
+        texto = "Tu pedido " + p.codigo + " fue entregado";
+        barra.style.background = "#475569";
+      } else if (p.estado === "Listo") {
+        texto = "Tu pedido " + p.codigo + " esta listo";
+        barra.style.background = "#16a34a";
+      } else {
+        texto = "Tu pedido " + p.codigo + " esta en preparacion";
+      }
+
       document.getElementById("barraPedidoTexto").innerText = texto;
-      if (p.estado === "Listo") barra.style.background = "#16a34a";
       barra.href = "/cliente-confirmado.html?c=" + encodeURIComponent(p.codigo);
       barra.style.display = "flex";
     })
