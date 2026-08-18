@@ -416,14 +416,27 @@
 
     function notaCocina(p) {
       let nota = (p.nota || "").replace(/\s*\+\$\d+/g, "");
-      if (conBebidaIncluida.some(n => p.nombre.startsWith(n))) {
-        nota = nota.split(",").map(s => s.trim()).filter(s => s && !bebidasPaquete.includes(s)).join(", ");
+      if (conBebidaIncluida.some(n => empiezaCon(p.nombre, n))) {
+        nota = nota.split(",").map(s => s.trim()).filter(s => s && !bebidasPaquete.some(b => esIgual(s, b))).join(", ");
       }
       return nota;
     }
 
+    // Los nombres llegan con o sin acentos segun la pantalla que los genero
+    // (caja escribe "Café", la pagina de clientes "Cafe"), asi que se comparan
+    // sin acentos para que un producto siempre caiga en la pantalla correcta.
+    function sinAcentos(s) {
+      return (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    }
+    function empiezaCon(nombre, prefijo) {
+      return sinAcentos(nombre).startsWith(sinAcentos(prefijo));
+    }
+    function esIgual(nombre, otro) {
+      return sinAcentos(nombre) === sinAcentos(otro);
+    }
+
     function esBebida(nombre) {
-      return bebidasCocina.some(b => nombre.startsWith(b)) || nombre.startsWith("Otro") || nombre.startsWith("Tupper") || nombre.startsWith("Hot Cakes") || nombre.startsWith("HotCakes") || nombre === "Corn Flakes" || nombre.startsWith("Paleta");
+      return bebidasCocina.some(b => empiezaCon(nombre, b)) || empiezaCon(nombre, "Otro") || empiezaCon(nombre, "Tupper") || empiezaCon(nombre, "Hot Cakes") || empiezaCon(nombre, "HotCakes") || esIgual(nombre, "Corn Flakes") || empiezaCon(nombre, "Paleta");
     }
 
     function mostrarPedido(pedido) {

@@ -407,15 +407,28 @@
     const snacks = ["Hot Dog", "2 Hot Dogs", "Banderilla", "Papas a la Francesa", "Nachos", "Maruchan"];
     const bebidasPaquete = ["Té", "Café", "Jugo"];
 
+    // Los nombres llegan con o sin acentos segun la pantalla que los genero
+    // (caja escribe "Café", la pagina de clientes "Cafe"), asi que se comparan
+    // sin acentos para que un producto siempre caiga en la pantalla correcta.
+    function sinAcentos(s) {
+      return (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    }
+    function empiezaCon(nombre, prefijo) {
+      return sinAcentos(nombre).startsWith(sinAcentos(prefijo));
+    }
+    function esIgual(nombre, otro) {
+      return sinAcentos(nombre) === sinAcentos(otro);
+    }
+
     function esDeBarra(nombre) {
-      if (prefBebidas.some(b => nombre.startsWith(b))) return true;
-      if (nombre.startsWith("Ensalada")) return true;
-      if (snacks.some(s => nombre.startsWith(s))) return true;
-      if (nombre.startsWith("Paleta")) return true;
-      if (nombre.startsWith("Económico")) return true;
-      if (nombre === "Tacos Dorados" || nombre === "1pza de Taco Dorado") return true;
-      if (nombre.startsWith("Hot Cakes") || nombre.startsWith("HotCakes") || nombre.startsWith("Paquete 4")) return true;
-      if (nombre === "Corn Flakes") return true;
+      if (prefBebidas.some(x => empiezaCon(nombre, x))) return true;
+      if (empiezaCon(nombre, "Ensalada")) return true;
+      if (snacks.some(s => empiezaCon(nombre, s))) return true;
+      if (empiezaCon(nombre, "Paleta")) return true;
+      if (empiezaCon(nombre, "Economico")) return true;
+      if (esIgual(nombre, "Tacos Dorados") || esIgual(nombre, "1pza de Taco Dorado")) return true;
+      if (empiezaCon(nombre, "Hot Cakes") || empiezaCon(nombre, "HotCakes") || empiezaCon(nombre, "Paquete 4")) return true;
+      if (esIgual(nombre, "Corn Flakes")) return true;
       return false;
     }
 
@@ -424,15 +437,15 @@
 
     function esPaqueteConBebida(p) {
       if (!p.nota) return false;
-      if (!conBebidaIncluida.some(n => p.nombre.startsWith(n))) return false;
+      if (!conBebidaIncluida.some(n => empiezaCon(p.nombre, n))) return false;
       // Paquete 4 ya sale completo en barra, no crear virtual
-      if (p.nombre.startsWith("Paquete 4")) return false;
-      return bebidasPaquete.some(b => p.nota.includes(b));
+      if (empiezaCon(p.nombre, "Paquete 4")) return false;
+      return bebidasPaquete.some(x => sinAcentos(p.nota).includes(sinAcentos(x)));
     }
 
     function extraerBebidaPaquete(nota) {
-      for (const b of bebidasPaquete) {
-        if (nota.includes(b)) return b;
+      for (const x of bebidasPaquete) {
+        if (sinAcentos(nota).includes(sinAcentos(x))) return x;
       }
       return "";
     }

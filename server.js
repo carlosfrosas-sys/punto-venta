@@ -1027,7 +1027,9 @@ app.post("/pedido/listo/:id", async (req, res) => {
 
 // Mapa de categorías por palabra clave en nombre del producto
 function detectarCategoria(nombre) {
-  const n = nombre.toLowerCase();
+  // Sin acentos: caja escribe "Café" y la página de clientes "Cafe",
+  // y ambos deben caer en la misma categoría del reporte
+  const n = (nombre || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   if (n.includes("paquete") || n.includes("hot cakes") || n.includes("hotcakes") || n.includes("orden de huevo") || n.includes("bisquet") || n.includes("corn flakes") || n.includes("avocado")) return "Desayunos";
   if (n.includes("chilaquil")) return "Chilaquiles";
   if (n.includes("mollete") && !n.includes("mollequil")) return "Molletes";
@@ -1043,7 +1045,7 @@ function detectarCategoria(nombre) {
   if (n.includes("bagel")) return "Bagels";
   if (n.includes("taco")) return "Tacos";
   if (n.includes("gringa")) return "Gringas";
-  if (n.includes("norteña")) return "Norteñas";
+  if (n.includes("nortena")) return "Norteñas";
   if (n.includes("sincronizada")) return "Sincronizadas";
   if (n.includes("ensalada")) return "Ensaladas";
   if (n.includes("hot dog")) return "Snacks";
@@ -1053,8 +1055,8 @@ function detectarCategoria(nombre) {
   if (n.includes("maruchan")) return "Snacks";
   if (n.includes("agua de") || n.includes("agua ")) return "Aguas";
   if (n.includes("licuado")) return "Licuados";
-  if (n.includes("café") || n.includes("capuccino") || n.includes("espumoso") || n.includes("agua caliente")) return "Café";
-  if (n.includes("coca") || n.includes("boing") || n.includes("fuze") || n.includes("jumex") || n.includes("gatorade") || n.includes("monster") || n.includes("redbull") || n.includes("volt") || n.includes("electrolit") || n.includes("yakult") || n.includes("panzoncita") || n.includes("peñafielita") || n.includes("del valle") || n.includes("refresco") || n.includes("santa clara") || n.includes("arizona") || n.includes("bonafont")) return "Bebidas";
+  if (n.includes("cafe") || n.includes("capuccino") || n.includes("espumoso") || n.includes("agua caliente")) return "Café";
+  if (n.includes("coca") || n.includes("boing") || n.includes("fuze") || n.includes("jumex") || n.includes("gatorade") || n.includes("monster") || n.includes("redbull") || n.includes("volt") || n.includes("electrolit") || n.includes("yakult") || n.includes("panzoncita") || n.includes("penafielita") || n.includes("del valle") || n.includes("refresco") || n.includes("santa clara") || n.includes("arizona") || n.includes("bonafont")) return "Bebidas";
   return "Otros";
 }
 
