@@ -2733,6 +2733,45 @@ function mostrarStatusBrick(html) {
   s.innerHTML = html;
 }
 
+// Vuelve a mostrar el formulario de pago sin perder el pedido
+function reintentarPago() {
+  document.getElementById("pagoBrickStatus").style.display = "none";
+  document.getElementById("pagoBrickContainer").style.display = "block";
+}
+
+function botonesFalloPago(mensaje) {
+  const estilo = "padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-size:14px;margin:0 4px;";
+  return mensaje +
+    "<br><br><button onclick='reintentarPago()' style='" + estilo + "background:#0e3a5c;color:white;'>Intentar de nuevo</button>" +
+    "<button onclick='cerrarPagoModal()' style='" + estilo + "background:#e5e7eb;color:#374151;'>Cerrar</button>";
+}
+
+// Traduce el rechazo de Mercado Pago a algo que el cliente entienda
+function mensajePagoRechazado(data) {
+  const detalle = (data && data.detalle) || "";
+  const status = (data && data.status) || "";
+
+  const porDetalle = {
+    cc_rejected_bad_filled_card_number: "Revisa el número de tu tarjeta.",
+    cc_rejected_bad_filled_date: "Revisa la fecha de vencimiento.",
+    cc_rejected_bad_filled_security_code: "Revisa el código de seguridad.",
+    cc_rejected_bad_filled_other: "Revisa los datos de tu tarjeta.",
+    cc_rejected_insufficient_amount: "Tu tarjeta no tiene fondos suficientes.",
+    cc_rejected_call_for_authorize: "Tu banco necesita autorizar este pago. Llámalos o usa otra tarjeta.",
+    cc_rejected_card_disabled: "Tu tarjeta está inactiva. Llama a tu banco o usa otra.",
+    cc_rejected_duplicated_payment: "Ya hiciste un pago igual. Si no se registró, espera unos minutos.",
+    cc_rejected_high_risk: "El pago fue rechazado por seguridad. Prueba con otra tarjeta o paga con Mercado Pago.",
+    cc_rejected_max_attempts: "Demasiados intentos. Prueba con otra tarjeta.",
+    cc_rejected_invalid_installments: "Esa cantidad de mensualidades no está disponible."
+  };
+
+  if (porDetalle[detalle]) return botonesFalloPago("⚠️ " + porDetalle[detalle]);
+  if (status === "in_process" || status === "pending") {
+    return botonesFalloPago("⏳ Tu pago quedó en revisión. En cuanto se apruebe pasa por tu pedido.");
+  }
+  return botonesFalloPago("⚠️ El pago fue rechazado. Prueba con otra tarjeta o paga con Mercado Pago.");
+}
+
 async function abrirBrickPago(preferenceId, publicKey, externalReference, totalMonto) {
   document.getElementById("pagoBrickResumen").innerText =
     "Total a pagar: $" + totalMonto.toFixed(2);
@@ -2760,29 +2799,51 @@ async function abrirBrickPago(preferenceId, publicKey, externalReference, totalM
     callbacks: {
       onReady: () => {},
       onSubmit: async ({ formData, selectedPaymentMethod }) => {
-        // El brick se encarga del cobro vía preferenceId.
-        // formData incluye payment_method_id / token. MP procesa con la preferencia.
-        // Después del cobro, Bricks llama onSubmit con formData; aquí confirmamos
-        // creando el pedido server-side.
         mostrarStatusBrick("Procesando pago...");
+
+        // Con tarjeta el brick solo entrega el token: el cobro lo crea el
+        // servidor. Con saldo/cuenta de Mercado Pago el cobro ya lo hizo MP
+        // y aquí solo hay que confirmarlo.
+        const esTarjeta = !!(formData && formData.token);
+        let fallo = null;
+
         try {
-          // Esperar 2s para dar tiempo a MP de registrar el pago
-          await new Promise(r => setTimeout(r, 2000));
-          // Pedirle al backend que verifique el último payment_id asociado al external_reference
-          const res = await fetch("/confirmar-pago-online", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ external_reference: externalReference, payment_id: formData.payment_id || formData.id || "" })
-          });
-          const data = await res.json();
-          if (data.ok) {
-            window.location.href = "/cliente-confirmado.html" + (data.nuevoRef ? "?ref=" + data.nuevoRef : "");
+          if (esTarjeta) {
+            const res = await fetch("/procesar-pago-tarjeta", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ external_reference: externalReference, formData })
+            });
+            const data = await res.json();
+
+            if (data.ok) {
+              window.location.href = "/cliente-confirmado.html" + (data.nuevoRef ? "?ref=" + data.nuevoRef : "");
+              return;
+            }
+            fallo = mensajePagoRechazado(data);
           } else {
-            mostrarStatusBrick("⚠️ El pago no se pudo confirmar.<br><br><button onclick='cerrarPagoModal()' style='padding:10px 20px;border:none;background:#0e3a5c;color:white;border-radius:8px;cursor:pointer;'>Cerrar</button>");
+            // Esperar 2s para dar tiempo a MP de registrar el pago
+            await new Promise(r => setTimeout(r, 2000));
+            // Pedirle al backend que verifique el último payment_id asociado al external_reference
+            const res = await fetch("/confirmar-pago-online", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ external_reference: externalReference, payment_id: formData.payment_id || formData.id || "" })
+            });
+            const data = await res.json();
+            if (data.ok) {
+              window.location.href = "/cliente-confirmado.html" + (data.nuevoRef ? "?ref=" + data.nuevoRef : "");
+              return;
+            }
+            fallo = botonesFalloPago("⚠️ El pago no se pudo confirmar.");
           }
         } catch (e) {
-          mostrarStatusBrick("⚠️ Error de conexión.<br><br><button onclick='cerrarPagoModal()' style='padding:10px 20px;border:none;background:#0e3a5c;color:white;border-radius:8px;cursor:pointer;'>Cerrar</button>");
+          fallo = botonesFalloPago("⚠️ Error de conexión.");
         }
+
+        mostrarStatusBrick(fallo);
+        // Rechazar la promesa desbloquea el formulario del brick para reintentar
+        throw new Error("pago_no_completado");
       },
       onError: (err) => {
         console.error("Brick error:", err);

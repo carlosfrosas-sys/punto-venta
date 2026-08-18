@@ -573,6 +573,60 @@ async function confirmarPagoOnline(external_reference, payment_id) {
   return { ok: true, pedidoId: pedido.id, nuevoRef: nuevoRefMP };
 }
 
+// Bricks con tarjeta: el brick solo tokeniza, el cobro se crea aquí.
+// (Con saldo/cuenta de Mercado Pago el cobro lo hace MP y se confirma
+// por /confirmar-pago-online, que solo busca el pago ya existente.)
+app.post("/procesar-pago-tarjeta", async (req, res) => {
+  const { external_reference, formData } = req.body || {};
+
+  if (!external_reference || !formData || !formData.token) {
+    return res.status(400).json({ ok: false, error: "datos_faltantes" });
+  }
+
+  try {
+    // El monto sale del pedido guardado en el servidor, nunca del navegador
+    const pendiente = await obtenerPedidoPendiente(external_reference);
+    if (!pendiente) {
+      return res.status(400).json({ ok: false, error: "pedido_pendiente_no_encontrado" });
+    }
+
+    const payment = new Payment(mpClient);
+    const cobro = await payment.create({
+      body: {
+        transaction_amount: Number(pendiente.total),
+        token: formData.token,
+        description: "Pedido de " + pendiente.cliente,
+        installments: Number(formData.installments) || 1,
+        payment_method_id: formData.payment_method_id,
+        issuer_id: formData.issuer_id,
+        payer: formData.payer,
+        external_reference
+      },
+      // La llave incluye el token de la tarjeta: si el cliente da doble clic
+      // no se cobra dos veces, pero si reintenta con otra tarjeta (token
+      // nuevo) sí se procesa el intento nuevo.
+      requestOptions: { idempotencyKey: external_reference + ":" + formData.token }
+    });
+
+    if (cobro.status !== "approved") {
+      return res.json({
+        ok: false,
+        error: "pago_no_aprobado",
+        status: cobro.status,
+        detalle: cobro.status_detail
+      });
+    }
+
+    const confirmado = await confirmarPagoOnline(external_reference, cobro.id);
+    if (!confirmado.ok) return res.status(400).json(confirmado);
+
+    res.json({ ok: true, status: "approved", ...confirmado });
+  } catch (e) {
+    console.error("Error procesando pago con tarjeta:", e.message);
+    res.status(500).json({ ok: false, error: "server_error", detalle: e.message });
+  }
+});
+
 // Bricks: confirma pago desde el frontend (POST con JSON)
 app.post("/confirmar-pago-online", async (req, res) => {
   const { external_reference, payment_id } = req.body;
