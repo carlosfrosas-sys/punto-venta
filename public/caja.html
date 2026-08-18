@@ -1221,7 +1221,9 @@ const menu = {
     items: [
       { nombre: "Café de Olla Chico", precio: 15 },
       { nombre: "Café de Olla Grande", precio: 18 },
+      { nombre: "Café de Medio", precio: 25 },
       { nombre: "Café con Leche", precio: 20 },
+      { nombre: "Café con Leche de Medio", precio: 30 },
       { nombre: "Capuccino Instantáneo", precio: 28, capuccino: true },
       { nombre: "Espumoso Chocolate", precio: 25 },
       { nombre: "Té", precio: 18 },
@@ -1523,9 +1525,11 @@ const menu = {
   "OTROS..": {
     items: [
       { nombre: "✏️ Personalizado", personalizado: true },
+      { nombre: "Tupper $5", precio: 5, tupper: true },
       { nombre: "$5", precio: 5 },
       { nombre: "$7", precio: 7 },
       { nombre: "$8", precio: 8 },
+      { nombre: "$9", precio: 9 },
       { nombre: "$10", precio: 10 },
       { nombre: "$12", precio: 12 },
       { nombre: "$13", precio: 13 },
@@ -1537,7 +1541,8 @@ const menu = {
       { nombre: "$25", precio: 25 },
       { nombre: "$28", precio: 28 },
       { nombre: "$30", precio: 30 },
-      { nombre: "$105", precio: 105 }
+      { nombre: "$100", precio: 100 },
+      { nombre: "$110", precio: 110 }
     ]
   }
 
@@ -1773,6 +1778,8 @@ if (categoria === "Licuados") {
           agregarProductoSinNota("Ensalada de " + item.nombre, item.precio);
         } else if (categoria === "OTROS.." && item.personalizado) {
           mostrarPersonalizado();
+        } else if (categoria === "OTROS.." && item.tupper) {
+          agregarProductoSinNota("Tupper", item.precio);
         } else if (categoria === "OTROS..") {
           agregarProductoSinNota("Otro", item.precio);
         } else {
