@@ -1147,12 +1147,15 @@ function mostrarOpciones(categoria) {
     datos.items.forEach(item => {
       const btn = document.createElement("button");
       const tieneMultiPrecio = item.sabores && item.sabores.some(s => typeof s === "object");
-      btn.innerText = item.precio > 0 && !tieneMultiPrecio ? item.nombre + " - $" + item.precio : item.nombre;
+      const mostrarPrecio = item.precio > 0 && !tieneMultiPrecio && !item.ocultarPrecio;
+      btn.innerText = mostrarPrecio ? item.nombre + " - $" + item.precio : item.nombre;
       btn.onclick = () => {
         if (categoria === "Burguers") {
           mostrarNotas(item.nombre, item.precio, notasHamburguesas);
         } else if (categoria === "Snacks" && item.hotdog) {
           mostrarOpcionPapasHotDog(item.nombre, item.precio, item.precioConPapas);
+        } else if (datos.agrupada) {
+          agregarProductoSinNota(item.nombre, item.precio);
         } else if (categoria === "Snacks" && item.paletas) {
           mostrarSaboresPaletas();
         } else if (categoria === "Snacks" && item.maruchan) {

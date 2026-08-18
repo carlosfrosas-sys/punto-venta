@@ -189,24 +189,28 @@
 
   "Gringa": {
     directo: true,
-    precio: 35
+    precio: 35,
+    grupoCliente: "Gringas"
   },
 
   "Norteña": {
     directo: true,
-    precio: 35
+    precio: 35,
+    grupoCliente: "Gringas"
   },
 
   "Campecheña": {
     directo: true,
     precio: 38,
-    soloCliente: true
+    soloCliente: true,
+    grupoCliente: "Gringas"
   },
 
   "Arracheña": {
     directo: true,
     precio: 40,
-    soloCliente: true
+    soloCliente: true,
+    grupoCliente: "Gringas"
   },
 
   "Licuados": {
@@ -334,7 +338,7 @@
       { nombre: "Papas a la Francesa", precio: 40 },
       { nombre: "Nachos", precio: 42, nachos: true },
       { nombre: "Maruchan", precio: 25, maruchan: true },
-      { nombre: "Paletas", precio: 20, paletas: true }
+      { nombre: "Paletas", precio: 20, paletas: true, ocultarPrecio: true }
     ]
   },
 
@@ -523,9 +527,30 @@
     return menu;
   }
 
+  // En caja conviene tener las gringas como categorias sueltas (un toque y
+  // listo), pero al cliente se le muestran juntas bajo "Gringas". Las
+  // categorias con grupoCliente se juntan en una sola con sus precios.
+  function agrupar(menu) {
+    const salida = {};
+    const grupos = {};
+
+    Object.keys(menu).forEach(function (categoria) {
+      const datos = menu[categoria];
+      if (!datos.grupoCliente) { salida[categoria] = datos; return; }
+
+      if (!grupos[datos.grupoCliente]) {
+        grupos[datos.grupoCliente] = { agrupada: true, items: [] };
+        salida[datos.grupoCliente] = grupos[datos.grupoCliente];  // conserva el lugar del primero
+      }
+      grupos[datos.grupoCliente].items.push({ nombre: categoria, precio: datos.precio });
+    });
+
+    return salida;
+  }
+
   global.MENU = {
     paraCaja: function (listas) { return filtrar(aplicarPrecios(construir(listas)), "caja"); },
-    paraCliente: function (listas) { return filtrar(aplicarPrecios(construir(listas)), "cliente"); },
+    paraCliente: function (listas) { return agrupar(filtrar(aplicarPrecios(construir(listas)), "cliente")); },
 
     // El servidor inyecta aqui los precios guardados al servir este archivo
     usarPrecios: function (precios) { preciosGuardados = precios || {}; },
