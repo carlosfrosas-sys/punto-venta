@@ -326,6 +326,55 @@
       margin-left: 6px;
     }
 
+    .badge-online {
+      color: #8b5cf6;
+      font-size: 10px;
+      font-weight: 600;
+      margin-left: 6px;
+    }
+
+    /* Filtro por forma de pago */
+    .filtro-pago {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .filtro-pago button {
+      background: #f8f8f8;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      padding: 7px 12px;
+      font-family: inherit;
+      font-size: 12px;
+      color: #666;
+      cursor: pointer;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .filtro-pago button:hover {
+      background: #f0f0f0;
+    }
+
+    .filtro-pago button.activo {
+      background: #1a1a1a;
+      border-color: #1a1a1a;
+      color: #fff;
+    }
+
+    .filtro-pago .fp-monto {
+      font-weight: 700;
+    }
+
+    .filtro-pago .fp-num {
+      font-size: 11px;
+      opacity: 0.65;
+    }
+
     .sin-datos {
       text-align: center;
       color: #ccc;
@@ -679,6 +728,7 @@ function hacerLogin() {
 
     <div id="desglose"></div>
     <div id="contenidoExtra"></div>
+    <div class="filtro-pago" id="filtroPago" style="display:none;"></div>
     <div id="pedidos"></div>
   </div>
 </div>
@@ -866,13 +916,56 @@ function hacerLogin() {
     }
   }
 
+  // Filtro por forma de pago: se combina con el buscador de cliente
+  let pagoActual = "todos";
+
   function filtrarPedidos() {
     const q = document.getElementById("buscadorCliente").value.toLowerCase().trim();
     document.querySelectorAll("#pedidos .pedido").forEach(div => {
       const cliente = div.querySelector(".cliente");
       if (!cliente) return;
-      div.style.display = !q || cliente.innerText.toLowerCase().includes(q) ? "" : "none";
+      const coincideTexto = !q || cliente.innerText.toLowerCase().includes(q);
+      const coincidePago = pagoActual === "todos" || div.dataset.pago === pagoActual;
+      div.style.display = coincideTexto && coincidePago ? "" : "none";
     });
+  }
+
+  function filtrarPorPago(tipo) {
+    pagoActual = tipo;
+    document.querySelectorAll("#filtroPago button").forEach(b => {
+      b.classList.toggle("activo", b.dataset.pago === tipo);
+    });
+    filtrarPedidos();
+  }
+
+  // Botones con el total y el número de pedidos de cada forma de pago
+  function renderFiltroPago(lista) {
+    const cont = document.getElementById("filtroPago");
+    if (!lista || lista.length === 0) {
+      cont.style.display = "none";
+      cont.innerHTML = "";
+      return;
+    }
+
+    const grupos = [
+      { tipo: "todos", etiqueta: "Todos" },
+      { tipo: "efectivo", etiqueta: "Efectivo" },
+      { tipo: "tarjeta", etiqueta: "Tarjeta" },
+      { tipo: "online", etiqueta: "Online" }
+    ];
+
+    cont.innerHTML = grupos.map(g => {
+      const suyos = g.tipo === "todos" ? lista : lista.filter(p => tipoPago(p) === g.tipo);
+      const monto = suyos.reduce((acc, p) => acc + (p.total || 0), 0);
+      return '<button data-pago="' + g.tipo + '" class="' + (g.tipo === pagoActual ? "activo" : "") + '"' +
+             ' onclick="filtrarPorPago(\'' + g.tipo + '\')">' +
+             '<span>' + g.etiqueta + '</span>' +
+             '<span class="fp-monto">$' + Math.round(monto * 100) / 100 + '</span>' +
+             '<span class="fp-num">' + suyos.length + '</span>' +
+             '</button>';
+    }).join("");
+
+    cont.style.display = "flex";
   }
 
   function renderBarChart(categorias, containerId) {
@@ -965,6 +1058,8 @@ function hacerLogin() {
     contenedor.innerHTML = "";
     document.getElementById("desglose").innerHTML = "";
     document.getElementById("contenidoExtra").innerHTML = "";
+    pagoActual = "todos";
+    renderFiltroPago(null);
   }
 
   // Load specific date
@@ -992,6 +1087,7 @@ function hacerLogin() {
           contenedor.innerHTML = '<div class="sin-datos">No hay ventas en esta fecha</div>';
         } else {
           data.pedidos.forEach(mostrarPedido);
+          renderFiltroPago(data.pedidos);
         }
       });
   }
@@ -1047,6 +1143,7 @@ function hacerLogin() {
           contenedor.innerHTML = '<div class="sin-datos">No hay ventas esta semana</div>';
         } else {
           data.pedidos.forEach(mostrarPedido);
+          renderFiltroPago(data.pedidos);
         }
       });
   }
@@ -1080,6 +1177,7 @@ function hacerLogin() {
           contenedor.innerHTML = '<div class="sin-datos">No hay ventas este mes</div>';
         } else {
           data.pedidos.forEach(mostrarPedido);
+          renderFiltroPago(data.pedidos);
         }
       });
   }
@@ -1184,18 +1282,30 @@ function hacerLogin() {
   // sí hace falta para ubicar cada pedido
   let mostrarFechaEnPedido = false;
 
+  // Forma de pago de un pedido, para el filtro y las etiquetas.
+  // Los pedidos de la página del cliente van como "online" aunque no traigan
+  // metodoPago: se cobraron por Mercado Pago, no en la caja.
+  function tipoPago(pedido) {
+    if (pedido.origen === "cliente") return "online";
+    if (pedido.metodoPago === "tarjeta") return "tarjeta";
+    return "efectivo";
+  }
+
   function mostrarPedido(pedido) {
     const div = document.createElement("div");
     div.className = "pedido";
     const prods = pedido.productos.map(p => (p.cantidad > 1 ? p.cantidad + "x " : "") + p.nombre).join(", ");
     // Hora en que se entregó. Los pedidos viejos no la traen, ahí se usa la de envío.
     const hora = pedido.horaEntrega || pedido.horaEnvio || "";
+    const tipo = tipoPago(pedido);
+    div.dataset.pago = tipo;
 
     div.innerHTML =
       '<div class="pedido-header">' +
         '<div style="flex:1;min-width:0;">' +
           '<span class="cliente">' + pedido.cliente + '</span>' +
-          (pedido.metodoPago === "tarjeta" ? '<span class="badge-tarjeta">TARJETA</span>' : '') +
+          (tipo === "tarjeta" ? '<span class="badge-tarjeta">TARJETA</span>' : '') +
+          (tipo === "online" ? '<span class="badge-online">ONLINE</span>' : '') +
           (hora ? '<span class="pedido-hora">' + (mostrarFechaEnPedido && pedido.fecha ? pedido.fecha + ' · ' : '') + hora + '</span>' : '') +
           '<div class="pedido-prods">' + prods + '</div>' +
         '</div>' +
