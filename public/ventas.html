@@ -297,6 +297,14 @@
       color: #22c55e;
     }
 
+    .pedido-hora {
+      font-size: 11px;
+      color: #888;
+      font-weight: 600;
+      white-space: nowrap;
+      margin-left: 6px;
+    }
+
     .btn-eliminar {
       background: transparent;
       border: none;
@@ -962,6 +970,7 @@ function hacerLogin() {
   // Load specific date
   function cargarFecha(fecha) {
     fechaActual = fecha;
+    mostrarFechaEnPedido = false;
     limpiarContenido();
     mostrarGraficas(true);
     mostrarMetricas(true);
@@ -1013,6 +1022,7 @@ function hacerLogin() {
 
   // Semanal
   function cargarSemanal() {
+    mostrarFechaEnPedido = true;
     limpiarContenido();
     mostrarGraficas(true);
     mostrarMetricas(true);
@@ -1043,6 +1053,7 @@ function hacerLogin() {
 
   // Mensual
   function cargarMensual() {
+    mostrarFechaEnPedido = true;
     limpiarContenido();
     mostrarGraficas(true);
     mostrarMetricas(true);
@@ -1169,16 +1180,23 @@ function hacerLogin() {
     if (btn) btn.innerText = visible ? "Ver todos (" + el.querySelectorAll("tr").length + ")" : "Ocultar";
   }
 
+  // En la vista de un solo día la fecha ya va en el título; en semana y mes
+  // sí hace falta para ubicar cada pedido
+  let mostrarFechaEnPedido = false;
+
   function mostrarPedido(pedido) {
     const div = document.createElement("div");
     div.className = "pedido";
     const prods = pedido.productos.map(p => (p.cantidad > 1 ? p.cantidad + "x " : "") + p.nombre).join(", ");
+    // Hora en que se entregó. Los pedidos viejos no la traen, ahí se usa la de envío.
+    const hora = pedido.horaEntrega || pedido.horaEnvio || "";
 
     div.innerHTML =
       '<div class="pedido-header">' +
         '<div style="flex:1;min-width:0;">' +
           '<span class="cliente">' + pedido.cliente + '</span>' +
           (pedido.metodoPago === "tarjeta" ? '<span class="badge-tarjeta">TARJETA</span>' : '') +
+          (hora ? '<span class="pedido-hora">' + (mostrarFechaEnPedido && pedido.fecha ? pedido.fecha + ' · ' : '') + hora + '</span>' : '') +
           '<div class="pedido-prods">' + prods + '</div>' +
         '</div>' +
         '<div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">' +

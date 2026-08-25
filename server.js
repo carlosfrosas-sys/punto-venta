@@ -250,9 +250,11 @@ async function guardarPrecios() {
 async function guardarPedido(pedido) {
   if (db) {
     try {
-      await db.collection("pedidos").updateOne(
+      // replaceOne y no $set: si un pedido regresa a pendiente y se le quita
+      // la hora de entrega, con $set el campo viejo seguiría en la base
+      await db.collection("pedidos").replaceOne(
         { id: pedido.id },
-        { $set: pedido },
+        pedido,
         { upsert: true }
       );
     } catch (e) {
@@ -389,9 +391,85 @@ app.delete("/eliminar-referido/:codigo", soloAdmin, async (req, res) => {
   }
 });
 
+// ---- Horario de pedidos en línea ----
+// Minutos desde medianoche, en hora de la Ciudad de México.
+// El domingo no se toman pedidos en línea (día sin horario).
+const HORARIO_ONLINE = {
+  0: null,                                        // domingo
+  1: { abre: 7 * 60 + 30, cierra: 21 * 60 },      // lunes
+  2: { abre: 7 * 60 + 30, cierra: 21 * 60 },      // martes
+  3: { abre: 7 * 60 + 30, cierra: 21 * 60 },      // miércoles
+  4: { abre: 7 * 60 + 30, cierra: 21 * 60 },      // jueves
+  5: { abre: 7 * 60 + 30, cierra: 21 * 60 },      // viernes
+  6: { abre: 7 * 60 + 30, cierra: 13 * 60 + 30 }  // sábado
+};
+
+const DIAS_SEMANA = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+const HORARIO_TEXTO = "Lunes a viernes 7:30 a.m. a 9:00 p.m. · Sábado 7:30 a.m. a 1:30 p.m. · Domingo cerrado";
+
+function horaLegible(minutos) {
+  const h24 = Math.floor(minutos / 60);
+  const m = minutos % 60;
+  const sufijo = h24 >= 12 ? "p.m." : "a.m.";
+  const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+  return h12 + ":" + String(m).padStart(2, "0") + " " + sufijo;
+}
+
+function estadoPedidosOnline() {
+  const ahora = fechaMXAhora();
+  const dia = ahora.getDay();
+  const minutos = ahora.getHours() * 60 + ahora.getMinutes();
+  const hoy = HORARIO_ONLINE[dia];
+
+  if (hoy && minutos >= hoy.abre && minutos < hoy.cierra) {
+    return {
+      abierto: true,
+      cierra: horaLegible(hoy.cierra),
+      mensaje: "Pedidos en línea abiertos hasta las " + horaLegible(hoy.cierra),
+      horario: HORARIO_TEXTO
+    };
+  }
+
+  // Todavía no abre hoy
+  if (hoy && minutos < hoy.abre) {
+    return {
+      abierto: false,
+      mensaje: "Los pedidos en línea abren hoy a las " + horaLegible(hoy.abre),
+      horario: HORARIO_TEXTO
+    };
+  }
+
+  // Ya cerró (o es domingo): buscar el siguiente día con horario
+  for (let i = 1; i <= 7; i++) {
+    const d = (dia + i) % 7;
+    const h = HORARIO_ONLINE[d];
+    if (!h) continue;
+    const cuando = i === 1 ? "mañana" : "el " + DIAS_SEMANA[d];
+    return {
+      abierto: false,
+      mensaje: "Los pedidos en línea abren " + cuando + " a las " + horaLegible(h.abre),
+      horario: HORARIO_TEXTO
+    };
+  }
+
+  return { abierto: false, mensaje: "Los pedidos en línea están cerrados", horario: HORARIO_TEXTO };
+}
+
+app.get("/horario-online", (req, res) => {
+  res.set("Cache-Control", "no-store");
+  res.json(estadoPedidosOnline());
+});
+
 // Mercado Pago: crear preferencia de pago
 app.post("/crear-preferencia", async (req, res) => {
   const { cliente, telefono, productos: prods, total: monto, nota, cupon, paraLlevar } = req.body;
+
+  // El horario se revisa aquí, no solo en la página: así no entra un pedido
+  // por una pestaña que quedó abierta desde antes de cerrar.
+  const horario = estadoPedidosOnline();
+  if (!horario.abierto) {
+    return res.status(403).json({ error: horario.mensaje, cerrado: true, horario: horario.horario });
+  }
 
   if (!cliente || !telefono || !prods || prods.length === 0 || !monto) {
     return res.status(400).json({ error: "Datos incompletos" });
@@ -447,7 +525,7 @@ app.post("/crear-preferencia", async (req, res) => {
         codigo: generarCodigoPedido(),
         creadoEn: Date.now(),
         fecha: fechaHoy(),
-        horaEnvio: new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" })
+        horaEnvio: horaMXAhora()
       };
 
       pedidos.push(pedido);
@@ -492,7 +570,7 @@ app.post("/crear-preferencia", async (req, res) => {
         codigo: generarCodigoPedido(),
         creadoEn: Date.now(),
         fecha: fechaHoy(),
-        horaEnvio: new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" })
+        horaEnvio: horaMXAhora()
       };
       pedidos.push(pedido);
       await guardarPedido(pedido);
@@ -623,7 +701,7 @@ async function confirmarPagoOnline(external_reference, payment_id) {
     creadoEn: Date.now(),
     folioPago: paymentData.id ? String(paymentData.id) : "",
     fecha: fechaHoy(),
-    horaEnvio: new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" })
+    horaEnvio: horaMXAhora()
   };
 
   pedidos.push(pedido);
@@ -743,6 +821,10 @@ function fechaHoy() {
   return new Date().toLocaleDateString("es-MX", { timeZone: "America/Mexico_City", year: "numeric", month: "2-digit", day: "2-digit" });
 }
 
+function horaMXAhora() {
+  return new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" });
+}
+
 app.post("/pedido", soloAdmin, async (req, res) => {
   const pedido = {
     id: idCounter++,
@@ -754,7 +836,7 @@ app.post("/pedido", soloAdmin, async (req, res) => {
     metodoPago: req.body.metodoPago || "efectivo",
     estado: "pendiente",
     fecha: fechaHoy(),
-    horaEnvio: new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" })
+    horaEnvio: horaMXAhora()
   };
 
   pedidos.push(pedido);
@@ -894,6 +976,11 @@ app.put("/pedido/:id", soloAdmin, async (req, res) => {
   const pedido = pedidos.find(p => p.id == req.params.id);
   if (pedido) {
     pedido.estado = req.body.estado;
+    // La hora de entrega se guarda venga de donde venga el cambio de estado
+    if (pedido.estado === "Entregado" && !pedido.horaEntrega) {
+      pedido.horaEntrega = horaMXAhora();
+      pedido.entregadoEn = Date.now();
+    }
     await guardarPedido(pedido);
     io.emit("actualizarPedido", pedido);
     res.json(pedido);
@@ -1285,7 +1372,7 @@ app.post("/pedido/:id/producto/:index", async (req, res) => {
   // Si todos los productos están entregados, marcar pedido como Entregado
   if (pedido.productosEntregados.length >= pedido.productos.length) {
     pedido.estado = "Entregado";
-    pedido.horaEntrega = new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" });
+    pedido.horaEntrega = horaMXAhora();
     pedido.entregadoEn = Date.now();
     await guardarPedido(pedido);
     io.emit("pedidoEliminado", id);
@@ -1300,7 +1387,7 @@ app.post("/pedido/entregado/:id", async (req, res) => {
 
   if (pedido) {
     pedido.estado = "Entregado";
-    pedido.horaEntrega = new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" });
+    pedido.horaEntrega = horaMXAhora();
     pedido.entregadoEn = Date.now();
     await guardarPedido(pedido);
     io.emit("pedidoEliminado", id);
@@ -1343,6 +1430,7 @@ app.post("/pedido/:id/regresar", async (req, res) => {
 
   pedido.estado = "pendiente";
   delete pedido.horaEntrega;
+  delete pedido.entregadoEn;
   await guardarPedido(pedido);
   io.emit("pedidoRegresado", pedido);
 
