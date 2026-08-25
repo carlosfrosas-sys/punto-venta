@@ -674,6 +674,7 @@ function hacerLogin() {
       <button onclick="navEliminados(this)">Eliminados</button>
       <button onclick="navReferidos(this)">Referidos</button>
       <button onclick="navClientes(this)">Clientes</button>
+      <button onclick="navQR(this)">QR</button>
       <button onclick="navPrecios(this)">Precios</button>
     </div>
     <div id="arbolFechas"></div>
@@ -1810,6 +1811,91 @@ function hacerLogin() {
           alert(data.error || "Error al eliminar");
         }
       });
+  }
+
+  // ===== ESCANEOS DEL QR =====
+  function navQR(btn) {
+    setActiveNav(btn);
+    tabActual = "qr";
+    limpiarContenido();
+    mostrarGraficas(false);
+    mostrarMetricas(false);
+    mostrarAcciones(false);
+    setTitulo("QR", "Cuántas veces se abrió el menú en línea");
+
+    contenedor.innerHTML = '<div class="sin-datos">Cargando...</div>';
+
+    fetch("/escaneos")
+      .then(res => res.json())
+      .then(data => {
+        const dias = data.dias || [];
+        const hoy = data.hoy || { total: 0, unicos: 0, pedidos: 0, porHora: {} };
+
+        // Últimos 7 días con datos
+        const semana = dias.slice(0, 7);
+        const totalSemana = semana.reduce((a, d) => a + d.total, 0);
+        const pedidosSemana = semana.reduce((a, d) => a + d.pedidos, 0);
+
+        let html = '<div style="background:#f8f8f8;border-radius:12px;padding:16px;margin-bottom:12px;display:flex;justify-content:space-around;text-align:center;flex-wrap:wrap;gap:12px;">';
+        html += '<div><div style="font-size:24px;font-weight:700;color:#333;">' + hoy.total + '</div><div style="font-size:11px;color:#999;">Hoy</div></div>';
+        html += '<div><div style="font-size:24px;font-weight:700;color:#8b5cf6;">' + hoy.unicos + '</div><div style="font-size:11px;color:#999;">Celulares hoy</div></div>';
+        html += '<div><div style="font-size:24px;font-weight:700;color:#f59e0b;">' + totalSemana + '</div><div style="font-size:11px;color:#999;">Últimos 7 días</div></div>';
+        html += '<div><div style="font-size:24px;font-weight:700;color:#22c55e;">' + porcentaje(pedidosSemana, totalSemana) + '</div><div style="font-size:11px;color:#999;">Acabaron en pedido</div></div>';
+        html += '</div>';
+
+        if (data.linkQR) {
+          html += '<div style="background:#fff;border:1px solid #eee;border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:12px;color:#666;">';
+          html += 'Si mandas a imprimir un QR nuevo, apúntalo a <strong>' + data.linkQR + '</strong>: así se distingue quién llegó por el cartel. ';
+          html += 'El QR que ya tienes impreso sigue contando igual.';
+          html += '</div>';
+        }
+
+        if (dias.length === 0) {
+          html += '<div class="sin-datos">Todavía nadie abre el menú en línea</div>';
+          contenedor.innerHTML = html;
+          return;
+        }
+
+        // Por hora, solo del día de hoy
+        const horas = Object.keys(hoy.porHora || {}).sort();
+        if (horas.length > 0) {
+          const maxHora = Math.max(...horas.map(h => hoy.porHora[h]));
+          html += '<div style="background:#f8f8f8;border-radius:12px;padding:16px;margin-bottom:12px;">';
+          html += '<div style="font-size:12px;color:#999;margin-bottom:12px;">A qué hora abren el menú hoy</div>';
+          html += '<div style="display:flex;align-items:flex-end;gap:4px;height:90px;">';
+          horas.forEach(h => {
+            const alto = Math.max(3, Math.round((hoy.porHora[h] / maxHora) * 70));
+            html += '<div style="flex:1;text-align:center;">';
+            html += '<div style="font-size:10px;color:#666;">' + hoy.porHora[h] + '</div>';
+            html += '<div style="background:#8b5cf6;border-radius:3px 3px 0 0;height:' + alto + 'px;"></div>';
+            html += '<div style="font-size:10px;color:#999;margin-top:3px;">' + h + '</div>';
+            html += '</div>';
+          });
+          html += '</div></div>';
+        }
+
+        html += '<div style="font-size:12px;color:#999;margin-bottom:10px;">Cada día: veces que se abrió el menú, celulares distintos y pedidos que salieron de ahí.</div>';
+
+        dias.forEach(d => {
+          html += '<div style="background:#fff;border:1px solid #eee;border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px;">';
+          html += '<div style="font-size:14px;font-weight:700;">' + d.fecha + '</div>';
+          html += '<div style="display:flex;gap:18px;text-align:right;font-variant-numeric:tabular-nums;">';
+          html += '<div><div style="font-size:15px;font-weight:700;">' + d.total + '</div><div style="font-size:10px;color:#999;">aperturas</div></div>';
+          html += '<div><div style="font-size:15px;font-weight:700;color:#8b5cf6;">' + d.unicos + '</div><div style="font-size:10px;color:#999;">celulares</div></div>';
+          html += '<div><div style="font-size:15px;font-weight:700;color:#22c55e;">' + d.pedidos + '</div><div style="font-size:10px;color:#999;">pedidos</div></div>';
+          html += '</div></div>';
+        });
+
+        contenedor.innerHTML = html;
+      })
+      .catch(() => {
+        contenedor.innerHTML = '<div class="sin-datos">Error al cargar los escaneos</div>';
+      });
+  }
+
+  function porcentaje(parte, total) {
+    if (!total) return "-";
+    return Math.round((parte / total) * 100) + "%";
   }
 
   // ===== CLIENTES FRECUENTES =====

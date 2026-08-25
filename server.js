@@ -179,6 +179,11 @@ async function cargarPedidos() {
       console.log("Cupones usados cargados:", cuponesUsados.size);
     } catch(e) {}
     try {
+      const dias = await db.collection("escaneos_qr").find().toArray();
+      dias.forEach(d => { delete d._id; escaneos[d.fecha] = d; });
+      console.log("Días con escaneos cargados:", dias.length);
+    } catch(e) {}
+    try {
       const doc = await db.collection("menu_precios").findOne({ _id: "precios" });
       if (doc && doc.valores) {
         menuPrecios = doc.valores;
@@ -204,6 +209,11 @@ async function cargarPedidos() {
   try {
     if (fs.existsSync(BACKUP_AGOTADOS_PATH)) {
       agotados = JSON.parse(fs.readFileSync(BACKUP_AGOTADOS_PATH, "utf8"));
+    }
+  } catch(e) {}
+  try {
+    if (Object.keys(escaneos).length === 0 && fs.existsSync(BACKUP_ESCANEOS_PATH)) {
+      escaneos = JSON.parse(fs.readFileSync(BACKUP_ESCANEOS_PATH, "utf8"));
     }
   } catch(e) {}
   cargarPreciosBackup();
@@ -307,6 +317,62 @@ async function eliminarPedidoPendiente(ref) {
   }
 }
 
+// ---- Escaneos del QR ----
+// Se guarda un resumen por día (no visitas sueltas): cuántas veces se abrió
+// el menú y desde cuántos celulares distintos, más el desglose por hora.
+let escaneos = {};
+const BACKUP_ESCANEOS_PATH = path.join(BACKUP_DIR, "escaneos-backup.json");
+
+// El archivo se escribe de forma síncrona, así que se agrupa: con varios
+// escaneos seguidos no se bloquea el servidor una vez por cada uno
+let guardadoEscaneosPendiente = null;
+
+function guardarEscaneos(fecha) {
+  if (!guardadoEscaneosPendiente) {
+    guardadoEscaneosPendiente = setTimeout(() => {
+      guardadoEscaneosPendiente = null;
+      try {
+        if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR);
+        fs.writeFileSync(BACKUP_ESCANEOS_PATH, JSON.stringify(escaneos, null, 2));
+      } catch (e) { console.error("Error guardando escaneos:", e.message); }
+    }, 5000);
+    guardadoEscaneosPendiente.unref && guardadoEscaneosPendiente.unref();
+  }
+
+  if (db && escaneos[fecha]) {
+    db.collection("escaneos_qr")
+      .updateOne({ fecha }, { $set: escaneos[fecha] }, { upsert: true })
+      .catch(e => console.error("Error guardando escaneos en MongoDB:", e.message));
+  }
+}
+
+function registrarEscaneo(req, res) {
+  const fecha = fechaHoy();
+  const ahora = fechaMXAhora();
+  const hora = String(ahora.getHours()).padStart(2, "0");
+
+  if (!escaneos[fecha]) escaneos[fecha] = { fecha, total: 0, unicos: 0, desdeQR: 0, porHora: {} };
+  const dia = escaneos[fecha];
+
+  dia.total++;
+  dia.porHora[hora] = (dia.porHora[hora] || 0) + 1;
+  if (req.query.via === "qr") dia.desdeQR++;
+
+  // La cookie trae la fecha: un celular que ya abrió el menú hoy suma visita
+  // pero no cuenta como persona nueva, y mañana vuelve a contar
+  const marca = fecha.replace(/\//g, "-");
+  const yaVinoHoy = (req.headers.cookie || "")
+    .split(";")
+    .some(c => c.trim() === "qr_visita=" + marca);
+
+  if (!yaVinoHoy) {
+    dia.unicos++;
+    res.cookie("qr_visita", marca, { maxAge: 24 * 60 * 60 * 1000, httpOnly: true, sameSite: "lax" });
+  }
+
+  guardarEscaneos(fecha);
+}
+
 // Rutas de páginas
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/public/index.html");
@@ -331,7 +397,17 @@ app.get("/ventas", (req, res) => {
   res.sendFile(__dirname + "/public/ventas.html");
 });
 
+// El QR lleva a esta página, así que cada vez que se abre se cuenta un
+// escaneo. /qr existe para poder reimprimir el código con un link más corto
+// y saber cuáles vienen del cartel y cuáles de alguien que ya lo tenía.
+app.get("/qr", (req, res) => {
+  res.redirect("/cliente?via=qr");
+});
+
 app.get("/cliente", (req, res) => {
+  registrarEscaneo(req, res);
+  // Sin caché: si el navegador guarda la página, el escaneo no se registra
+  res.set("Cache-Control", "no-store");
   res.sendFile(__dirname + "/public/cliente.html");
 });
 
@@ -942,6 +1018,33 @@ app.get("/clientes-frecuentes", soloAdmin, (req, res) => {
     .slice(0, 300);
 
   res.json({ clientes });
+});
+
+// ---- Escaneos del QR (panel de la página de ventas) ----
+app.get("/escaneos", soloAdmin, (req, res) => {
+  // Pedidos en línea por día, para ver cuántos escaneos acabaron en pedido
+  const pedidosPorDia = {};
+  pedidos.forEach(p => {
+    if (p.origen !== "cliente" || !p.fecha) return;
+    pedidosPorDia[p.fecha] = (pedidosPorDia[p.fecha] || 0) + 1;
+  });
+
+  const dias = Object.values(escaneos)
+    .map(d => ({ ...d, pedidos: pedidosPorDia[d.fecha] || 0 }))
+    .sort((a, b) => parseFechaMX(b.fecha) - parseFechaMX(a.fecha))
+    .slice(0, 60);
+
+  const hoy = fechaHoy();
+  const totalEscaneos = dias.reduce((acc, d) => acc + d.total, 0);
+  const totalPedidos = dias.reduce((acc, d) => acc + d.pedidos, 0);
+
+  res.json({
+    hoy: dias.find(d => d.fecha === hoy) || { fecha: hoy, total: 0, unicos: 0, desdeQR: 0, porHora: {}, pedidos: 0 },
+    dias,
+    totalEscaneos,
+    totalPedidos,
+    linkQR: (process.env.BASE_URL || "") + "/qr"
+  });
 });
 
 // ---- Precios del menú (editor de la página de ventas) ----
