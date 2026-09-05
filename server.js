@@ -83,6 +83,41 @@ function generarCodigoReferido() {
   return codigo;
 }
 
+// Marca el cupón de referido como usado y devuelve el nuevo que el cliente
+// podrá compartir. Queda a nombre de su teléfono para que no se lo aplique
+// a sí mismo en el siguiente pedido.
+async function canjearReferido(cuponUpper, telefono, enviadoPorNegocio) {
+  if (!db) return null;
+  try {
+    await db.collection("referidos").updateOne(
+      { codigo: cuponUpper.replace("REF-", "") },
+      { $set: { usado: true, usadoPor: telefono, fechaUso: new Date() } }
+    );
+
+    // Solo los cupones que se pasan entre clientes gastan el turno del
+    // teléfono; los que manda el negocio se pueden repetir cuando quiera
+    if (!enviadoPorNegocio) {
+      await db.collection("referidos_usados").insertOne({ telefono, fecha: new Date() });
+    }
+
+    let nuevo = generarCodigoReferido();
+    while (await db.collection("referidos").findOne({ codigo: nuevo })) {
+      nuevo = generarCodigoReferido();
+    }
+    await db.collection("referidos").insertOne({
+      codigo: nuevo,
+      origen: telefono,
+      creadoPor: telefono,
+      usado: false,
+      fecha: new Date()
+    });
+    return nuevo;
+  } catch (e) {
+    console.error("Error canjeando referido:", e.message);
+    return null;
+  }
+}
+
 // MongoDB
 let db;
 let pedidos = [];
@@ -435,9 +470,11 @@ app.post("/crear-referido-inicial", soloAdmin, async (req, res) => {
     while (await db.collection("referidos").findOne({ codigo })) {
       codigo = generarCodigoReferido();
     }
-    // Para quién se creó, así en la pestaña de referidos se sabe a quién se le mandó
+    // Para quién se creó, así en la pestaña de referidos se sabe a quién se le mandó.
+    // enviado: true lo distingue de los que generan los clientes al pedir; estos
+    // se pueden usar aunque el teléfono ya haya usado otro cupón antes.
     const para = typeof req.body?.para === "string" ? req.body.para.slice(0, 80).trim() : "";
-    await db.collection("referidos").insertOne({ codigo, origen: para || "admin", usado: false, fecha: new Date() });
+    await db.collection("referidos").insertOne({ codigo, origen: para || "admin", enviado: true, usado: false, fecha: new Date() });
     return res.json({ codigo, link: "/cliente?ref=" + codigo });
   } catch(e) {
     return res.status(500).json({ error: "Error creando referido" });
@@ -567,21 +604,40 @@ app.post("/crear-preferencia", async (req, res) => {
     descuento = CUPONES_1USO[cuponUpper];
   }
 
-  // Cupón de referido (link único + validación por teléfono)
+  // Cupón de referido (link único). Hay dos clases y no se tratan igual:
+  //   - los que manda el negocio desde la página de ventas (enviado: true):
+  //     se pueden usar aunque el teléfono ya haya usado otro antes, para
+  //     poder reactivar a un cliente cada tantos meses
+  //   - los que genera un cliente al pedir, para pasarlos a sus conocidos:
+  //     siguen siendo uno por teléfono, y quien lo generó no puede usarlo
   let esReferido = false;
+  let referidoEnviado = false;
   if (!descuento && cuponUpper.startsWith("REF-") && db) {
     try {
-      // Verificar si este teléfono ya usó un referido antes
-      const yaUso = await db.collection("referidos_usados").findOne({ telefono });
-      if (yaUso) {
-        return res.status(400).json({ error: "Ya usaste un cupón de referido anteriormente" });
-      }
       const ref = await db.collection("referidos").findOne({ codigo: cuponUpper.replace("REF-", "") });
-      if (ref && !ref.usado) {
+
+      if (ref && ref.usado) {
+        return res.status(400).json({ error: "Este link de referido ya fue usado" });
+      }
+
+      if (ref) {
+        // creadoPor es el teléfono de quien lo generó; en los cupones viejos
+        // ese dato vive en origen
+        if ((ref.creadoPor || ref.origen) === telefono) {
+          return res.status(400).json({ error: "Este cupón es para que lo compartas, no para usarlo tú" });
+        }
+
+        referidoEnviado = ref.enviado === true;
+
+        if (!referidoEnviado) {
+          const yaUso = await db.collection("referidos_usados").findOne({ telefono });
+          if (yaUso) {
+            return res.status(400).json({ error: "Ya usaste un cupón de referido anteriormente" });
+          }
+        }
+
         descuento = 10;
         esReferido = true;
-      } else if (ref && ref.usado) {
-        return res.status(400).json({ error: "Este link de referido ya fue usado" });
       }
     } catch(e) {}
   }
@@ -612,20 +668,7 @@ app.post("/crear-preferencia", async (req, res) => {
       await guardarPedido(pedido);
       if (CUPONES_1USO[cuponUpper]) await marcarCuponUsado(cuponUpper);
 
-      // Referido: marcar como usado, guardar teléfono y generar nuevo código
-      let nuevoCodigoRef = null;
-      if (esReferido && db) {
-        try {
-          const codigoUsado = cuponUpper.replace("REF-", "");
-          await db.collection("referidos").updateOne({ codigo: codigoUsado }, { $set: { usado: true, usadoPor: telefono, fechaUso: new Date() } });
-          await db.collection("referidos_usados").insertOne({ telefono, fecha: new Date() });
-          nuevoCodigoRef = generarCodigoReferido();
-          while (await db.collection("referidos").findOne({ codigo: nuevoCodigoRef })) {
-            nuevoCodigoRef = generarCodigoReferido();
-          }
-          await db.collection("referidos").insertOne({ codigo: nuevoCodigoRef, origen: telefono, usado: false, fecha: new Date() });
-        } catch(e) {}
-      }
+      const nuevoCodigoRef = esReferido ? await canjearReferido(cuponUpper, telefono, referidoEnviado) : null;
       io.emit("nuevoPedido", pedido);
 
       return res.json({ directo: true, nuevoRef: nuevoCodigoRef, codigo: pedido.codigo });
@@ -664,19 +707,7 @@ app.post("/crear-preferencia", async (req, res) => {
       pedidos.push(pedido);
       await guardarPedido(pedido);
 
-      let nuevoCodigoRef2 = null;
-      if (esReferido && db) {
-        try {
-          const codigoUsado = cuponUpper.replace("REF-", "");
-          await db.collection("referidos").updateOne({ codigo: codigoUsado }, { $set: { usado: true, usadoPor: telefono, fechaUso: new Date() } });
-          await db.collection("referidos_usados").insertOne({ telefono, fecha: new Date() });
-          nuevoCodigoRef2 = generarCodigoReferido();
-          while (await db.collection("referidos").findOne({ codigo: nuevoCodigoRef2 })) {
-            nuevoCodigoRef2 = generarCodigoReferido();
-          }
-          await db.collection("referidos").insertOne({ codigo: nuevoCodigoRef2, origen: telefono, usado: false, fecha: new Date() });
-        } catch(e) {}
-      }
+      const nuevoCodigoRef2 = esReferido ? await canjearReferido(cuponUpper, telefono, referidoEnviado) : null;
       io.emit("nuevoPedido", pedido);
       return res.json({ directo: true, nuevoRef: nuevoCodigoRef2, codigo: pedido.codigo });
     } catch (e) {
@@ -706,7 +737,7 @@ app.post("/crear-preferencia", async (req, res) => {
       }
     });
 
-    await guardarPedidoPendiente(ref, { cliente, telefono, productos: prods, total: montoFinal, nota: notaConCupon, paraLlevar: paraLlevar || false, cupon: cuponUpper, esReferido });
+    await guardarPedidoPendiente(ref, { cliente, telefono, productos: prods, total: montoFinal, nota: notaConCupon, paraLlevar: paraLlevar || false, cupon: cuponUpper, esReferido, referidoEnviado });
 
     res.json({
       preference_id: result.id,
@@ -789,19 +820,9 @@ async function confirmarPagoOnline(external_reference, payment_id) {
   await guardarPedido(pedido);
   if (pendiente.cupon && CUPONES_1USO[pendiente.cupon]) await marcarCuponUsado(pendiente.cupon);
 
-  let nuevoRefMP = null;
-  if (pendiente.esReferido && pendiente.cupon && db) {
-    try {
-      const codigoUsado = pendiente.cupon.replace("REF-", "");
-      await db.collection("referidos").updateOne({ codigo: codigoUsado }, { $set: { usado: true, usadoPor: pendiente.telefono, fechaUso: new Date() } });
-      await db.collection("referidos_usados").insertOne({ telefono: pendiente.telefono, fecha: new Date() });
-      nuevoRefMP = generarCodigoReferido();
-      while (await db.collection("referidos").findOne({ codigo: nuevoRefMP })) {
-        nuevoRefMP = generarCodigoReferido();
-      }
-      await db.collection("referidos").insertOne({ codigo: nuevoRefMP, origen: pendiente.telefono, usado: false, fecha: new Date() });
-    } catch(e) {}
-  }
+  const nuevoRefMP = (pendiente.esReferido && pendiente.cupon)
+    ? await canjearReferido(pendiente.cupon, pendiente.telefono, pendiente.referidoEnviado)
+    : null;
   io.emit("nuevoPedido", pedido);
   await eliminarPedidoPendiente(external_reference);
 
