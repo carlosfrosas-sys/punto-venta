@@ -274,7 +274,7 @@
           { nombre: "Huevo", precio: 37 },
           { nombre: "Pollo", precio: 40 },
           { nombre: "Atún", precio: 40 },
-          { nombre: "Pechuga", precio: 40 },
+          { nombre: "Pechuga Empanizada", precio: 40 },
           { nombre: "Pechuga Asada", precio: 40 },
           { nombre: "Pollo c/ Mole", precio: 40 },
           { nombre: "Arrachera", precio: 45 }
