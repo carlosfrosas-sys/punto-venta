@@ -255,7 +255,7 @@
       <div id="detalleMeta" class="detalle-meta"></div>
     </div>
     <div id="refBox" class="ref-box" style="display:none;">
-      <p>Comparte este link con tus amigos y ellos recibiran 10% de descuento en su primer pedido:</p>
+      <p>¡Ya tienes tu cupón para regalar! 🎁 Pásaselo a un compañero y se lleva 10% de descuento en su primer pedido:</p>
       <div id="refLink" class="ref-link"></div>
       <div class="ref-buttons">
         <button class="btn-copiar" onclick="copiarLink()">Copiar link</button>
@@ -272,7 +272,9 @@
         const link = window.location.origin + "/cliente?ref=" + ref;
         document.getElementById("refLink").innerText = link;
         document.getElementById("refBox").style.display = "block";
-        const mensaje = "Hola! Pide en La Cabana y recibe 10% de descuento en tu primer pedido: " + link;
+        const mensaje = "¡Te paso este cupón de La Cabaña! 🔥\n\n" +
+          "Pide en línea y te llevas 10% de descuento en tu primer pedido:\n" + link + "\n\n" +
+          "Es de un solo uso, aprovéchalo 😉";
         document.getElementById("btnWhatsapp").href = "https://wa.me/?text=" + encodeURIComponent(mensaje);
       }
     })();
