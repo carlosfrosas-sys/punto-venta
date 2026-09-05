@@ -425,15 +425,19 @@ app.get("/validar-ref/:codigo", async (req, res) => {
   }
 });
 
-// Crear código de referido inicial (el tuyo para compartir)
-app.post("/crear-referido-inicial", async (req, res) => {
+// Crear un código de referido (10% de un solo uso). Lo usa el botón de
+// cupón de la página de ventas; va con contraseña porque si no, cualquiera
+// podría generarse descuentos.
+app.post("/crear-referido-inicial", soloAdmin, async (req, res) => {
   if (!db) return res.status(500).json({ error: "Sin base de datos" });
   try {
     let codigo = generarCodigoReferido();
     while (await db.collection("referidos").findOne({ codigo })) {
       codigo = generarCodigoReferido();
     }
-    await db.collection("referidos").insertOne({ codigo, origen: "admin", usado: false, fecha: new Date() });
+    // Para quién se creó, así en la pestaña de referidos se sabe a quién se le mandó
+    const para = typeof req.body?.para === "string" ? req.body.para.slice(0, 80).trim() : "";
+    await db.collection("referidos").insertOne({ codigo, origen: para || "admin", usado: false, fecha: new Date() });
     return res.json({ codigo, link: "/cliente?ref=" + codigo });
   } catch(e) {
     return res.status(500).json({ error: "Error creando referido" });
@@ -631,6 +635,15 @@ app.post("/crear-preferencia", async (req, res) => {
     }
   }
 
+  // Monto con descuento parcial. Se calcula antes de las dos ramas porque
+  // el cupón tiene que valer igual con o sin Mercado Pago.
+  let montoFinal = monto;
+  let notaConCupon = nota || "";
+  if (descuento > 0) {
+    montoFinal = Math.round(monto * (1 - descuento / 100) * 100) / 100;
+    notaConCupon = "[CUPON " + cuponUpper + " -" + descuento + "%] " + notaConCupon;
+  }
+
   if (!process.env.MERCADOPAGO_ACCESS_TOKEN_ONLINE && !process.env.MERCADOPAGO_ACCESS_TOKEN) {
     // Sin Mercado Pago: crear pedido directo
     try {
@@ -638,8 +651,8 @@ app.post("/crear-preferencia", async (req, res) => {
         id: idCounter++,
         cliente: cliente + " (Tel: " + telefono + ")",
         productos: prods,
-        total: monto,
-        nota: nota || "",
+        total: montoFinal,
+        nota: notaConCupon,
         paraLlevar: paraLlevar || false,
         origen: "cliente",
         estado: "pendiente",
@@ -669,14 +682,6 @@ app.post("/crear-preferencia", async (req, res) => {
     } catch (e) {
       return res.status(500).json({ error: "Error al crear el pedido" });
     }
-  }
-
-  // Calcular monto con descuento parcial
-  let montoFinal = monto;
-  let notaConCupon = nota || "";
-  if (descuento > 0) {
-    montoFinal = monto * (1 - descuento / 100);
-    notaConCupon = "[CUPON " + cuponUpper + " -" + descuento + "%] " + notaConCupon;
   }
 
   const ref = "pedido_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
@@ -899,6 +904,59 @@ function fechaHoy() {
 
 function horaMXAhora() {
   return new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" });
+}
+
+// Las horas se guardan como "10:59 p.m.". Para los reportes hace falta el
+// número de 0 a 23: si no, las 10 de la mañana y las 10 de la noche caen
+// en la misma columna de la gráfica.
+function hora24(texto) {
+  const partes = String(texto || "").match(/(\d{1,2}):(\d{2})/);
+  if (!partes) return null;
+
+  let h = parseInt(partes[1], 10);
+  if (!isFinite(h) || h < 0 || h > 23) return null;
+
+  const t = String(texto).toLowerCase();
+  if (/p\.?\s*m\.?/.test(t) && h < 12) h += 12;
+  if (/a\.?\s*m\.?/.test(t) && h === 12) h = 0;
+  return h;
+}
+
+// Pedidos por hora del día, con todas las horas de servicio aunque no haya
+// habido ventas: así se ve el hueco, no una gráfica que se salta horas.
+const HORA_APERTURA = 7;
+const HORA_CIERRE = 23;
+
+function pedidosPorHora(lista) {
+  const cuenta = {};
+
+  lista.forEach(p => {
+    const h = hora24(p.horaEnvio);
+    if (h === null) return;
+    if (!cuenta[h]) cuenta[h] = { pedidos: 0, total: 0 };
+    cuenta[h].pedidos++;
+    cuenta[h].total += p.total || 0;
+  });
+
+  const horas = new Set(Object.keys(cuenta).map(Number));
+  for (let h = HORA_APERTURA; h <= HORA_CIERRE; h++) horas.add(h);
+
+  return [...horas].sort((a, b) => a - b).map(h => ({
+    hora: String(h).padStart(2, "0") + ":00",
+    h24: h,
+    etiqueta: etiquetaHora(h, true),
+    etiquetaLarga: etiquetaHora(h, false),
+    pedidos: cuenta[h] ? cuenta[h].pedidos : 0,
+    total: cuenta[h] ? cuenta[h].total : 0
+  }));
+}
+
+// corta: "7a" / "12p", para que quepan 17 columnas en la gráfica
+// larga: "7 am" / "12 pm", para el resumen y el globo de ayuda
+function etiquetaHora(h, corta) {
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  if (corta) return h12 + (h >= 12 ? "p" : "a");
+  return h12 + (h >= 12 ? " pm" : " am");
 }
 
 app.post("/pedido", soloAdmin, async (req, res) => {
@@ -1279,16 +1337,7 @@ app.get("/ventas/fecha/:fecha", soloAdmin, (req, res) => {
   });
   const categorias = Object.values(cats).sort((a, b) => b.cantidad - a.cantidad);
 
-  // Por hora
-  const horas = {};
-  entregados.forEach(p => {
-    const h = (p.horaEnvio || "").split(":")[0];
-    if (!h) return;
-    if (!horas[h]) horas[h] = { hora: h + ":00", pedidos: 0, total: 0 };
-    horas[h].pedidos++;
-    horas[h].total += p.total;
-  });
-  const porHora = Object.values(horas).sort((a, b) => a.hora.localeCompare(b.hora));
+  const porHora = pedidosPorHora(entregados);
 
   // Por método de pago
   const totalEfectivo = entregados.filter(p => p.metodoPago !== "tarjeta").reduce((acc, p) => acc + p.total, 0);

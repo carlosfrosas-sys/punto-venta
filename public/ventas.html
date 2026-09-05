@@ -251,10 +251,15 @@
       white-space: nowrap;
     }
 
+    .hour-bar.vacia {
+      background: #e8e8e8;
+    }
+
     .hour-label {
-      font-size: 10px;
+      font-size: 9px;
       color: #999;
       margin-top: 4px;
+      white-space: nowrap;
     }
 
     /* Pedidos */
@@ -995,14 +1000,25 @@ function hacerLogin() {
       return;
     }
     const maxPed = Math.max(...porHora.map(h => h.pedidos));
-    let html = '<div class="chart-title">Ventas por Hora</div><div class="hour-chart">';
+    if (maxPed === 0) {
+      container.innerHTML = '<div class="chart-title">Hora Pico</div><div style="color:#ccc;font-size:13px;">Sin datos</div>';
+      return;
+    }
+
+    const pico = porHora.reduce((a, h) => h.pedidos > a.pedidos ? h : a);
+
+    let html = '<div class="chart-title">Ventas por Hora' +
+               '<span style="float:right;font-weight:400;color:#999;">pico ' + (pico.etiquetaLarga || pico.hora) +
+               ' &middot; ' + pico.pedidos + (pico.pedidos === 1 ? ' pedido' : ' pedidos') + '</span></div>';
+    html += '<div class="hour-chart">';
     porHora.forEach(h => {
       const height = Math.max(2, Math.round((h.pedidos / maxPed) * 100));
-      html += '<div class="hour-col">';
-      html += '<div class="hour-bar" style="height:' + height + '%">';
-      html += '<span class="hour-bar-count">' + h.pedidos + '</span>';
+      // Las horas sin ventas se ven como hueco, no como barra chiquita
+      html += '<div class="hour-col" title="' + (h.etiquetaLarga || h.hora) + ': ' + h.pedidos + ' pedidos - $' + (h.total || 0) + '">';
+      html += '<div class="hour-bar' + (h.pedidos === 0 ? ' vacia' : '') + '" style="height:' + height + '%">';
+      html += h.pedidos > 0 ? '<span class="hour-bar-count">' + h.pedidos + '</span>' : '';
       html += '</div>';
-      html += '<span class="hour-label">' + h.hora.replace(":00", "") + '</span>';
+      html += '<span class="hour-label">' + (h.etiqueta || h.hora.replace(":00", "")) + '</span>';
       html += '</div>';
     });
     html += '</div>';
@@ -1899,6 +1915,43 @@ function hacerLogin() {
   }
 
   // ===== CLIENTES FRECUENTES =====
+  let clientesActuales = [];
+
+  // Genera un cupón de referido (10%, un solo uso) y abre WhatsApp con el
+  // link ya escrito. La ventana se abre antes del fetch porque si no, el
+  // navegador la bloquea por no venir directo del clic.
+  async function mandarCupon(telefono) {
+    const c = clientesActuales.find(x => x.telefono === telefono);
+    if (!c) return;
+
+    const btn = document.querySelector('[data-cupon="' + telefono + '"]');
+    const ventana = window.open("", "_blank");
+    if (btn) { btn.disabled = true; btn.innerText = "Creando..."; }
+
+    try {
+      const res = await fetch("/crear-referido-inicial", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ para: c.nombre + " (" + c.telefono + ")" })
+      });
+      const data = await res.json();
+      if (!data.codigo) throw new Error(data.error || "sin código");
+
+      const link = window.location.origin + "/cliente?ref=" + data.codigo;
+      const texto = "Hola " + c.nombre + ", te escribimos de La Cabaña. " +
+        "Te regalamos 10% de descuento en tu próximo pedido en línea: " + link +
+        " (es un link personal, de un solo uso).";
+      const url = "https://wa.me/52" + c.telefono + "?text=" + encodeURIComponent(texto);
+
+      if (ventana) ventana.location.href = url; else window.open(url, "_blank");
+      if (btn) { btn.innerText = data.codigo; btn.style.background = "#4caf50"; }
+    } catch (e) {
+      if (ventana) ventana.close();
+      alert("No se pudo crear el cupón. Intenta de nuevo.");
+      if (btn) { btn.disabled = false; btn.innerText = "Cupón"; }
+    }
+  }
+
   function navClientes(btn) {
     setActiveNav(btn);
     tabActual = "clientes";
@@ -1925,7 +1978,9 @@ function hacerLogin() {
         html += '<div><div style="font-size:24px;font-weight:700;color:#3b82f6;">$' + clientes.reduce((a, c) => a + c.total, 0).toLocaleString() + '</div><div style="font-size:11px;color:#999;">Han gastado</div></div>';
         html += '</div>';
 
-        html += '<div style="font-size:12px;color:#999;margin-bottom:10px;">Ordenados por número de pedidos. Toca el botón verde para escribirle por WhatsApp.</div>';
+        html += '<div style="font-size:12px;color:#999;margin-bottom:10px;">Ordenados por número de pedidos. <strong>WhatsApp</strong> abre el chat; <strong>Cupón</strong> genera un 10% de un solo uso y lo manda por WhatsApp.</div>';
+
+        clientesActuales = clientes;
 
         clientes.forEach(c => {
           const mensaje = encodeURIComponent("Hola " + c.nombre + ", te escribimos de La Cabaña. ");
@@ -1938,7 +1993,10 @@ function hacerLogin() {
           html += '<div style="font-size:15px;font-weight:700;color:#4caf50;">$' + c.total.toLocaleString() + '</div>';
           html += '<div style="font-size:11px;color:#999;">' + c.pedidos + (c.pedidos === 1 ? ' pedido' : ' pedidos') + '</div>';
           html += '</div>';
+          html += '<div style="display:flex;gap:6px;flex-shrink:0;">';
           html += '<a href="https://wa.me/52' + c.telefono + '?text=' + mensaje + '" target="_blank" style="background:#25d366;color:#fff;text-decoration:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;white-space:nowrap;">WhatsApp</a>';
+          html += '<button data-cupon="' + c.telefono + '" onclick="mandarCupon(\'' + c.telefono + '\')" style="background:#8b5cf6;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer;font-family:inherit;min-height:auto;">Cupón</button>';
+          html += '</div>';
           html += '</div>';
         });
 
