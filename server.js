@@ -1112,6 +1112,80 @@ app.get("/clientes-frecuentes", soloAdmin, (req, res) => {
   res.json({ clientes });
 });
 
+// ---- Historial de un cliente (se abre desde la lista de clientes) ----
+app.get("/cliente-historial/:telefono", soloAdmin, (req, res) => {
+  const telefono = String(req.params.telefono || "").replace(/\D/g, "");
+  if (!/^\d{10}$/.test(telefono)) {
+    return res.status(400).json({ error: "Teléfono inválido" });
+  }
+
+  const suyos = pedidos.filter(p => {
+    const m = (p.cliente || "").match(/\(Tel:\s*(\d+)\)/);
+    return m && m[1] === telefono;
+  });
+
+  // Del más reciente al más viejo. La fecha y la hora son texto, así que se
+  // ordenan por su valor real, no alfabéticamente.
+  const cuando = p => {
+    const f = p.fecha ? parseFechaMX(p.fecha).getTime() : 0;
+    const h = hora24(p.horaEnvio);
+    return f + (h === null ? 0 : h * 3600000);
+  };
+  suyos.sort((a, b) => cuando(b) - cuando(a) || b.id - a.id);
+
+  const historial = suyos.map(p => {
+    const cupon = (p.nota || "").match(/\[CUPON\s+([^\s\]]+)/);
+    return {
+      id: p.id,
+      codigo: p.codigo || "",
+      fecha: p.fecha || "",
+      hora: p.horaEnvio || "",
+      horaEntrega: p.horaEntrega || "",
+      estado: p.estado,
+      total: p.total || 0,
+      paraLlevar: p.paraLlevar || false,
+      enLinea: p.origen === "cliente",
+      metodoPago: p.metodoPago || "",
+      cupon: cupon ? cupon[1] : "",
+      productos: (p.productos || []).map(pr => ({
+        nombre: pr.nombre,
+        cantidad: pr.cantidad || 1,
+        nota: pr.nota || ""
+      })),
+      // Las marcas de pago son para la caja, aquí solo estorban
+      nota: (p.nota || "")
+        .replace(/^\[PAGO ONLINE\]\s*/, "")
+        .replace(/^\[CUPON[^\]]*\]\s*/, "")
+        .trim()
+    };
+  });
+
+  // Lo que más pide, para saber qué ofrecerle
+  const cuenta = {};
+  historial.forEach(p => {
+    if (p.estado !== "Entregado") return;
+    p.productos.forEach(pr => {
+      cuenta[pr.nombre] = (cuenta[pr.nombre] || 0) + pr.cantidad;
+    });
+  });
+  const favoritos = Object.entries(cuenta)
+    .map(([nombre, cantidad]) => ({ nombre, cantidad }))
+    .sort((a, b) => b.cantidad - a.cantidad)
+    .slice(0, 5);
+
+  const entregados = historial.filter(p => p.estado === "Entregado");
+
+  res.json({
+    telefono,
+    pedidos: historial,
+    entregados: entregados.length,
+    total: entregados.reduce((a, p) => a + p.total, 0),
+    primera: historial.length ? historial[historial.length - 1].fecha : "",
+    ultima: historial.length ? historial[0].fecha : "",
+    favoritos
+  });
+});
+
 // ---- Escaneos del QR (panel de la página de ventas) ----
 app.get("/escaneos", soloAdmin, (req, res) => {
   // Pedidos en línea por día, para ver cuántos escaneos acabaron en pedido

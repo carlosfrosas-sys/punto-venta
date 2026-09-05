@@ -1952,6 +1952,82 @@ function hacerLogin() {
     }
   }
 
+  // Historial de un cliente: se carga la primera vez que se abre y se
+  // queda en el DOM, así cerrarlo y volverlo a abrir no pide de nuevo
+  const historialesCargados = new Set();
+
+  function verHistorial(telefono) {
+    const caja = document.getElementById("historial-" + telefono);
+    const flecha = document.getElementById("flecha-" + telefono);
+    if (!caja) return;
+
+    const abierto = caja.style.display !== "none";
+    caja.style.display = abierto ? "none" : "block";
+    if (flecha) flecha.innerHTML = abierto ? "&#9654;" : "&#9660;";
+    if (abierto || historialesCargados.has(telefono)) return;
+
+    historialesCargados.add(telefono);
+    caja.innerHTML = '<div style="padding:12px 0;color:#999;font-size:13px;">Cargando pedidos...</div>';
+
+    fetch("/cliente-historial/" + telefono)
+      .then(res => res.json())
+      .then(data => { caja.innerHTML = pintarHistorial(data); })
+      .catch(() => {
+        historialesCargados.delete(telefono);
+        caja.innerHTML = '<div style="padding:12px 0;color:#c62828;font-size:13px;">No se pudo cargar el historial</div>';
+      });
+  }
+
+  function pintarHistorial(data) {
+    const lista = data.pedidos || [];
+    if (lista.length === 0) {
+      return '<div style="padding:12px 0;color:#999;font-size:13px;">Sin pedidos registrados</div>';
+    }
+
+    let html = '<div style="border-top:1px solid #eee;margin-top:10px;padding-top:10px;">';
+
+    html += '<div style="font-size:12px;color:#666;margin-bottom:10px;">';
+    html += '<b>' + data.entregados + '</b> pedido' + (data.entregados === 1 ? '' : 's') +
+            ' &middot; <b>$' + data.total.toLocaleString() + '</b> en total';
+    if (data.primera) html += ' &middot; cliente desde ' + data.primera;
+    html += '</div>';
+
+    if (data.favoritos && data.favoritos.length > 0) {
+      html += '<div style="font-size:12px;color:#666;margin-bottom:10px;">Lo que más pide: ';
+      html += data.favoritos.map(f =>
+        '<span style="background:#f3f0ff;color:#6d28d9;border-radius:12px;padding:2px 9px;margin-right:4px;white-space:nowrap;">' +
+        f.nombre + ' &times;' + f.cantidad + '</span>').join("");
+      html += '</div>';
+    }
+
+    lista.forEach(p => {
+      const prods = p.productos.map(pr =>
+        (pr.cantidad > 1 ? pr.cantidad + "x " : "") + pr.nombre + (pr.nota ? " (" + pr.nota + ")" : "")
+      ).join(", ");
+
+      html += '<div style="background:#fafafa;border-radius:8px;padding:9px 12px;margin-bottom:6px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">';
+      html += '<div style="min-width:0;flex:1;">';
+
+      html += '<div style="font-size:12px;color:#666;font-weight:600;">' + p.fecha + ' &middot; ' + (p.horaEntrega || p.hora);
+      if (p.enLinea) html += ' <span style="color:#8b5cf6;font-size:10px;font-weight:700;">ONLINE</span>';
+      if (p.metodoPago === "tarjeta") html += ' <span style="color:#3b82f6;font-size:10px;font-weight:700;">TARJETA</span>';
+      if (p.cupon) html += ' <span style="color:#f59e0b;font-size:10px;font-weight:700;">CUPÓN ' + p.cupon + '</span>';
+      if (p.paraLlevar) html += ' <span style="color:#e65100;font-size:10px;font-weight:700;">PARA LLEVAR</span>';
+      if (p.estado !== "Entregado") html += ' <span style="color:#999;font-size:10px;font-weight:700;">' + p.estado.toUpperCase() + '</span>';
+      html += '</div>';
+
+      html += '<div style="font-size:13px;color:#333;margin-top:2px;">' + prods + '</div>';
+      if (p.nota) html += '<div style="font-size:12px;color:#999;font-style:italic;">' + p.nota + '</div>';
+      html += '</div>';
+
+      html += '<div style="font-size:14px;font-weight:700;color:#4caf50;white-space:nowrap;">$' + p.total + '</div>';
+      html += '</div>';
+    });
+
+    html += '</div>';
+    return html;
+  }
+
   function navClientes(btn) {
     setActiveNav(btn);
     tabActual = "clientes";
@@ -1984,9 +2060,10 @@ function hacerLogin() {
 
         clientes.forEach(c => {
           const mensaje = encodeURIComponent("Hola " + c.nombre + ", te escribimos de La Cabaña. ");
-          html += '<div style="background:#fff;border:1px solid #eee;border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">';
-          html += '<div style="min-width:0;flex:1;">';
-          html += '<div style="font-size:15px;font-weight:700;">' + c.nombre + '</div>';
+          html += '<div style="background:#fff;border:1px solid #eee;border-radius:10px;padding:12px 14px;margin-bottom:8px;">';
+          html += '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">';
+          html += '<div onclick="verHistorial(\'' + c.telefono + '\')" style="min-width:0;flex:1;cursor:pointer;">';
+          html += '<div style="font-size:15px;font-weight:700;"><span id="flecha-' + c.telefono + '" style="color:#999;font-size:11px;">&#9654;</span> ' + c.nombre + '</div>';
           html += '<div style="font-size:12px;color:#999;">' + c.telefono + ' · última vez ' + c.ultimaFecha + '</div>';
           html += '</div>';
           html += '<div style="text-align:right;font-variant-numeric:tabular-nums;">';
@@ -1997,6 +2074,8 @@ function hacerLogin() {
           html += '<a href="https://wa.me/52' + c.telefono + '?text=' + mensaje + '" target="_blank" style="background:#25d366;color:#fff;text-decoration:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;white-space:nowrap;">WhatsApp</a>';
           html += '<button data-cupon="' + c.telefono + '" onclick="mandarCupon(\'' + c.telefono + '\')" style="background:#8b5cf6;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer;font-family:inherit;min-height:auto;">Cupón</button>';
           html += '</div>';
+          html += '</div>';
+          html += '<div id="historial-' + c.telefono + '" style="display:none;"></div>';
           html += '</div>';
         });
 
