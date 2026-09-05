@@ -1938,9 +1938,11 @@ function hacerLogin() {
       if (!data.codigo) throw new Error(data.error || "sin código");
 
       const link = window.location.origin + "/cliente?ref=" + data.codigo;
-      const texto = "Hola " + c.nombre + ", te escribimos de La Cabaña. " +
-        "Te regalamos 10% de descuento en tu próximo pedido en línea: " + link +
-        " (es un link personal, de un solo uso).";
+      const texto = "¡Hola " + c.nombre + "! No dejes de pedir en La Cabaña 🔥\n\n" +
+        "Te mandamos un cupón de 10% de descuento para tu próximo pedido en línea:\n" +
+        link + "\n\n" +
+        "Y lo mejor: al usarlo se te genera otro cupón para que se lo pases a un compañero. " +
+        "Es tuyo y de un solo uso, no lo dejes ir 😉";
       const url = "https://wa.me/52" + c.telefono + "?text=" + encodeURIComponent(texto);
 
       if (ventana) ventana.location.href = url; else window.open(url, "_blank");
