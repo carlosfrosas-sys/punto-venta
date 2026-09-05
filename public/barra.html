@@ -450,6 +450,15 @@
       return "";
     }
 
+    // La nota del pedido llega marcada con [PAGO ONLINE] o [CUPON ...]: eso
+    // es para la caja, en barra solo estorba. Queda la indicación del cliente.
+    function notaPedido(pedido) {
+      return (pedido.nota || "")
+        .replace(/^\[PAGO ONLINE\]\s*/, "")
+        .replace(/^\[CUPON[^\]]*\]\s*/, "")
+        .trim();
+    }
+
     function mostrarPedido(pedido) {
       if (pedidosMostrados.has(pedido.id)) return;
       pedidosMostrados.add(pedido.id);
@@ -487,7 +496,7 @@
               `<li data-index="${p._index}">
                 <span class="punto">&#8226;</span> ${p.cantidad && p.cantidad > 1 ? `<span class="qty">${p.cantidad}</span> ` : ""}${p.nombre}
                 ${p.nota && !p._virtual ? `<span class="nota">${p.nota.replace(/\s*\+\$\d+/g, "")}</span>` : ""}
-                ${idx === productosBarra.length - 1 && pedido.nota ? `<span class="nota-general">${pedido.nota}</span>` : ""}
+                ${idx === productosBarra.length - 1 && notaPedido(pedido) ? `<span class="nota-general">${notaPedido(pedido)}</span>` : ""}
               </li>`
             ).join("")}
           </ul>
