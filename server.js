@@ -83,6 +83,36 @@ function generarCodigoReferido() {
   return codigo;
 }
 
+// Revisa si un teléfono puede usar un cupón de referido. La usan el aviso
+// de la página del cliente (en cuanto escribe su número) y el cobro, así
+// las dos dicen lo mismo y no hay sorpresas al pagar.
+// Sin teléfono solo puede decir si el link sirve.
+async function revisarReferido(codigo, telefono) {
+  if (!db) return { existe: false };
+
+  const ref = await db.collection("referidos").findOne({ codigo: String(codigo || "").toUpperCase() });
+  if (!ref) return { existe: false };
+  if (ref.usado) return { existe: true, ok: false, error: "Este link de referido ya fue usado" };
+
+  const enviado = ref.enviado === true;
+  if (!telefono) return { existe: true, ok: true, enviado };
+
+  // creadoPor es el teléfono de quien lo generó; en los cupones viejos
+  // ese dato vive en origen
+  if ((ref.creadoPor || ref.origen) === telefono) {
+    return { existe: true, ok: false, enviado, error: "Este cupón es para que lo compartas, no para usarlo tú" };
+  }
+
+  if (!enviado) {
+    const yaUso = await db.collection("referidos_usados").findOne({ telefono });
+    if (yaUso) {
+      return { existe: true, ok: false, enviado, error: "Ya usaste un cupón de referido anteriormente" };
+    }
+  }
+
+  return { existe: true, ok: true, enviado };
+}
+
 // Marca el cupón de referido como usado y devuelve el nuevo que el cliente
 // podrá compartir. Queda a nombre de su teléfono para que no se lo aplique
 // a sí mismo en el siguiente pedido.
@@ -446,14 +476,15 @@ app.get("/cliente", (req, res) => {
   res.sendFile(__dirname + "/public/cliente.html");
 });
 
-// Validar código de referido
+// Validar código de referido. Con ?telefono=... revisa además si esa
+// persona en particular lo puede usar (no es suyo, no gastó su turno).
 app.get("/validar-ref/:codigo", async (req, res) => {
   const codigo = req.params.codigo.toUpperCase();
-  if (!db) return res.json({ valido: false });
+  const tel = typeof req.query.telefono === "string" ? req.query.telefono.trim() : "";
   try {
-    const ref = await db.collection("referidos").findOne({ codigo });
-    if (!ref) return res.json({ valido: false });
-    if (ref.usado) return res.json({ valido: false, mensaje: "Este link ya fue usado" });
+    const r = await revisarReferido(codigo, /^\d{10}$/.test(tel) ? tel : "");
+    if (!r.existe) return res.json({ valido: false });
+    if (!r.ok) return res.json({ valido: false, mensaje: r.error });
     return res.json({ valido: true, descuento: 10 });
   } catch(e) {
     return res.json({ valido: false });
@@ -614,30 +645,12 @@ app.post("/crear-preferencia", async (req, res) => {
   let referidoEnviado = false;
   if (!descuento && cuponUpper.startsWith("REF-") && db) {
     try {
-      const ref = await db.collection("referidos").findOne({ codigo: cuponUpper.replace("REF-", "") });
-
-      if (ref && ref.usado) {
-        return res.status(400).json({ error: "Este link de referido ya fue usado" });
-      }
-
-      if (ref) {
-        // creadoPor es el teléfono de quien lo generó; en los cupones viejos
-        // ese dato vive en origen
-        if ((ref.creadoPor || ref.origen) === telefono) {
-          return res.status(400).json({ error: "Este cupón es para que lo compartas, no para usarlo tú" });
-        }
-
-        referidoEnviado = ref.enviado === true;
-
-        if (!referidoEnviado) {
-          const yaUso = await db.collection("referidos_usados").findOne({ telefono });
-          if (yaUso) {
-            return res.status(400).json({ error: "Ya usaste un cupón de referido anteriormente" });
-          }
-        }
-
+      const r = await revisarReferido(cuponUpper.replace("REF-", ""), telefono);
+      if (r.existe) {
+        if (!r.ok) return res.status(400).json({ error: r.error });
         descuento = 10;
         esReferido = true;
+        referidoEnviado = r.enviado;
       }
     } catch(e) {}
   }

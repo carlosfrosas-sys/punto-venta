@@ -2476,6 +2476,50 @@ function toggleParaLlevar() {
   actualizarTotalConDescuento();
 }
 
+// Un cupón de referido depende de quién lo use: el que lo generó no puede
+// aplicárselo, y los que se pasan entre clientes son uno por teléfono. Eso
+// solo se puede saber con el número escrito, así que se revisa en cuanto
+// lo completa y no hasta que le da pagar.
+let telefonoRevisado = "";
+
+function marcarCuponInvalido(mensaje) {
+  descuentoAplicado = 0;
+  cuponAplicado = "";
+  const input = document.getElementById("cupon");
+  const info = document.getElementById("cuponInfo");
+  input.disabled = false;
+  info.style.display = "block";
+  info.style.background = "#fce4ec";
+  info.style.borderColor = "#e53935";
+  info.style.color = "#c62828";
+  info.innerText = mensaje;
+  actualizarTotalConDescuento();
+}
+
+async function revisarCuponConTelefono() {
+  if (!cuponAplicado.startsWith("REF-")) return;
+
+  const tel = document.getElementById("telefono").value.trim();
+  if (!/^\d{10}$/.test(tel) || tel === telefonoRevisado) return;
+  telefonoRevisado = tel;
+
+  try {
+    const codigo = cuponAplicado.replace("REF-", "");
+    const res = await fetch("/validar-ref/" + encodeURIComponent(codigo) + "?telefono=" + encodeURIComponent(tel));
+    const data = await res.json();
+    if (data.valido) return;
+    marcarCuponInvalido(data.mensaje || "Este cupón no se puede usar con este teléfono");
+  } catch (e) {
+    // Sin conexión se deja pasar: al pagar se vuelve a revisar en el servidor
+  }
+}
+
+(function () {
+  const tel = document.getElementById("telefono");
+  tel.addEventListener("blur", revisarCuponConTelefono);
+  tel.addEventListener("input", revisarCuponConTelefono);
+})();
+
 function aplicarCupon() {
   const input = document.getElementById("cupon");
   const codigo = input.value.trim().toUpperCase();
@@ -2505,6 +2549,7 @@ function aplicarCupon() {
 
   descuentoAplicado = pct;
   cuponAplicado = codigo;
+  telefonoRevisado = "";
   input.disabled = true;
   info.style.display = "block";
   info.style.background = "#e8f5e9";
