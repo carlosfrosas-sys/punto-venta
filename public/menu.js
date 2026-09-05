@@ -275,6 +275,7 @@
           { nombre: "Pollo", precio: 40 },
           { nombre: "Atún", precio: 40 },
           { nombre: "Pechuga", precio: 40 },
+          { nombre: "Pechuga Asada", precio: 40 },
           { nombre: "Pollo c/ Mole", precio: 40 },
           { nombre: "Arrachera", precio: 45 }
         ]
@@ -325,7 +326,8 @@
       { nombre: "Mestizas", precio: 55, precio1pza: 20 },
       { nombre: "Alambre", precio: 55, precio1pza: 20 },
       { nombre: "Arrachera", precio: 60, precio1pza: 22 },
-      { nombre: "Arracheña", precio: 40, precio1pza: 20 }
+      // En la página de clientes la arracheña ya sale en Gringas, aquí saldría repetida
+      { nombre: "Arracheña", precio: 40, precio1pza: 20, soloCaja: true }
     ]
   },
 
@@ -338,7 +340,7 @@
       { nombre: "Papas a la Francesa", precio: 40 },
       { nombre: "Nachos", precio: 42, nachos: true },
       { nombre: "Maruchan", precio: 25, maruchan: true },
-      { nombre: "Paletas", precio: 20, paletas: true, ocultarPrecio: true }
+      { nombre: "Paletas", precio: 20, paletas: true, soloCaja: true }
     ]
   },
 
