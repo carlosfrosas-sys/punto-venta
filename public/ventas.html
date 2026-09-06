@@ -2215,7 +2215,11 @@ function hacerLogin() {
     html += '<div><div style="font-size:24px;font-weight:700;color:#ef4444;">$' + data.totalDebe.toLocaleString() + '</div>' +
             '<div style="font-size:11px;color:#999;">' + (trab ? "Deben" : "Por cobrar") + '</div></div>';
     if (trab) {
-      const neto = Math.round((data.totalSalarios - data.totalDebe) * 100) / 100;
+      if (data.totalFaltas > 0) {
+        html += '<div><div style="font-size:24px;font-weight:700;color:#ef4444;">−$' + data.totalFaltas.toLocaleString() + '</div>' +
+                '<div style="font-size:11px;color:#999;">Faltas</div></div>';
+      }
+      const neto = Math.round((data.totalSalarios - data.totalFaltas - data.totalDebe) * 100) / 100;
       html += '<div><div style="font-size:24px;font-weight:700;color:#22c55e;">$' + neto.toLocaleString() + '</div>' +
               '<div style="font-size:11px;color:#999;">Neto a pagar</div></div>';
     }
@@ -2279,6 +2283,10 @@ function hacerLogin() {
               '<div class="etiqueta">Por turno</div></div>';
       html += '<div class="ficha-dato"><div class="valor">$' + (f.salario || 0).toLocaleString() + '</div>' +
               '<div class="etiqueta">' + f.turnos.length + ' turno' + (f.turnos.length === 1 ? '' : 's') + ' semana</div></div>';
+      if (f.faltas && f.faltas.length > 0) {
+        html += '<div class="ficha-dato"><div class="valor" style="color:#ef4444;">−$' + f.descuentoFaltas.toLocaleString() + '</div>' +
+                '<div class="etiqueta">' + f.faltas.length + ' falta' + (f.faltas.length === 1 ? '' : 's') + '</div></div>';
+      }
     }
 
     html += '<div class="ficha-dato"><div class="valor" style="color:' + (f.debe > 0 ? "#ef4444" : "#999") + ';">$' + f.debe.toLocaleString() + '</div>' +
@@ -2312,10 +2320,14 @@ function hacerLogin() {
   // Se marca el turno y el salario se recalcula solo.
   function pintarTurnos(f) {
     const marcados = new Set(f.turnos || []);
+    const faltas = new Set((f.faltas || []).map(x => x.turno));
     const maxTurnos = Math.max(...diasTurno.map(d => d.turnos));
 
     let html = '<div style="border-top:1px solid #eee;margin-top:10px;padding-top:10px;">';
-    html += '<div style="font-size:12px;color:#999;margin-bottom:8px;">Turnos que cubre. El salario es el pago por turno por los turnos marcados.</div>';
+    html += '<div style="font-size:12px;color:#999;margin-bottom:8px;">' +
+            'Toca una casilla para asignar el turno (<span style="color:#22c55e;font-weight:700;">&#10003;</span>), ' +
+            'otra vez si faltó ese día (<span style="color:#ef4444;font-weight:700;">&#10007;</span>) ' +
+            'y otra para dejarla libre. Las faltas se descuentan del salario.</div>';
     html += '<div style="display:inline-grid;grid-template-columns:auto repeat(' + diasTurno.length + ',minmax(44px,1fr));gap:4px;align-items:center;">';
 
     html += '<div></div>';
@@ -2331,12 +2343,16 @@ function hacerLogin() {
           return;
         }
         const clave = d.clave + "-" + t;
+        const falto = faltas.has(clave);
         const on = marcados.has(clave);
-        html += '<button onclick="alternarTurno(' + f.id + ',\'' + clave + '\')" ' +
-                'style="width:100%;min-height:34px;border-radius:7px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700;' +
-                'border:1px solid ' + (on ? "#22c55e" : "#e2e8f0") + ';' +
-                'background:' + (on ? "#22c55e" : "#fff") + ';color:' + (on ? "#fff" : "#cbd5e1") + ';">' +
-                (on ? "&#10003;" : "") + '</button>';
+        const color = falto ? "#ef4444" : (on ? "#22c55e" : "#e2e8f0");
+        const marca = falto ? "&#10007;" : (on ? "&#10003;" : "");
+        const titulo = falto ? "Faltó" : (on ? "Cubre este turno" : "No lo cubre");
+        html += '<button title="' + titulo + '" onclick="alternarTurno(' + f.id + ',\'' + clave + '\')" ' +
+                'style="width:100%;min-height:34px;border-radius:7px;cursor:pointer;font-family:inherit;font-size:14px;font-weight:700;' +
+                'border:1px solid ' + color + ';' +
+                'background:' + (on || falto ? color : "#fff") + ';color:' + (on || falto ? "#fff" : "#cbd5e1") + ';">' +
+                marca + '</button>';
       });
     }
 
@@ -2349,10 +2365,37 @@ function hacerLogin() {
               'onclick="llenarTurnos(' + f.id + ',' + t + ')">Todo el turno ' + t + '</button>';
     }
     html += '<button class="btn-mini" style="background:#e2e8f0;color:#475569;" onclick="llenarTurnos(' + f.id + ',0)">Ninguno</button>';
+    if (faltas.size > 0) {
+      html += '<button class="btn-mini" style="background:#fee2e2;color:#b91c1c;" onclick="limpiarFaltas(' + f.id + ')">' +
+              'Borrar faltas (' + faltas.size + ')</button>';
+    }
     html += '</div>';
+
+    // Cuándo se marcó cada falta, para no pelearse con el trabajador
+    if (f.faltas && f.faltas.length > 0) {
+      html += '<div style="font-size:11px;color:#999;margin-top:8px;">Faltas marcadas: ' +
+              f.faltas.map(x => nombreTurno(x.turno) + " (" + x.fecha + ")").join(" &middot; ") + '</div>';
+    }
 
     html += '</div>';
     return html;
+  }
+
+  function nombreTurno(clave) {
+    const partes = String(clave).split("-");
+    const dia = diasTurno.find(d => d.clave === partes[0]);
+    return (dia ? dia.nombre : partes[0]) + " T" + partes[1];
+  }
+
+  function limpiarFaltas(id) {
+    fetch("/" + cuentaActual + "/" + id, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ faltas: [] })
+    })
+      .then(res => res.json())
+      .then(data => { if (data.error) alert(data.error); cargarCuenta(); })
+      .catch(() => { alert("No se pudo guardar"); cargarCuenta(); });
   }
 
   function llenarTurnos(id, turno) {
@@ -2457,17 +2500,27 @@ function hacerLogin() {
       .catch(() => { alert("No se pudo guardar"); cargarCuenta(); });
   }
 
+  // Cada toque avanza un estado: libre -> lo cubre -> faltó -> libre
   function alternarTurno(id, clave) {
     const ficha = fichasCargadas.find(f => f.id === id);
     if (!ficha) return;
 
     const turnos = new Set(ficha.turnos || []);
-    if (turnos.has(clave)) turnos.delete(clave); else turnos.add(clave);
+    const faltas = new Set((ficha.faltas || []).map(x => x.turno));
+
+    if (!turnos.has(clave)) {
+      turnos.add(clave);
+    } else if (!faltas.has(clave)) {
+      faltas.add(clave);
+    } else {
+      turnos.delete(clave);
+      faltas.delete(clave);
+    }
 
     fetch("/" + cuentaActual + "/" + id, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ turnos: [...turnos] })
+      body: JSON.stringify({ turnos: [...turnos], faltas: [...faltas] })
     })
       .then(res => res.json())
       .then(data => {

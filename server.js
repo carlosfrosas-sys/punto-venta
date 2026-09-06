@@ -1167,6 +1167,19 @@ function turnosLimpios(valor) {
   return [...new Set(valor.filter(t => TURNOS_VALIDOS.has(t)))];
 }
 
+// Las faltas guardan cuándo se marcaron. Al volver a mandar la lista se
+// conserva la fecha de las que ya estaban y solo se sella la nueva.
+function faltasLimpias(nuevas, previas) {
+  const antes = new Map((previas || []).map(f => [f.turno, f]));
+  const ahora = fechaMXAhora();
+
+  return turnosLimpios(nuevas).map(turno => antes.get(turno) || {
+    turno,
+    fecha: ahora.toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" }),
+    hora: ahora.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })
+  });
+}
+
 function rutaBackupCuenta(tipo) {
   return path.join(BACKUP_DIR, CONFIG_CUENTAS[tipo].backup);
 }
@@ -1206,6 +1219,7 @@ function normalizarFicha(tipo, ficha) {
   if (CONFIG_CUENTAS[tipo].salario) {
     if (ficha.pagoTurno === undefined) ficha.pagoTurno = 0;
     if (!Array.isArray(ficha.turnos)) ficha.turnos = [];
+    if (!Array.isArray(ficha.faltas)) ficha.faltas = [];
     delete ficha.salario;
   }
 
@@ -1227,9 +1241,16 @@ function fichaConSaldo(tipo, ficha) {
     // El salario no se guarda: se calcula, así no puede quedar peleado con
     // los turnos que cubre
     const turnos = turnosLimpios(ficha.turnos);
+    const pago = ficha.pagoTurno || 0;
+
+    // Una falta en un turno que ya no cubre no se cobra
+    const faltas = (ficha.faltas || []).filter(f => turnos.includes(f.turno));
+
     salida.turnos = turnos;
-    salida.salario = Math.round((ficha.pagoTurno || 0) * turnos.length * 100) / 100;
-    salida.neto = Math.round((salida.salario - debe) * 100) / 100;
+    salida.faltas = faltas;
+    salida.salario = Math.round(pago * turnos.length * 100) / 100;
+    salida.descuentoFaltas = Math.round(pago * faltas.length * 100) / 100;
+    salida.neto = Math.round((salida.salario - salida.descuentoFaltas - debe) * 100) / 100;
   }
 
   return salida;
@@ -1261,6 +1282,9 @@ function registrarRutasCuenta(tipo) {
       totalDebe: Math.round(lista.reduce((a, f) => a + f.debe, 0) * 100) / 100,
       totalSalarios: conSalario
         ? Math.round(lista.reduce((a, f) => a + (f.salario || 0), 0) * 100) / 100
+        : 0,
+      totalFaltas: conSalario
+        ? Math.round(lista.reduce((a, f) => a + (f.descuentoFaltas || 0), 0) * 100) / 100
         : 0
     });
   });
@@ -1284,6 +1308,7 @@ function registrarRutasCuenta(tipo) {
       }
       ficha.pagoTurno = pago || 0;
       ficha.turnos = turnosLimpios(req.body.turnos);
+      ficha.faltas = [];
     } else {
       ficha.telefono = String(req.body.telefono || "").replace(/\D/g, "").slice(0, 10);
     }
@@ -1311,6 +1336,9 @@ function registrarRutasCuenta(tipo) {
         ficha.pagoTurno = pago;
       }
       if (req.body.turnos !== undefined) ficha.turnos = turnosLimpios(req.body.turnos);
+      if (req.body.faltas !== undefined) ficha.faltas = faltasLimpias(req.body.faltas, ficha.faltas);
+      // Si se le quitó un turno, su falta ya no tiene sentido
+      ficha.faltas = (ficha.faltas || []).filter(f => (ficha.turnos || []).includes(f.turno));
     } else if (req.body.telefono !== undefined) {
       ficha.telefono = String(req.body.telefono).replace(/\D/g, "").slice(0, 10);
     }
