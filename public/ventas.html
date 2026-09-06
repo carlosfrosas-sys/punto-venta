@@ -2235,7 +2235,7 @@ function hacerLogin() {
       html += '<div style="font-size:12px;color:' + (modoHorario ? "#1e40af" : "#666") + ';">' +
               (modoHorario
                 ? "Estás armando el horario: cada casilla que toques le asigna o le quita ese turno."
-                : "Toca una casilla verde si esa persona faltó ese turno. Las faltas se descuentan del salario.") +
+                : "Casilla vacía la asigna (✓); tocar una verde marca que faltó (✗) y se le descuenta. Para quitarle un turno, entra a editar horarios.") +
               '</div>';
       html += '<button class="btn-mini" style="background:' + (modoHorario ? "#3b82f6" : "#64748b") + ';" ' +
               'onclick="cambiarModoHorario()">' + (modoHorario ? "Listo" : "Editar horarios") + '</button>';
@@ -2360,19 +2360,15 @@ function hacerLogin() {
         const falto = faltas.has(clave);
         const on = marcados.has(clave);
 
-        // Fuera del modo horario solo se tocan los turnos que sí cubre:
-        // así un clic de más no le borra el turno sin querer
-        const tocable = modoHorario || on;
         const color = falto ? "#ef4444" : (on ? "#22c55e" : "#e2e8f0");
         const marca = falto ? "&#10007;" : (on ? "&#10003;" : "");
         const titulo = modoHorario
           ? (on ? "Quitarle este turno" : "Asignarle este turno")
-          : (falto ? "Faltó, toca para quitar la falta" : (on ? "Toca si faltó" : "No cubre este turno"));
+          : (falto ? "Faltó, toca para quitar la falta" : (on ? "Toca si faltó" : "Asignarle este turno"));
 
-        html += '<button title="' + titulo + '"' + (tocable ? '' : ' disabled') +
+        html += '<button title="' + titulo + '"' +
                 ' onclick="alternarTurno(' + f.id + ',\'' + clave + '\')" ' +
-                'style="width:100%;min-height:32px;border-radius:6px;font-family:inherit;font-size:14px;font-weight:700;' +
-                'cursor:' + (tocable ? "pointer" : "default") + ';' +
+                'style="width:100%;min-height:32px;border-radius:6px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;' +
                 'border:1px solid ' + color + ';' +
                 'background:' + (on || falto ? color : "#fff") + ';color:' + (on || falto ? "#fff" : "#cbd5e1") + ';">' +
                 marca + '</button>';
@@ -2540,9 +2536,14 @@ function hacerLogin() {
     if (modoHorario) {
       if (turnos.has(clave)) { turnos.delete(clave); faltas.delete(clave); }
       else turnos.add(clave);
+    } else if (!turnos.has(clave)) {
+      // Casilla vacía: se le asigna el turno. Quitarlo es cosa del modo
+      // horario, así un clic de más nunca le borra un turno a nadie.
+      turnos.add(clave);
+    } else if (faltas.has(clave)) {
+      faltas.delete(clave);
     } else {
-      if (!turnos.has(clave)) return;
-      if (faltas.has(clave)) faltas.delete(clave); else faltas.add(clave);
+      faltas.add(clave);
     }
 
     fetch("/" + cuentaActual + "/" + id, {
