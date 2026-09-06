@@ -2259,6 +2259,18 @@ function hacerLogin() {
       html += '<input class="campo chico" style="width:100%;" placeholder="Teléfono" value="' + escapar(f.telefono || "") + '" ' +
               'onchange="guardarCampo(' + f.id + ',\'telefono\',this.value)">';
     }
+
+    // Cuándo se le cargó por última vez, sin tener que abrir los movimientos
+    const ultimo = f.movimientos[f.movimientos.length - 1];
+    if (ultimo) {
+      const cargo = ultimo.tipo !== "abono";
+      html += '<div style="font-size:11px;color:#999;padding:0 6px;">' +
+              (cargo ? "Último cargo" : "Último abono") + ': ' +
+              ultimo.fecha + ' &middot; ' + ultimo.hora +
+              ' <span style="color:' + (cargo ? "#ef4444" : "#22c55e") + ';font-weight:700;">' +
+              (cargo ? "+" : "−") + "$" + ultimo.monto.toLocaleString() + '</span></div>';
+    }
+
     html += '</div>';
 
     if (trab) {
