@@ -2169,6 +2169,9 @@ function hacerLogin() {
   // escrito en dos lados
   let diasTurno = [];
   let fichasCargadas = [];
+  // El horario se arma una vez; el día a día es marcar faltas. Por eso son
+  // dos modos: si no, un clic de más borra el turno de alguien.
+  let modoHorario = false;
 
   function esTrabajadores() { return cuentaActual === "trabajadores"; }
 
@@ -2224,6 +2227,20 @@ function hacerLogin() {
               '<div style="font-size:11px;color:#999;">Neto a pagar</div></div>';
     }
     html += '</div>';
+
+    if (trab) {
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;' +
+              'background:' + (modoHorario ? "#eff6ff" : "#f8fafc") + ';border:1px solid ' + (modoHorario ? "#bfdbfe" : "#e2e8f0") +
+              ';border-radius:10px;padding:10px 14px;">';
+      html += '<div style="font-size:12px;color:' + (modoHorario ? "#1e40af" : "#666") + ';">' +
+              (modoHorario
+                ? "Estás armando el horario: cada casilla que toques le asigna o le quita ese turno."
+                : "Toca una casilla verde si esa persona faltó ese turno. Las faltas se descuentan del salario.") +
+              '</div>';
+      html += '<button class="btn-mini" style="background:' + (modoHorario ? "#3b82f6" : "#64748b") + ';" ' +
+              'onclick="cambiarModoHorario()">' + (modoHorario ? "Listo" : "Editar horarios") + '</button>';
+      html += '</div>';
+    }
 
     // Alta
     html += '<div class="ficha" style="background:#f8fafc;border-color:#e2e8f0;">';
@@ -2298,7 +2315,7 @@ function hacerLogin() {
     }
 
     html += '<button class="btn-mini" style="background:#64748b;" onclick="alternarFicha(' + f.id + ')">' +
-            (abierta ? "Cerrar" : (trab ? "Turnos y cuenta" : "Movimientos (" + f.movimientos.length + ")")) + '</button>';
+            (abierta ? "Cerrar" : "Movimientos (" + f.movimientos.length + ")") + '</button>';
 
     if (!trab && f.telefono && /^\d{10}$/.test(f.telefono)) {
       const msj = encodeURIComponent("Hola " + f.nombre + ", te escribimos de La Cabaña. Nos quedó pendiente tu cuenta de $" + f.debe + ". ¿Cuándo te queda pasar a liquidarla?");
@@ -2308,10 +2325,11 @@ function hacerLogin() {
     html += '<button class="btn-eliminar" onclick="borrarFicha(' + f.id + ')">&#10005;</button>';
     html += '</div>';
 
-    if (abierta) {
-      if (trab) html += pintarTurnos(f);
-      html += pintarMovimientos(f);
-    }
+    // La rejilla va siempre a la vista: marcar una falta es lo que se hace
+    // a diario, no algo que valga la pena esconder tras un botón
+    if (trab) html += pintarTurnos(f);
+    if (abierta) html += pintarMovimientos(f);
+
     html += '</div>';
     return html;
   }
@@ -2323,12 +2341,8 @@ function hacerLogin() {
     const faltas = new Set((f.faltas || []).map(x => x.turno));
     const maxTurnos = Math.max(...diasTurno.map(d => d.turnos));
 
-    let html = '<div style="border-top:1px solid #eee;margin-top:10px;padding-top:10px;">';
-    html += '<div style="font-size:12px;color:#999;margin-bottom:8px;">' +
-            'Toca una casilla para asignar el turno (<span style="color:#22c55e;font-weight:700;">&#10003;</span>), ' +
-            'otra vez si faltó ese día (<span style="color:#ef4444;font-weight:700;">&#10007;</span>) ' +
-            'y otra para dejarla libre. Las faltas se descuentan del salario.</div>';
-    html += '<div style="display:inline-grid;grid-template-columns:auto repeat(' + diasTurno.length + ',minmax(44px,1fr));gap:4px;align-items:center;">';
+    let html = '<div style="border-top:1px solid #f1f5f9;margin-top:8px;padding-top:8px;">';
+    html += '<div style="display:inline-grid;grid-template-columns:auto repeat(' + diasTurno.length + ',minmax(40px,1fr));gap:3px;align-items:center;">';
 
     html += '<div></div>';
     diasTurno.forEach(d => {
@@ -2345,11 +2359,20 @@ function hacerLogin() {
         const clave = d.clave + "-" + t;
         const falto = faltas.has(clave);
         const on = marcados.has(clave);
+
+        // Fuera del modo horario solo se tocan los turnos que sí cubre:
+        // así un clic de más no le borra el turno sin querer
+        const tocable = modoHorario || on;
         const color = falto ? "#ef4444" : (on ? "#22c55e" : "#e2e8f0");
         const marca = falto ? "&#10007;" : (on ? "&#10003;" : "");
-        const titulo = falto ? "Faltó" : (on ? "Cubre este turno" : "No lo cubre");
-        html += '<button title="' + titulo + '" onclick="alternarTurno(' + f.id + ',\'' + clave + '\')" ' +
-                'style="width:100%;min-height:34px;border-radius:7px;cursor:pointer;font-family:inherit;font-size:14px;font-weight:700;' +
+        const titulo = modoHorario
+          ? (on ? "Quitarle este turno" : "Asignarle este turno")
+          : (falto ? "Faltó, toca para quitar la falta" : (on ? "Toca si faltó" : "No cubre este turno"));
+
+        html += '<button title="' + titulo + '"' + (tocable ? '' : ' disabled') +
+                ' onclick="alternarTurno(' + f.id + ',\'' + clave + '\')" ' +
+                'style="width:100%;min-height:32px;border-radius:6px;font-family:inherit;font-size:14px;font-weight:700;' +
+                'cursor:' + (tocable ? "pointer" : "default") + ';' +
                 'border:1px solid ' + color + ';' +
                 'background:' + (on || falto ? color : "#fff") + ';color:' + (on || falto ? "#fff" : "#cbd5e1") + ';">' +
                 marca + '</button>';
@@ -2358,27 +2381,32 @@ function hacerLogin() {
 
     html += '</div>';
 
-    // Atajos: casi siempre alguien cubre el mismo turno toda la semana
-    html += '<div class="ficha-fila" style="margin-top:10px;">';
-    for (let t = 1; t <= maxTurnos; t++) {
-      html += '<button class="btn-mini" style="background:#e2e8f0;color:#475569;" ' +
-              'onclick="llenarTurnos(' + f.id + ',' + t + ')">Todo el turno ' + t + '</button>';
+    // Los atajos del horario solo estorban cuando lo que se quiere es marcar faltas
+    if (modoHorario) {
+      html += '<div class="ficha-fila" style="margin-top:8px;">';
+      for (let t = 1; t <= maxTurnos; t++) {
+        html += '<button class="btn-mini" style="background:#e2e8f0;color:#475569;" ' +
+                'onclick="llenarTurnos(' + f.id + ',' + t + ')">Todo el turno ' + t + '</button>';
+      }
+      html += '<button class="btn-mini" style="background:#e2e8f0;color:#475569;" onclick="llenarTurnos(' + f.id + ',0)">Ninguno</button>';
+      html += '</div>';
     }
-    html += '<button class="btn-mini" style="background:#e2e8f0;color:#475569;" onclick="llenarTurnos(' + f.id + ',0)">Ninguno</button>';
-    if (faltas.size > 0) {
-      html += '<button class="btn-mini" style="background:#fee2e2;color:#b91c1c;" onclick="limpiarFaltas(' + f.id + ')">' +
-              'Borrar faltas (' + faltas.size + ')</button>';
-    }
-    html += '</div>';
 
     // Cuándo se marcó cada falta, para no pelearse con el trabajador
     if (f.faltas && f.faltas.length > 0) {
-      html += '<div style="font-size:11px;color:#999;margin-top:8px;">Faltas marcadas: ' +
-              f.faltas.map(x => nombreTurno(x.turno) + " (" + x.fecha + ")").join(" &middot; ") + '</div>';
+      html += '<div style="font-size:11px;color:#999;margin-top:6px;">Faltó: ' +
+              f.faltas.map(x => nombreTurno(x.turno) + " (" + x.fecha + ")").join(" &middot; ") +
+              ' <button class="btn-mini" style="background:#fee2e2;color:#b91c1c;padding:3px 8px;font-size:11px;" ' +
+              'onclick="limpiarFaltas(' + f.id + ')">Borrar faltas</button></div>';
     }
 
     html += '</div>';
     return html;
+  }
+
+  function cambiarModoHorario() {
+    modoHorario = !modoHorario;
+    cargarCuenta();
   }
 
   function nombreTurno(clave) {
@@ -2500,7 +2528,8 @@ function hacerLogin() {
       .catch(() => { alert("No se pudo guardar"); cargarCuenta(); });
   }
 
-  // Cada toque avanza un estado: libre -> lo cubre -> faltó -> libre
+  // Normal: el clic solo pone o quita el tache de falta.
+  // En modo horario: el clic asigna o quita el turno.
   function alternarTurno(id, clave) {
     const ficha = fichasCargadas.find(f => f.id === id);
     if (!ficha) return;
@@ -2508,13 +2537,12 @@ function hacerLogin() {
     const turnos = new Set(ficha.turnos || []);
     const faltas = new Set((ficha.faltas || []).map(x => x.turno));
 
-    if (!turnos.has(clave)) {
-      turnos.add(clave);
-    } else if (!faltas.has(clave)) {
-      faltas.add(clave);
+    if (modoHorario) {
+      if (turnos.has(clave)) { turnos.delete(clave); faltas.delete(clave); }
+      else turnos.add(clave);
     } else {
-      turnos.delete(clave);
-      faltas.delete(clave);
+      if (!turnos.has(clave)) return;
+      if (faltas.has(clave)) faltas.delete(clave); else faltas.add(clave);
     }
 
     fetch("/" + cuentaActual + "/" + id, {
