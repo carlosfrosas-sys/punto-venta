@@ -380,6 +380,76 @@
       opacity: 0.65;
     }
 
+    /* Trabajadores y clientes que deben */
+    .ficha {
+      background: #fff;
+      border: 1px solid #eee;
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+    }
+
+    .ficha-fila {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* Se ven como texto hasta que se tocan, para poder corregir un nombre
+       o un salario sin entrar a otra pantalla */
+    .campo {
+      border: 1px solid transparent;
+      background: transparent;
+      border-radius: 6px;
+      padding: 4px 6px;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 700;
+      color: #1a1a1a;
+      min-width: 0;
+      min-height: auto;
+    }
+
+    .campo:hover { border-color: #e5e5e5; }
+    .campo:focus { border-color: #3b82f6; background: #fff; outline: none; }
+    .campo.chico { font-size: 12px; font-weight: 400; color: #999; }
+    .campo.monto { font-size: 14px; font-weight: 700; color: #3b82f6; width: 90px; text-align: right; }
+
+    .ficha-dato {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .ficha-dato .valor { font-size: 15px; font-weight: 700; }
+    .ficha-dato .etiqueta { font-size: 10px; color: #999; }
+
+    .btn-mini {
+      border: none;
+      border-radius: 8px;
+      padding: 7px 12px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      min-height: auto;
+      color: #fff;
+    }
+
+    .mov {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      background: #fafafa;
+      border-radius: 8px;
+      padding: 7px 11px;
+      margin-bottom: 5px;
+      font-size: 13px;
+    }
+
     .sin-datos {
       text-align: center;
       color: #ccc;
@@ -679,6 +749,8 @@ function hacerLogin() {
       <button onclick="navEliminados(this)">Eliminados</button>
       <button onclick="navReferidos(this)">Referidos</button>
       <button onclick="navClientes(this)">Clientes</button>
+      <button onclick="navCuenta(this,'trabajadores')">Trabajadores</button>
+      <button onclick="navCuenta(this,'deudores')">Me Deben</button>
       <button onclick="navQR(this)">QR</button>
       <button onclick="navPrecios(this)">Precios</button>
     </div>
@@ -2085,6 +2157,263 @@ function hacerLogin() {
       })
       .catch(() => {
         contenedor.innerHTML = '<div class="sin-datos">No se pudieron cargar los clientes</div>';
+      });
+  }
+
+  // ===== TRABAJADORES Y CLIENTES QUE DEBEN =====
+  // Las dos pestañas son la misma pantalla: una ficha con movimientos que
+  // suman (cargo) o restan (abono). Los trabajadores además llevan salario.
+  let cuentaActual = "trabajadores";
+  const fichasAbiertas = new Set();
+
+  function esTrabajadores() { return cuentaActual === "trabajadores"; }
+
+  function navCuenta(btn, tipo) {
+    setActiveNav(btn);
+    tabActual = tipo;
+    cuentaActual = tipo;
+    limpiarContenido();
+    mostrarGraficas(false);
+    mostrarMetricas(false);
+    mostrarAcciones(false);
+    setTitulo(
+      tipo === "trabajadores" ? "Trabajadores" : "Me Deben",
+      tipo === "trabajadores" ? "Salarios, préstamos y descuentos" : "Clientes con cuenta pendiente"
+    );
+    cargarCuenta();
+  }
+
+  function cargarCuenta() {
+    contenedor.innerHTML = '<div class="sin-datos">Cargando...</div>';
+    fetch("/" + cuentaActual)
+      .then(res => res.json())
+      .then(pintarCuenta)
+      .catch(() => {
+        contenedor.innerHTML = '<div class="sin-datos">No se pudo cargar</div>';
+      });
+  }
+
+  function pintarCuenta(data) {
+    const lista = data.lista || [];
+    const trab = esTrabajadores();
+    let html = "";
+
+    // Resumen
+    html += '<div style="background:#f8f8f8;border-radius:12px;padding:16px;margin-bottom:12px;display:flex;justify-content:space-around;text-align:center;flex-wrap:wrap;gap:12px;">';
+    html += '<div><div style="font-size:24px;font-weight:700;color:#333;">' + lista.length + '</div>' +
+            '<div style="font-size:11px;color:#999;">' + (trab ? "Trabajadores" : "Clientes") + '</div></div>';
+    if (trab) {
+      html += '<div><div style="font-size:24px;font-weight:700;color:#3b82f6;">$' + data.totalSalarios.toLocaleString() + '</div>' +
+              '<div style="font-size:11px;color:#999;">En salarios</div></div>';
+    }
+    html += '<div><div style="font-size:24px;font-weight:700;color:#ef4444;">$' + data.totalDebe.toLocaleString() + '</div>' +
+            '<div style="font-size:11px;color:#999;">' + (trab ? "Deben" : "Por cobrar") + '</div></div>';
+    if (trab) {
+      const neto = Math.round((data.totalSalarios - data.totalDebe) * 100) / 100;
+      html += '<div><div style="font-size:24px;font-weight:700;color:#22c55e;">$' + neto.toLocaleString() + '</div>' +
+              '<div style="font-size:11px;color:#999;">Neto a pagar</div></div>';
+    }
+    html += '</div>';
+
+    // Alta
+    html += '<div class="ficha" style="background:#f8fafc;border-color:#e2e8f0;">';
+    html += '<div class="ficha-fila">';
+    html += '<input id="nuevoNombre" placeholder="Nombre" style="flex:1;min-width:140px;padding:9px 11px;font-size:14px;border:1px solid #ddd;border-radius:8px;font-family:inherit;">';
+    if (trab) {
+      html += '<input id="nuevoPuesto" placeholder="Puesto" style="width:120px;padding:9px 11px;font-size:14px;border:1px solid #ddd;border-radius:8px;font-family:inherit;">';
+      html += '<input id="nuevoSalario" type="number" inputmode="decimal" placeholder="Salario" style="width:110px;padding:9px 11px;font-size:14px;border:1px solid #ddd;border-radius:8px;font-family:inherit;">';
+    } else {
+      html += '<input id="nuevoTelefono" type="tel" inputmode="numeric" placeholder="Teléfono (10 dígitos)" style="width:170px;padding:9px 11px;font-size:14px;border:1px solid #ddd;border-radius:8px;font-family:inherit;">';
+    }
+    html += '<button class="btn-mini" style="background:#22c55e;padding:9px 16px;font-size:13px;" onclick="agregarFicha()">Agregar</button>';
+    html += '</div></div>';
+
+    if (lista.length === 0) {
+      html += '<div class="sin-datos">' + (trab ? "Todavía no hay trabajadores" : "Nadie te debe ahorita") + '</div>';
+      contenedor.innerHTML = html;
+      return;
+    }
+
+    lista.forEach(f => { html += pintarFicha(f, trab); });
+    contenedor.innerHTML = html;
+  }
+
+  function pintarFicha(f, trab) {
+    const abierta = fichasAbiertas.has(f.id);
+    let html = '<div class="ficha">';
+
+    html += '<div class="ficha-fila">';
+    html += '<div style="flex:1;min-width:160px;">';
+    html += '<input class="campo" style="width:100%;" value="' + escapar(f.nombre) + '" ' +
+            'onchange="guardarCampo(' + f.id + ',\'nombre\',this.value)">';
+    if (trab) {
+      html += '<input class="campo chico" style="width:100%;" placeholder="Puesto" value="' + escapar(f.puesto || "") + '" ' +
+              'onchange="guardarCampo(' + f.id + ',\'puesto\',this.value)">';
+    } else {
+      html += '<input class="campo chico" style="width:100%;" placeholder="Teléfono" value="' + escapar(f.telefono || "") + '" ' +
+              'onchange="guardarCampo(' + f.id + ',\'telefono\',this.value)">';
+    }
+    html += '</div>';
+
+    if (trab) {
+      html += '<div class="ficha-dato"><input class="campo monto" type="number" inputmode="decimal" value="' + (f.salario || 0) + '" ' +
+              'onchange="guardarCampo(' + f.id + ',\'salario\',this.value)">' +
+              '<div class="etiqueta">Salario</div></div>';
+    }
+
+    html += '<div class="ficha-dato"><div class="valor" style="color:' + (f.debe > 0 ? "#ef4444" : "#999") + ';">$' + f.debe.toLocaleString() + '</div>' +
+            '<div class="etiqueta">Debe</div></div>';
+
+    if (trab) {
+      html += '<div class="ficha-dato"><div class="valor" style="color:#22c55e;">$' + (f.neto || 0).toLocaleString() + '</div>' +
+              '<div class="etiqueta">Neto</div></div>';
+    }
+
+    html += '<button class="btn-mini" style="background:#64748b;" onclick="alternarFicha(' + f.id + ')">' +
+            (abierta ? "Cerrar" : "Movimientos (" + f.movimientos.length + ")") + '</button>';
+
+    if (!trab && f.telefono && /^\d{10}$/.test(f.telefono)) {
+      const msj = encodeURIComponent("Hola " + f.nombre + ", te escribimos de La Cabaña. Nos quedó pendiente tu cuenta de $" + f.debe + ". ¿Cuándo te queda pasar a liquidarla?");
+      html += '<a href="https://wa.me/52' + f.telefono + '?text=' + msj + '" target="_blank" class="btn-mini" style="background:#25d366;text-decoration:none;display:inline-block;">Cobrar</a>';
+    }
+
+    html += '<button class="btn-eliminar" onclick="borrarFicha(' + f.id + ')">&#10005;</button>';
+    html += '</div>';
+
+    if (abierta) html += pintarMovimientos(f);
+    html += '</div>';
+    return html;
+  }
+
+  function pintarMovimientos(f) {
+    let html = '<div style="border-top:1px solid #eee;margin-top:10px;padding-top:10px;">';
+
+    html += '<div class="ficha-fila" style="margin-bottom:10px;">';
+    html += '<input id="conc-' + f.id + '" placeholder="Concepto" style="flex:1;min-width:130px;padding:8px 10px;font-size:13px;border:1px solid #ddd;border-radius:8px;font-family:inherit;">';
+    html += '<input id="monto-' + f.id + '" type="number" inputmode="decimal" placeholder="Monto" style="width:100px;padding:8px 10px;font-size:13px;border:1px solid #ddd;border-radius:8px;font-family:inherit;">';
+    html += '<button class="btn-mini" style="background:#ef4444;" onclick="agregarMovimiento(' + f.id + ',\'cargo\')">+ Debe</button>';
+    html += '<button class="btn-mini" style="background:#22c55e;" onclick="agregarMovimiento(' + f.id + ',\'abono\')">- Abona</button>';
+    html += '</div>';
+
+    if (f.movimientos.length === 0) {
+      html += '<div style="font-size:13px;color:#999;">Sin movimientos</div></div>';
+      return html;
+    }
+
+    f.movimientos.slice().reverse().forEach(m => {
+      const cargo = m.tipo !== "abono";
+      html += '<div class="mov">';
+      html += '<div style="min-width:0;"><div style="font-weight:600;color:#333;">' + escapar(m.concepto) + '</div>';
+      html += '<div style="font-size:11px;color:#999;">' + m.fecha + ' &middot; ' + m.hora + '</div></div>';
+      html += '<div style="display:flex;align-items:center;gap:8px;">';
+      html += '<span style="font-weight:700;white-space:nowrap;color:' + (cargo ? "#ef4444" : "#22c55e") + ';">' +
+              (cargo ? "+" : "−") + "$" + m.monto.toLocaleString() + '</span>';
+      html += '<button class="btn-eliminar" onclick="borrarMovimiento(' + f.id + ',' + m.id + ')">&#10005;</button>';
+      html += '</div></div>';
+    });
+
+    html += '</div>';
+    return html;
+  }
+
+  function escapar(s) {
+    return String(s === undefined || s === null ? "" : s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+  }
+
+  function alternarFicha(id) {
+    if (fichasAbiertas.has(id)) fichasAbiertas.delete(id); else fichasAbiertas.add(id);
+    cargarCuenta();
+  }
+
+  function agregarFicha() {
+    const nombre = document.getElementById("nuevoNombre").value.trim();
+    if (!nombre) { alert("Escribe el nombre"); return; }
+
+    const cuerpo = { nombre };
+    if (esTrabajadores()) {
+      cuerpo.puesto = document.getElementById("nuevoPuesto").value.trim();
+      cuerpo.salario = parseFloat(document.getElementById("nuevoSalario").value) || 0;
+    } else {
+      cuerpo.telefono = document.getElementById("nuevoTelefono").value.trim();
+    }
+
+    fetch("/" + cuentaActual, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(cuerpo)
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) { alert(data.error); return; }
+        cargarCuenta();
+      })
+      .catch(() => alert("No se pudo guardar"));
+  }
+
+  function guardarCampo(id, campo, valor) {
+    const cuerpo = {};
+    cuerpo[campo] = campo === "salario" ? (parseFloat(valor) || 0) : valor;
+
+    fetch("/" + cuentaActual + "/" + id, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(cuerpo)
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) { alert(data.error); cargarCuenta(); return; }
+        // El salario cambia el neto, hay que repintar
+        if (campo === "salario") cargarCuenta();
+      })
+      .catch(() => { alert("No se pudo guardar"); cargarCuenta(); });
+  }
+
+  function agregarMovimiento(id, tipo) {
+    const concepto = document.getElementById("conc-" + id).value.trim();
+    const monto = parseFloat(document.getElementById("monto-" + id).value);
+    if (!monto || monto <= 0) { alert("Escribe el monto"); return; }
+
+    fetch("/" + cuentaActual + "/" + id + "/movimiento", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tipo, concepto, monto })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) { alert(data.error); return; }
+        cargarCuenta();
+      })
+      .catch(() => alert("No se pudo guardar"));
+  }
+
+  function borrarFicha(id) {
+    const pass = prompt("Ingresa la contrasena para eliminar:");
+    if (!pass) return;
+    fetch("/" + cuentaActual + "/" + id, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: pass })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) { alert(data.error); return; }
+        fichasAbiertas.delete(id);
+        cargarCuenta();
+      });
+  }
+
+  function borrarMovimiento(id, movId) {
+    const pass = prompt("Ingresa la contrasena para eliminar:");
+    if (!pass) return;
+    fetch("/" + cuentaActual + "/" + id + "/movimiento/" + movId, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: pass })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) { alert(data.error); return; }
+        cargarCuenta();
       });
   }
 

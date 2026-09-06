@@ -243,6 +243,16 @@ async function cargarPedidos() {
       usados.forEach(c => cuponesUsados.add(c.codigo));
       console.log("Cupones usados cargados:", cuponesUsados.size);
     } catch(e) {}
+    for (const tipo of ["trabajadores", "deudores"]) {
+      try {
+        const fichas = await db.collection(tipo).find().toArray();
+        fichas.forEach(f => { delete f._id; if (!Array.isArray(f.movimientos)) f.movimientos = []; });
+        if (fichas.length > 0) {
+          cuentas[tipo] = fichas;
+          contadorCuenta[tipo] = Math.max(...fichas.map(f => f.id)) + 1;
+        }
+      } catch(e) {}
+    }
     try {
       const dias = await db.collection("escaneos_qr").find().toArray();
       dias.forEach(d => { delete d._id; escaneos[d.fecha] = d; });
@@ -281,6 +291,18 @@ async function cargarPedidos() {
       escaneos = JSON.parse(fs.readFileSync(BACKUP_ESCANEOS_PATH, "utf8"));
     }
   } catch(e) {}
+  for (const tipo of ["trabajadores", "deudores"]) {
+    try {
+      const ruta = rutaBackupCuenta(tipo);
+      if (cuentas[tipo].length === 0 && fs.existsSync(ruta)) {
+        cuentas[tipo] = JSON.parse(fs.readFileSync(ruta, "utf8"));
+        cuentas[tipo].forEach(f => { if (!Array.isArray(f.movimientos)) f.movimientos = []; });
+        if (cuentas[tipo].length > 0) {
+          contadorCuenta[tipo] = Math.max(...cuentas[tipo].map(f => f.id)) + 1;
+        }
+      }
+    } catch(e) { console.error("Error cargando " + tipo + ":", e.message); }
+  }
   cargarPreciosBackup();
 }
 
@@ -1111,6 +1133,197 @@ app.get("/clientes-frecuentes", soloAdmin, (req, res) => {
 
   res.json({ clientes });
 });
+
+// ---- Cuentas: trabajadores y clientes que deben ----
+// Las dos listas llevan lo mismo: una ficha con movimientos que suman
+// (cargo: lo que debe) o restan (abono: lo que ya pagó o se le descontó).
+// Los trabajadores además guardan puesto y salario.
+const cuentas = { trabajadores: [], deudores: [] };
+const contadorCuenta = { trabajadores: 1, deudores: 1 };
+
+const CONFIG_CUENTAS = {
+  trabajadores: { backup: "trabajadores-backup.json", salario: true },
+  deudores:     { backup: "deudores-backup.json",     salario: false }
+};
+
+function rutaBackupCuenta(tipo) {
+  return path.join(BACKUP_DIR, CONFIG_CUENTAS[tipo].backup);
+}
+
+function guardarCuentaEnDisco(tipo) {
+  try {
+    if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR);
+    fs.writeFileSync(rutaBackupCuenta(tipo), JSON.stringify(cuentas[tipo], null, 2));
+  } catch (e) { console.error("Error guardando " + tipo + ":", e.message); }
+}
+
+async function guardarFicha(tipo, ficha) {
+  guardarCuentaEnDisco(tipo);
+  if (db) {
+    try {
+      // replaceOne y no $set: si se borra un movimiento, con $set el arreglo
+      // viejo se quedaría en la base
+      await db.collection(tipo).replaceOne({ id: ficha.id }, ficha, { upsert: true });
+    } catch (e) { console.error("Error guardando " + tipo + " en MongoDB:", e.message); }
+  }
+}
+
+async function borrarFicha(tipo, id) {
+  guardarCuentaEnDisco(tipo);
+  if (db) {
+    try { await db.collection(tipo).deleteOne({ id }); }
+    catch (e) { console.error("Error borrando " + tipo + " en MongoDB:", e.message); }
+  }
+}
+
+// Lo que debe: los cargos suman, los abonos restan
+function saldoCuenta(ficha) {
+  const saldo = (ficha.movimientos || [])
+    .reduce((acc, m) => acc + (m.tipo === "abono" ? -m.monto : m.monto), 0);
+  return Math.round(saldo * 100) / 100;
+}
+
+function fichaConSaldo(tipo, ficha) {
+  const debe = saldoCuenta(ficha);
+  const salida = { ...ficha, debe };
+  if (CONFIG_CUENTAS[tipo].salario) {
+    salida.neto = Math.round(((ficha.salario || 0) - debe) * 100) / 100;
+  }
+  return salida;
+}
+
+function textoLimpio(valor, max) {
+  return typeof valor === "string" ? valor.trim().slice(0, max) : "";
+}
+
+// Devuelve el monto redondeado a centavos, o null si no sirve
+function montoValido(valor, permitirCero) {
+  const n = Number(valor);
+  if (!isFinite(n) || n > 1000000) return null;
+  if (permitirCero ? n < 0 : n <= 0) return null;
+  return Math.round(n * 100) / 100;
+}
+
+function registrarRutasCuenta(tipo) {
+  const base = "/" + tipo;
+  const conSalario = CONFIG_CUENTAS[tipo].salario;
+
+  app.get(base, soloAdmin, (req, res) => {
+    const lista = cuentas[tipo].map(f => fichaConSaldo(tipo, f));
+    res.json({
+      lista,
+      totalDebe: Math.round(lista.reduce((a, f) => a + f.debe, 0) * 100) / 100,
+      totalSalarios: conSalario
+        ? Math.round(lista.reduce((a, f) => a + (f.salario || 0), 0) * 100) / 100
+        : 0
+    });
+  });
+
+  app.post(base, soloAdmin, async (req, res) => {
+    const nombre = textoLimpio(req.body && req.body.nombre, 60);
+    if (!nombre) return res.status(400).json({ error: "Falta el nombre" });
+
+    const ficha = {
+      id: contadorCuenta[tipo]++,
+      nombre,
+      movimientos: [],
+      creado: fechaHoy()
+    };
+
+    if (conSalario) {
+      ficha.puesto = textoLimpio(req.body.puesto, 40);
+      const salario = montoValido(req.body.salario, true);
+      if (req.body.salario !== undefined && salario === null) {
+        return res.status(400).json({ error: "Salario inválido" });
+      }
+      ficha.salario = salario || 0;
+    } else {
+      ficha.telefono = String(req.body.telefono || "").replace(/\D/g, "").slice(0, 10);
+    }
+
+    cuentas[tipo].push(ficha);
+    await guardarFicha(tipo, ficha);
+    res.json(fichaConSaldo(tipo, ficha));
+  });
+
+  app.put(base + "/:id", soloAdmin, async (req, res) => {
+    const ficha = cuentas[tipo].find(f => f.id === parseInt(req.params.id));
+    if (!ficha) return res.status(404).json({ error: "No encontrado" });
+
+    if (req.body.nombre !== undefined) {
+      const nombre = textoLimpio(req.body.nombre, 60);
+      if (!nombre) return res.status(400).json({ error: "Falta el nombre" });
+      ficha.nombre = nombre;
+    }
+
+    if (conSalario) {
+      if (req.body.puesto !== undefined) ficha.puesto = textoLimpio(req.body.puesto, 40);
+      if (req.body.salario !== undefined) {
+        const salario = montoValido(req.body.salario, true);
+        if (salario === null) return res.status(400).json({ error: "Salario inválido" });
+        ficha.salario = salario;
+      }
+    } else if (req.body.telefono !== undefined) {
+      ficha.telefono = String(req.body.telefono).replace(/\D/g, "").slice(0, 10);
+    }
+
+    await guardarFicha(tipo, ficha);
+    res.json(fichaConSaldo(tipo, ficha));
+  });
+
+  app.delete(base + "/:id", soloAdmin, async (req, res) => {
+    if (req.body.password !== PASS_ELIMINAR) {
+      return res.status(401).json({ error: "Contraseña incorrecta" });
+    }
+    const id = parseInt(req.params.id);
+    const idx = cuentas[tipo].findIndex(f => f.id === id);
+    if (idx === -1) return res.status(404).json({ error: "No encontrado" });
+
+    cuentas[tipo].splice(idx, 1);
+    await borrarFicha(tipo, id);
+    res.json({ ok: true });
+  });
+
+  app.post(base + "/:id/movimiento", soloAdmin, async (req, res) => {
+    const ficha = cuentas[tipo].find(f => f.id === parseInt(req.params.id));
+    if (!ficha) return res.status(404).json({ error: "No encontrado" });
+
+    const monto = montoValido(req.body && req.body.monto);
+    if (monto === null) return res.status(400).json({ error: "Monto inválido" });
+
+    const ahora = fechaMXAhora();
+    const movimiento = {
+      id: (ficha.movimientos.reduce((a, m) => Math.max(a, m.id), 0) || 0) + 1,
+      tipo: req.body.tipo === "abono" ? "abono" : "cargo",
+      concepto: textoLimpio(req.body.concepto, 80) || (req.body.tipo === "abono" ? "Abono" : "Cargo"),
+      monto,
+      fecha: ahora.toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" }),
+      hora: ahora.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })
+    };
+
+    ficha.movimientos.push(movimiento);
+    await guardarFicha(tipo, ficha);
+    res.json(fichaConSaldo(tipo, ficha));
+  });
+
+  app.delete(base + "/:id/movimiento/:movId", soloAdmin, async (req, res) => {
+    if (req.body.password !== PASS_ELIMINAR) {
+      return res.status(401).json({ error: "Contraseña incorrecta" });
+    }
+    const ficha = cuentas[tipo].find(f => f.id === parseInt(req.params.id));
+    if (!ficha) return res.status(404).json({ error: "No encontrado" });
+
+    const idx = ficha.movimientos.findIndex(m => m.id === parseInt(req.params.movId));
+    if (idx === -1) return res.status(404).json({ error: "Movimiento no encontrado" });
+
+    ficha.movimientos.splice(idx, 1);
+    await guardarFicha(tipo, ficha);
+    res.json(fichaConSaldo(tipo, ficha));
+  });
+}
+
+registrarRutasCuenta("trabajadores");
+registrarRutasCuenta("deudores");
 
 // ---- Historial de un cliente (se abre desde la lista de clientes) ----
 app.get("/cliente-historial/:telefono", soloAdmin, (req, res) => {
