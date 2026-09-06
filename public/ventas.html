@@ -2165,6 +2165,10 @@ function hacerLogin() {
   // suman (cargo) o restan (abono). Los trabajadores además llevan salario.
   let cuentaActual = "trabajadores";
   const fichasAbiertas = new Set();
+  // Los turnos de la semana los manda el servidor, para no tener el horario
+  // escrito en dos lados
+  let diasTurno = [];
+  let fichasCargadas = [];
 
   function esTrabajadores() { return cuentaActual === "trabajadores"; }
 
@@ -2196,6 +2200,8 @@ function hacerLogin() {
   function pintarCuenta(data) {
     const lista = data.lista || [];
     const trab = esTrabajadores();
+    if (data.dias) diasTurno = data.dias;
+    fichasCargadas = lista;
     let html = "";
 
     // Resumen
@@ -2221,7 +2227,7 @@ function hacerLogin() {
     html += '<input id="nuevoNombre" placeholder="Nombre" style="flex:1;min-width:140px;padding:9px 11px;font-size:14px;border:1px solid #ddd;border-radius:8px;font-family:inherit;">';
     if (trab) {
       html += '<input id="nuevoPuesto" placeholder="Puesto" style="width:120px;padding:9px 11px;font-size:14px;border:1px solid #ddd;border-radius:8px;font-family:inherit;">';
-      html += '<input id="nuevoSalario" type="number" inputmode="decimal" placeholder="Salario" style="width:110px;padding:9px 11px;font-size:14px;border:1px solid #ddd;border-radius:8px;font-family:inherit;">';
+      html += '<input id="nuevoPago" type="number" inputmode="decimal" placeholder="Pago x turno" style="width:130px;padding:9px 11px;font-size:14px;border:1px solid #ddd;border-radius:8px;font-family:inherit;">';
     } else {
       html += '<input id="nuevoTelefono" type="tel" inputmode="numeric" placeholder="Teléfono (10 dígitos)" style="width:170px;padding:9px 11px;font-size:14px;border:1px solid #ddd;border-radius:8px;font-family:inherit;">';
     }
@@ -2256,9 +2262,11 @@ function hacerLogin() {
     html += '</div>';
 
     if (trab) {
-      html += '<div class="ficha-dato"><input class="campo monto" type="number" inputmode="decimal" value="' + (f.salario || 0) + '" ' +
-              'onchange="guardarCampo(' + f.id + ',\'salario\',this.value)">' +
-              '<div class="etiqueta">Salario</div></div>';
+      html += '<div class="ficha-dato"><input class="campo monto" type="number" inputmode="decimal" value="' + (f.pagoTurno || 0) + '" ' +
+              'onchange="guardarCampo(' + f.id + ',\'pagoTurno\',this.value)">' +
+              '<div class="etiqueta">Por turno</div></div>';
+      html += '<div class="ficha-dato"><div class="valor">$' + (f.salario || 0).toLocaleString() + '</div>' +
+              '<div class="etiqueta">' + f.turnos.length + ' turno' + (f.turnos.length === 1 ? '' : 's') + ' semana</div></div>';
     }
 
     html += '<div class="ficha-dato"><div class="valor" style="color:' + (f.debe > 0 ? "#ef4444" : "#999") + ';">$' + f.debe.toLocaleString() + '</div>' +
@@ -2270,7 +2278,7 @@ function hacerLogin() {
     }
 
     html += '<button class="btn-mini" style="background:#64748b;" onclick="alternarFicha(' + f.id + ')">' +
-            (abierta ? "Cerrar" : "Movimientos (" + f.movimientos.length + ")") + '</button>';
+            (abierta ? "Cerrar" : (trab ? "Turnos y cuenta" : "Movimientos (" + f.movimientos.length + ")")) + '</button>';
 
     if (!trab && f.telefono && /^\d{10}$/.test(f.telefono)) {
       const msj = encodeURIComponent("Hola " + f.nombre + ", te escribimos de La Cabaña. Nos quedó pendiente tu cuenta de $" + f.debe + ". ¿Cuándo te queda pasar a liquidarla?");
@@ -2280,9 +2288,75 @@ function hacerLogin() {
     html += '<button class="btn-eliminar" onclick="borrarFicha(' + f.id + ')">&#10005;</button>';
     html += '</div>';
 
-    if (abierta) html += pintarMovimientos(f);
+    if (abierta) {
+      if (trab) html += pintarTurnos(f);
+      html += pintarMovimientos(f);
+    }
     html += '</div>';
     return html;
+  }
+
+  // Rejilla de la semana: de lunes a viernes dos turnos, el sábado uno.
+  // Se marca el turno y el salario se recalcula solo.
+  function pintarTurnos(f) {
+    const marcados = new Set(f.turnos || []);
+    const maxTurnos = Math.max(...diasTurno.map(d => d.turnos));
+
+    let html = '<div style="border-top:1px solid #eee;margin-top:10px;padding-top:10px;">';
+    html += '<div style="font-size:12px;color:#999;margin-bottom:8px;">Turnos que cubre. El salario es el pago por turno por los turnos marcados.</div>';
+    html += '<div style="display:inline-grid;grid-template-columns:auto repeat(' + diasTurno.length + ',minmax(44px,1fr));gap:4px;align-items:center;">';
+
+    html += '<div></div>';
+    diasTurno.forEach(d => {
+      html += '<div style="text-align:center;font-size:11px;font-weight:700;color:#666;">' + d.nombre + '</div>';
+    });
+
+    for (let t = 1; t <= maxTurnos; t++) {
+      html += '<div style="font-size:11px;color:#999;padding-right:6px;white-space:nowrap;">Turno ' + t + '</div>';
+      diasTurno.forEach(d => {
+        if (t > d.turnos) {
+          html += '<div style="text-align:center;color:#ddd;font-size:16px;">&mdash;</div>';
+          return;
+        }
+        const clave = d.clave + "-" + t;
+        const on = marcados.has(clave);
+        html += '<button onclick="alternarTurno(' + f.id + ',\'' + clave + '\')" ' +
+                'style="width:100%;min-height:34px;border-radius:7px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700;' +
+                'border:1px solid ' + (on ? "#22c55e" : "#e2e8f0") + ';' +
+                'background:' + (on ? "#22c55e" : "#fff") + ';color:' + (on ? "#fff" : "#cbd5e1") + ';">' +
+                (on ? "&#10003;" : "") + '</button>';
+      });
+    }
+
+    html += '</div>';
+
+    // Atajos: casi siempre alguien cubre el mismo turno toda la semana
+    html += '<div class="ficha-fila" style="margin-top:10px;">';
+    for (let t = 1; t <= maxTurnos; t++) {
+      html += '<button class="btn-mini" style="background:#e2e8f0;color:#475569;" ' +
+              'onclick="llenarTurnos(' + f.id + ',' + t + ')">Todo el turno ' + t + '</button>';
+    }
+    html += '<button class="btn-mini" style="background:#e2e8f0;color:#475569;" onclick="llenarTurnos(' + f.id + ',0)">Ninguno</button>';
+    html += '</div>';
+
+    html += '</div>';
+    return html;
+  }
+
+  function llenarTurnos(id, turno) {
+    // turno 0 limpia; si no, marca ese turno en todos los días que lo tengan
+    const turnos = turno === 0
+      ? []
+      : diasTurno.filter(d => d.turnos >= turno).map(d => d.clave + "-" + turno);
+
+    fetch("/" + cuentaActual + "/" + id, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ turnos })
+    })
+      .then(res => res.json())
+      .then(data => { if (data.error) alert(data.error); cargarCuenta(); })
+      .catch(() => { alert("No se pudo guardar"); cargarCuenta(); });
   }
 
   function pintarMovimientos(f) {
@@ -2332,7 +2406,10 @@ function hacerLogin() {
     const cuerpo = { nombre };
     if (esTrabajadores()) {
       cuerpo.puesto = document.getElementById("nuevoPuesto").value.trim();
-      cuerpo.salario = parseFloat(document.getElementById("nuevoSalario").value) || 0;
+      cuerpo.pagoTurno = parseFloat(document.getElementById("nuevoPago").value) || 0;
+      // Sin turnos: se marcan en su rejilla. Así nadie queda con un salario
+      // más alto del que le toca por no haber revisado.
+      cuerpo.turnos = [];
     } else {
       cuerpo.telefono = document.getElementById("nuevoTelefono").value.trim();
     }
@@ -2352,7 +2429,7 @@ function hacerLogin() {
 
   function guardarCampo(id, campo, valor) {
     const cuerpo = {};
-    cuerpo[campo] = campo === "salario" ? (parseFloat(valor) || 0) : valor;
+    cuerpo[campo] = campo === "pagoTurno" ? (parseFloat(valor) || 0) : valor;
 
     fetch("/" + cuentaActual + "/" + id, {
       method: "PUT",
@@ -2362,8 +2439,28 @@ function hacerLogin() {
       .then(res => res.json())
       .then(data => {
         if (data.error) { alert(data.error); cargarCuenta(); return; }
-        // El salario cambia el neto, hay que repintar
-        if (campo === "salario") cargarCuenta();
+        // El pago por turno cambia el salario y el neto, hay que repintar
+        if (campo === "pagoTurno") cargarCuenta();
+      })
+      .catch(() => { alert("No se pudo guardar"); cargarCuenta(); });
+  }
+
+  function alternarTurno(id, clave) {
+    const ficha = fichasCargadas.find(f => f.id === id);
+    if (!ficha) return;
+
+    const turnos = new Set(ficha.turnos || []);
+    if (turnos.has(clave)) turnos.delete(clave); else turnos.add(clave);
+
+    fetch("/" + cuentaActual + "/" + id, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ turnos: [...turnos] })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) { alert(data.error); }
+        cargarCuenta();
       })
       .catch(() => { alert("No se pudo guardar"); cargarCuenta(); });
   }

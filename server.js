@@ -246,7 +246,7 @@ async function cargarPedidos() {
     for (const tipo of ["trabajadores", "deudores"]) {
       try {
         const fichas = await db.collection(tipo).find().toArray();
-        fichas.forEach(f => { delete f._id; if (!Array.isArray(f.movimientos)) f.movimientos = []; });
+        fichas.forEach(f => { delete f._id; normalizarFicha(tipo, f); });
         if (fichas.length > 0) {
           cuentas[tipo] = fichas;
           contadorCuenta[tipo] = Math.max(...fichas.map(f => f.id)) + 1;
@@ -296,7 +296,7 @@ async function cargarPedidos() {
       const ruta = rutaBackupCuenta(tipo);
       if (cuentas[tipo].length === 0 && fs.existsSync(ruta)) {
         cuentas[tipo] = JSON.parse(fs.readFileSync(ruta, "utf8"));
-        cuentas[tipo].forEach(f => { if (!Array.isArray(f.movimientos)) f.movimientos = []; });
+        cuentas[tipo].forEach(f => normalizarFicha(tipo, f));
         if (cuentas[tipo].length > 0) {
           contadorCuenta[tipo] = Math.max(...cuentas[tipo].map(f => f.id)) + 1;
         }
@@ -1146,6 +1146,27 @@ const CONFIG_CUENTAS = {
   deudores:     { backup: "deudores-backup.json",     salario: false }
 };
 
+// Turnos de la semana: de lunes a viernes hay dos, el sábado uno solo.
+// El salario sale de aquí: pago por turno × turnos que cubre cada quien.
+const DIAS_TURNO = [
+  { clave: "lun", nombre: "Lun", turnos: 2 },
+  { clave: "mar", nombre: "Mar", turnos: 2 },
+  { clave: "mie", nombre: "Mié", turnos: 2 },
+  { clave: "jue", nombre: "Jue", turnos: 2 },
+  { clave: "vie", nombre: "Vie", turnos: 2 },
+  { clave: "sab", nombre: "Sáb", turnos: 1 }
+];
+
+const TURNOS_VALIDOS = new Set(
+  DIAS_TURNO.flatMap(d => Array.from({ length: d.turnos }, (_, i) => d.clave + "-" + (i + 1)))
+);
+
+// Deja solo los turnos que existen y sin repetir
+function turnosLimpios(valor) {
+  if (!Array.isArray(valor)) return [];
+  return [...new Set(valor.filter(t => TURNOS_VALIDOS.has(t)))];
+}
+
 function rutaBackupCuenta(tipo) {
   return path.join(BACKUP_DIR, CONFIG_CUENTAS[tipo].backup);
 }
@@ -1176,6 +1197,21 @@ async function borrarFicha(tipo, id) {
   }
 }
 
+// Pone al día una ficha guardada antes. El salario dejó de guardarse suelto:
+// ahora sale del pago por turno, así que una ficha vieja se queda esperando
+// que se le capture el pago y los turnos.
+function normalizarFicha(tipo, ficha) {
+  if (!Array.isArray(ficha.movimientos)) ficha.movimientos = [];
+
+  if (CONFIG_CUENTAS[tipo].salario) {
+    if (ficha.pagoTurno === undefined) ficha.pagoTurno = 0;
+    if (!Array.isArray(ficha.turnos)) ficha.turnos = [];
+    delete ficha.salario;
+  }
+
+  return ficha;
+}
+
 // Lo que debe: los cargos suman, los abonos restan
 function saldoCuenta(ficha) {
   const saldo = (ficha.movimientos || [])
@@ -1186,9 +1222,16 @@ function saldoCuenta(ficha) {
 function fichaConSaldo(tipo, ficha) {
   const debe = saldoCuenta(ficha);
   const salida = { ...ficha, debe };
+
   if (CONFIG_CUENTAS[tipo].salario) {
-    salida.neto = Math.round(((ficha.salario || 0) - debe) * 100) / 100;
+    // El salario no se guarda: se calcula, así no puede quedar peleado con
+    // los turnos que cubre
+    const turnos = turnosLimpios(ficha.turnos);
+    salida.turnos = turnos;
+    salida.salario = Math.round((ficha.pagoTurno || 0) * turnos.length * 100) / 100;
+    salida.neto = Math.round((salida.salario - debe) * 100) / 100;
   }
+
   return salida;
 }
 
@@ -1212,6 +1255,9 @@ function registrarRutasCuenta(tipo) {
     const lista = cuentas[tipo].map(f => fichaConSaldo(tipo, f));
     res.json({
       lista,
+      // La rejilla de turnos la arma el navegador con esto, así el horario
+      // se cambia en un solo lugar
+      dias: conSalario ? DIAS_TURNO : undefined,
       totalDebe: Math.round(lista.reduce((a, f) => a + f.debe, 0) * 100) / 100,
       totalSalarios: conSalario
         ? Math.round(lista.reduce((a, f) => a + (f.salario || 0), 0) * 100) / 100
@@ -1232,11 +1278,12 @@ function registrarRutasCuenta(tipo) {
 
     if (conSalario) {
       ficha.puesto = textoLimpio(req.body.puesto, 40);
-      const salario = montoValido(req.body.salario, true);
-      if (req.body.salario !== undefined && salario === null) {
-        return res.status(400).json({ error: "Salario inválido" });
+      const pago = montoValido(req.body.pagoTurno, true);
+      if (req.body.pagoTurno !== undefined && pago === null) {
+        return res.status(400).json({ error: "Pago por turno inválido" });
       }
-      ficha.salario = salario || 0;
+      ficha.pagoTurno = pago || 0;
+      ficha.turnos = turnosLimpios(req.body.turnos);
     } else {
       ficha.telefono = String(req.body.telefono || "").replace(/\D/g, "").slice(0, 10);
     }
@@ -1258,11 +1305,12 @@ function registrarRutasCuenta(tipo) {
 
     if (conSalario) {
       if (req.body.puesto !== undefined) ficha.puesto = textoLimpio(req.body.puesto, 40);
-      if (req.body.salario !== undefined) {
-        const salario = montoValido(req.body.salario, true);
-        if (salario === null) return res.status(400).json({ error: "Salario inválido" });
-        ficha.salario = salario;
+      if (req.body.pagoTurno !== undefined) {
+        const pago = montoValido(req.body.pagoTurno, true);
+        if (pago === null) return res.status(400).json({ error: "Pago por turno inválido" });
+        ficha.pagoTurno = pago;
       }
+      if (req.body.turnos !== undefined) ficha.turnos = turnosLimpios(req.body.turnos);
     } else if (req.body.telefono !== undefined) {
       ficha.telefono = String(req.body.telefono).replace(/\D/g, "").slice(0, 10);
     }
