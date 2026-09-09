@@ -484,6 +484,14 @@ app.get("/ventas", (req, res) => {
   res.sendFile(__dirname + "/public/ventas.html");
 });
 
+// Kiosko de autocobro: el cliente arma su pedido y paga con tarjeta en su
+// propia terminal. Sin caché, para que la tablet siempre traiga la última
+// versión del menú y de la página.
+app.get("/kiosko", (req, res) => {
+  res.set("Cache-Control", "no-store");
+  res.sendFile(__dirname + "/public/kiosko.html");
+});
+
 // El QR lleva a esta página, así que cada vez que se abre se cuenta un
 // escaneo. /qr existe para poder reimprimir el código con un link más corto
 // y saber cuáles vienen del cartel y cuáles de alguien que ya lo tenía.
@@ -1016,6 +1024,8 @@ function etiquetaHora(h, corta) {
 }
 
 app.post("/pedido", soloAdmin, async (req, res) => {
+  const esKiosko = req.body.origen === "kiosko";
+
   const pedido = {
     id: idCounter++,
     cliente: req.body.cliente,
@@ -1028,6 +1038,14 @@ app.post("/pedido", soloAdmin, async (req, res) => {
     fecha: fechaHoy(),
     horaEnvio: horaMXAhora()
   };
+
+  // El del kiosko se lleva su código: nadie le toma el nombre, se le llama
+  // por el código que le aparece en pantalla
+  if (esKiosko) {
+    pedido.origen = "kiosko";
+    pedido.codigo = generarCodigoPedido();
+    pedido.creadoEn = Date.now();
+  }
 
   pedidos.push(pedido);
   await guardarPedido(pedido);
@@ -1548,24 +1566,37 @@ app.put("/pedido/:id", soloAdmin, async (req, res) => {
 });
 
 // Mercado Pago Point: cobrar con terminal (API v1/orders)
-const MP_DEVICE_ID = process.env.MP_DEVICE_ID || "NEWLAND_N950__N950NCCB05482252";
+// Cada pantalla tiene su terminal y su propia orden pendiente: si la
+// compartieran, cobrar en el kiosko cancelaría el cobro de la caja.
+const TERMINALES = {
+  caja:   { device: process.env.MP_DEVICE_ID || "NEWLAND_N950__N950NCCB05482252", ultimaOrden: null },
+  kiosko: { device: process.env.MP_DEVICE_ID_KIOSKO || "", ultimaOrden: null }
+};
 
-let lastOrderId = null;
+function terminalDe(valor) {
+  return TERMINALES[valor === "kiosko" ? "kiosko" : "caja"];
+}
 
 app.post("/cobrar-terminal", soloAdmin, async (req, res) => {
-  const { amount, reference } = req.body;
+  const { amount, reference, terminal } = req.body;
   if (!amount || amount < 5) return res.status(400).json({ error: "Monto mínimo $5" });
   if (!MP_TOKEN_PRESENCIAL) return res.status(500).json({ error: "Mercado Pago presencial no configurado" });
+
+  const term = terminalDe(terminal);
+  if (!term.device) {
+    return res.status(500).json({ error: "Falta configurar la terminal del kiosko (MP_DEVICE_ID_KIOSKO)" });
+  }
+
   try {
-    // Cancelar orden anterior si existe
-    if (lastOrderId) {
+    // Cancelar la orden anterior de ESTA terminal si quedó colgada
+    if (term.ultimaOrden) {
       try {
-        await fetch(`https://api.mercadopago.com/v1/orders/${lastOrderId}/cancel`, {
+        await fetch(`https://api.mercadopago.com/v1/orders/${term.ultimaOrden}/cancel`, {
           method: "POST",
-          headers: { "Authorization": "Bearer " + MP_TOKEN_PRESENCIAL, "X-Idempotency-Key": "cancel-" + lastOrderId + "-" + Date.now() }
+          headers: { "Authorization": "Bearer " + MP_TOKEN_PRESENCIAL, "X-Idempotency-Key": "cancel-" + term.ultimaOrden + "-" + Date.now() }
         });
       } catch (e) {}
-      lastOrderId = null;
+      term.ultimaOrden = null;
     }
     const resp = await fetch("https://api.mercadopago.com/v1/orders", {
       method: "POST",
@@ -1579,14 +1610,14 @@ app.post("/cobrar-terminal", soloAdmin, async (req, res) => {
         external_reference: reference || "caja-" + Date.now(),
         transactions: { payments: [{ amount: amount.toFixed(2) }] },
         config: {
-          point: { terminal_id: MP_DEVICE_ID, print_on_terminal: "no_ticket" },
+          point: { terminal_id: term.device, print_on_terminal: "no_ticket" },
           payment_method: { default_type: "credit_card" }
         }
       })
     });
     const data = await resp.json();
     if (!resp.ok) return res.status(resp.status).json(data);
-    lastOrderId = data.id;
+    term.ultimaOrden = data.id;
     res.json(data);
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -1614,7 +1645,10 @@ app.delete("/cobrar-terminal/:orderId", soloAdmin, async (req, res) => {
       headers: { "Authorization": "Bearer " + MP_TOKEN_PRESENCIAL, "X-Idempotency-Key": "cancel-" + req.params.orderId + "-" + Date.now() }
     });
     if (!resp.ok) return res.status(resp.status).json(await resp.json());
-    lastOrderId = null;
+    // Limpiar la orden en la terminal a la que pertenezca
+    Object.values(TERMINALES).forEach(t => {
+      if (t.ultimaOrden === req.params.orderId) t.ultimaOrden = null;
+    });
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
