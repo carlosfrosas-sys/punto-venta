@@ -976,7 +976,7 @@ function mostrarOpciones(categoria) {
       } else if (categoria === "Molletes") {
         mostrarPicoDegallo(categoria + " Sencillos", datos.sencillo);
       } else if (categoria === "Mollequiles") {
-        mostrarNotas(categoria + " Sencillos", datos.sencillo, ["Sin Crema"]);
+        mostrarNotas(categoria + " Sencillos", datos.sencillo, notasChilaquiles);
       } else {
         agregarProductoConNota(categoria + " Sencillos", datos.sencillo);
       }
@@ -992,7 +992,7 @@ function mostrarOpciones(categoria) {
 
   // MOLLEQUILES - multi-seleccion max 2
   if (categoria === "Mollequiles" && datos.proteinas) {
-    mostrarMultiProteina(categoria, datos, 2, ["Sin Crema"]);
+    mostrarMultiProteina(categoria, datos, 2, notasChilaquiles);
     return;
   }
 
@@ -1013,7 +1013,7 @@ function mostrarOpciones(categoria) {
           if (categoria === "Molletes") {
             mostrarPicoDegallo(categoria + " de " + p.nombre, p.precio);
           } else if (categoria === "Mollequiles") {
-            mostrarNotas(categoria + " de " + p.nombre, p.precio, ["Sin Crema"]);
+            mostrarNotas(categoria + " de " + p.nombre, p.precio, notasChilaquiles);
           } else if (categoria === "Chilaquiles") {
             mostrarNotas(categoria + " de " + p.nombre, p.precio, notasChilaquiles);
           } else if (categoria === "Sandwiches") {
@@ -1038,7 +1038,7 @@ function mostrarOpciones(categoria) {
           if (categoria === "Molletes") {
             mostrarPicoDegallo(categoria + " de " + p, datos.precio);
           } else if (categoria === "Mollequiles") {
-            mostrarNotas(categoria + " de " + p, datos.precio, ["Sin Crema"]);
+            mostrarNotas(categoria + " de " + p, datos.precio, notasChilaquiles);
           } else if (categoria === "Chilaquiles") {
             mostrarNotas(categoria + " de " + p, datos.precio, notasChilaquiles);
           } else if (categoria === "Enchiladas") {
