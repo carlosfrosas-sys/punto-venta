@@ -1796,44 +1796,88 @@ function mostrarIngredientesTortaMulti() {
   cont.appendChild(btnSig);
 }
 
+// Esta pantalla es la que más confunde a quien no conoce el sistema: ve una
+// lista de "Sin esto, sin lo otro" y no sabe si tiene que elegir algo. Por
+// eso arriba va la pregunta en grande y el botón siempre dice qué va a pasar.
 function mostrarNotas(nombre, precio, opciones, siguiente) {
   const cont = document.getElementById("proteinas");
-  cont.innerHTML = "<h3>" + nombre + " - $" + precio + "</h3><p>Selecciona las opciones:</p>";
+
+  const quitar = opciones.filter(o => typeof o !== "object");
+  const agregar = opciones.filter(o => typeof o === "object");
+
+  // "¿Con todo?" solo tiene sentido si todo lo que se puede tocar es quitar
+  // algo. En bebidas las opciones son "Sin Azúcar" y "Poca Azúcar".
+  const esComida = quitar.length > 0 && quitar.every(o => /^sin /i.test(o));
+  const pregunta = esComida ? "¿CON TODO?" : "¿ASÍ ESTÁ BIEN?";
+  const textoTodo = esComida ? "SÍ, CON TODO" : "SÍ, ASÍ ESTÁ BIEN";
+
+  cont.innerHTML =
+    '<h3 style="margin-bottom:2px;">' + nombre + '</h3>' +
+    '<p style="font-size:20px;font-weight:700;color:#0f3d2c;margin:0 0 14px;">$' + precio + '</p>' +
+    '<div style="background:#e9f7ee;border:2px solid #16a34a;border-radius:14px;padding:14px;text-align:center;margin-bottom:14px;">' +
+      '<div style="font-size:30px;font-weight:800;color:#0f3d2c;letter-spacing:1px;">' + pregunta + '</div>' +
+      '<div style="font-size:15px;color:#3f6b53;margin-top:4px;">' +
+        (esComida ? "Ya viene completo. Solo toca lo que <b>no</b> quieras." : "Toca solo si quieres cambiarle algo.") +
+      '</div>' +
+    '</div>';
 
   const seleccionadas = new Set();
   let precioExtra = 0;
+  let btnListo;
 
-  opciones.forEach(opcion => {
-    const esObjeto = typeof opcion === "object";
-    const texto = esObjeto ? opcion.nombre + " +$" + opcion.precio : opcion;
-    const btn = document.createElement("button");
-    btn.innerText = texto;
-    btn.style.background = "#e5e7eb";
-    btn.style.color = "#111827";
-    btn.onclick = () => {
-      if (seleccionadas.has(texto)) {
-        seleccionadas.delete(texto);
-        if (esObjeto) precioExtra -= opcion.precio;
-        btn.style.background = "#e5e7eb";
-        btn.style.color = "#111827";
-      } else {
-        seleccionadas.add(texto);
-        if (esObjeto) precioExtra += opcion.precio;
-        btn.style.background = esObjeto ? "#16a34a" : "#ef4444";
-        btn.style.color = "white";
-      }
-    };
-    cont.appendChild(btn);
-  });
+  // El botón dice en todo momento qué va a agregar, para que nadie se quede
+  // dudando de si su cambio se registró
+  function actualizarBoton() {
+    if (seleccionadas.size === 0) {
+      btnListo.innerText = textoTodo;
+      return;
+    }
+    // Los extras traen su precio en el nombre; en el botón va una sola vez
+    const cambios = Array.from(seleccionadas)
+      .map(t => t.replace(/\s*\+\$\d+/, ""))
+      .join(", ");
+    btnListo.innerText = "AGREGAR: " + cambios.toUpperCase() +
+      (precioExtra > 0 ? "  (+$" + precioExtra + ")" : "");
+  }
 
-  const btnAgregar = document.createElement("button");
-  btnAgregar.innerText = "Agregar al pedido";
-  btnAgregar.style.background = "#16a34a";
-  btnAgregar.style.color = "white";
-  btnAgregar.style.fontSize = "16px";
-  btnAgregar.style.marginTop = "10px";
-  btnAgregar.style.width = "100%";
-  btnAgregar.onclick = () => {
+  function pintarGrupo(titulo, lista, esExtra) {
+    if (lista.length === 0) return;
+
+    const encabezado = document.createElement("div");
+    encabezado.style.cssText = "font-size:14px;font-weight:700;color:#6d9c81;margin:10px 0 6px;";
+    encabezado.innerText = titulo;
+    cont.appendChild(encabezado);
+
+    lista.forEach(opcion => {
+      const texto = esExtra ? opcion.nombre + " +$" + opcion.precio : opcion;
+      const btn = document.createElement("button");
+      btn.innerText = texto;
+      btn.style.background = "#e5e7eb";
+      btn.style.color = "#111827";
+      btn.onclick = () => {
+        if (seleccionadas.has(texto)) {
+          seleccionadas.delete(texto);
+          if (esExtra) precioExtra -= opcion.precio;
+          btn.style.background = "#e5e7eb";
+          btn.style.color = "#111827";
+        } else {
+          seleccionadas.add(texto);
+          if (esExtra) precioExtra += opcion.precio;
+          btn.style.background = esExtra ? "#16a34a" : "#ef4444";
+          btn.style.color = "white";
+        }
+        actualizarBoton();
+      };
+      cont.appendChild(btn);
+    });
+  }
+
+  pintarGrupo(esComida ? "Toca lo que NO quieras:" : "Puedes cambiarle:", quitar, false);
+  pintarGrupo("¿Le agregamos algo?", agregar, true);
+
+  btnListo = document.createElement("button");
+  btnListo.style.cssText = "background:#16a34a;color:#fff;font-size:19px;font-weight:800;margin-top:16px;width:100%;min-height:64px;border-radius:14px;line-height:1.25;";
+  btnListo.onclick = () => {
     const nota = Array.from(seleccionadas).join(", ");
     const precioFinal = precio + precioExtra;
     if (siguiente) {
@@ -1846,7 +1890,8 @@ function mostrarNotas(nombre, precio, opciones, siguiente) {
       scrollACategorias();
     }
   };
-  cont.appendChild(btnAgregar);
+  actualizarBoton();
+  cont.appendChild(btnListo);
 }
 
 function mostrarHuevoPaquete(datos) {
