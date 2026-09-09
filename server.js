@@ -1624,6 +1624,34 @@ app.post("/cobrar-terminal", soloAdmin, async (req, res) => {
   }
 });
 
+// Lista las terminales de la cuenta con su ID, que es lo que hay que poner
+// en MP_DEVICE_ID_KIOSKO. Se consulta desde aquí porque el token de Point
+// vive en el servidor, no en la máquina de nadie.
+app.get("/terminales", soloAdmin, async (req, res) => {
+  if (!MP_TOKEN_PRESENCIAL) {
+    return res.status(500).json({ error: "Mercado Pago presencial no configurado" });
+  }
+  try {
+    const resp = await fetch("https://api.mercadopago.com/point/integration-api/devices", {
+      headers: { Authorization: "Bearer " + MP_TOKEN_PRESENCIAL }
+    });
+    const data = await resp.json();
+    if (!resp.ok) return res.status(resp.status).json(data);
+
+    res.json({
+      terminales: (data.devices || []).map(d => ({
+        id: d.id,
+        modo: d.operating_mode || "",
+        // Para saber cuál ya está en uso y cuál queda libre
+        usadaEn: Object.keys(TERMINALES).filter(k => TERMINALES[k].device === d.id)
+      })),
+      configuradas: { caja: TERMINALES.caja.device, kiosko: TERMINALES.kiosko.device }
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.get("/cobrar-terminal/:orderId", soloAdmin, async (req, res) => {
   if (!MP_TOKEN_PRESENCIAL) return res.status(500).json({ error: "No configurado" });
   try {
