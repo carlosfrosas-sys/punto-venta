@@ -1652,6 +1652,39 @@ app.get("/terminales", soloAdmin, async (req, res) => {
   }
 });
 
+// Cambiar el modo de una terminal. En PDV recibe los cobros que le manda
+// el sistema; en STANDALONE cobra sola con el monto tecleado y no atiende
+// a la API. Se hace desde aquí para no depender de los menús de la app,
+// que cambian con cada versión.
+app.post("/terminales/:deviceId/modo", soloAdmin, async (req, res) => {
+  if (!MP_TOKEN_PRESENCIAL) {
+    return res.status(500).json({ error: "Mercado Pago presencial no configurado" });
+  }
+
+  const modo = req.body && req.body.modo === "STANDALONE" ? "STANDALONE" : "PDV";
+
+  try {
+    const resp = await fetch(
+      "https://api.mercadopago.com/point/integration-api/devices/" + encodeURIComponent(req.params.deviceId),
+      {
+        method: "PATCH",
+        headers: {
+          "Authorization": "Bearer " + MP_TOKEN_PRESENCIAL,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ operating_mode: modo })
+      }
+    );
+
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) return res.status(resp.status).json(data);
+
+    res.json({ ok: true, modo, terminal: req.params.deviceId });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.get("/cobrar-terminal/:orderId", soloAdmin, async (req, res) => {
   if (!MP_TOKEN_PRESENCIAL) return res.status(500).json({ error: "No configurado" });
   try {

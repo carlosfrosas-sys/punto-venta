@@ -2416,28 +2416,75 @@ function pedirActivacion() {
 if (!localStorage.getItem("token_admin")) pedirActivacion();
 else revisarTerminal();
 
-// Si falta configurar la terminal, se avisa con los IDs de la cuenta a la
-// mano: es justo el dato que hay que copiar a MP_DEVICE_ID_KIOSKO.
+// Avisa mientras la terminal del kiosko no esté lista: o falta el ID, o
+// está en standalone y no atiende los cobros que le manda el sistema.
+// El aviso se quita solo en cuanto queda bien.
 function revisarTerminal() {
   fetch("/terminales")
     .then(r => r.json())
     .then(d => {
-      if (!d.terminales || (d.configuradas && d.configuradas.kiosko)) return;
+      if (!d.terminales) return;
 
-      const filas = d.terminales.length
-        ? d.terminales.map(t =>
-            '<div style="background:#fff;border-radius:8px;padding:8px 10px;margin-top:6px;font-family:monospace;font-size:13px;word-break:break-all;">' +
-            t.id + (t.usadaEn.length ? ' <span style="font-family:inherit;color:#b45309;">(ya la usa ' + t.usadaEn.join(", ") + ')</span>' : '') +
-            '</div>').join("")
-        : '<div style="margin-top:6px;">No aparecen terminales en la cuenta.</div>';
+      const asignada = d.configuradas && d.configuradas.kiosko;
+      const suya = d.terminales.find(t => t.id === asignada);
 
+      // Ya está asignada y en modo punto de venta: no hay nada que avisar
+      if (asignada && suya && suya.modo === "PDV") { quitarAvisoTerminal(); return; }
+
+      let titulo, filas;
+
+      if (!asignada) {
+        titulo = 'Falta asignarle terminal al kiosko. Copia un ID y ponlo en Render como <b>MP_DEVICE_ID_KIOSKO</b>.';
+        filas = d.terminales.map(t => filaTerminal(t, false)).join("") ||
+                '<div style="margin-top:6px;">No aparecen terminales en la cuenta.</div>';
+      } else if (!suya) {
+        titulo = 'La terminal <b>' + asignada + '</b> no aparece en la cuenta. Revisa el ID o que esté dada de alta.';
+        filas = d.terminales.map(t => filaTerminal(t, false)).join("");
+      } else {
+        titulo = 'La terminal del kiosko está en <b>' + suya.modo + '</b>. Para que reciba los cobros tiene que estar en punto de venta.';
+        filas = filaTerminal(suya, true);
+      }
+
+      quitarAvisoTerminal();
       const aviso = document.createElement("div");
+      aviso.id = "avisoTerminal";
       aviso.style.cssText = "background:#fef3c7;border-bottom:2px solid #f59e0b;color:#78350f;padding:12px 16px;font-size:13px;line-height:1.5;";
-      aviso.innerHTML = '<b>Falta configurar la terminal del kiosko.</b> ' +
-        'Copia el ID de la terminal nueva y ponlo en Render como <b>MP_DEVICE_ID_KIOSKO</b>.' + filas;
+      aviso.innerHTML = titulo + filas;
       document.body.insertBefore(aviso, document.body.firstChild);
     })
     .catch(() => {});
+}
+
+function filaTerminal(t, conBoton) {
+  return '<div style="background:#fff;border-radius:8px;padding:8px 10px;margin-top:6px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">' +
+    '<span style="font-family:monospace;font-size:13px;word-break:break-all;">' + t.id +
+      ' <span style="font-family:inherit;color:#b45309;">(' + (t.modo || "sin modo") +
+      (t.usadaEn.length ? ", la usa " + t.usadaEn.join(", ") : "") + ')</span></span>' +
+    (conBoton
+      ? '<button onclick="ponerEnPuntoDeVenta(\'' + t.id + '\')" style="background:#0e3a5c;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap;">Ponerla en punto de venta</button>'
+      : '') +
+  '</div>';
+}
+
+function quitarAvisoTerminal() {
+  const previo = document.getElementById("avisoTerminal");
+  if (previo) previo.remove();
+}
+
+function ponerEnPuntoDeVenta(deviceId) {
+  if (!confirm("La terminal va a dejar de cobrar por su cuenta y va a esperar los cobros del sistema. ¿Continuar?")) return;
+
+  fetch("/terminales/" + encodeURIComponent(deviceId) + "/modo", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ modo: "PDV" })
+  })
+    .then(r => r.json().then(d => ({ ok: r.ok, d })))
+    .then(({ ok, d }) => {
+      if (!ok) { alert("Mercado Pago no aceptó el cambio: " + (d.message || d.error || JSON.stringify(d))); return; }
+      revisarTerminal();
+    })
+    .catch(() => alert("Error de conexión"));
 }
 
 // ===== REVISAR Y COBRAR =====
