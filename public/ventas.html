@@ -751,6 +751,7 @@ function hacerLogin() {
       <button onclick="navClientes(this)">Clientes</button>
       <button onclick="navCuenta(this,'trabajadores')">Trabajadores</button>
       <button onclick="navCuenta(this,'deudores')">Me Deben</button>
+      <button onclick="navPagosSinPedido(this)">Pagos atorados</button>
       <button onclick="navQR(this)">QR</button>
       <button onclick="navPrecios(this)">Precios</button>
     </div>
@@ -1899,6 +1900,78 @@ function hacerLogin() {
           alert(data.error || "Error al eliminar");
         }
       });
+  }
+
+  // ===== PAGOS COBRADOS QUE NO SE VOLVIERON PEDIDO =====
+  // Los recientes los recupera solo el servidor. Aquí salen los viejos,
+  // que ya no conviene mandar a cocina sin hablar antes con el cliente.
+  function navPagosSinPedido(btn) {
+    setActiveNav(btn);
+    tabActual = "pagos";
+    limpiarContenido();
+    mostrarGraficas(false);
+    mostrarMetricas(false);
+    mostrarAcciones(false);
+    setTitulo("Pagos atorados", "Cobrados en Mercado Pago que no llegaron a cocina");
+
+    contenedor.innerHTML = '<div class="sin-datos">Revisando con Mercado Pago...</div>';
+
+    fetch("/pagos-sin-pedido")
+      .then(res => res.json())
+      .then(data => {
+        const pagos = data.pagos || [];
+
+        if (pagos.length === 0) {
+          contenedor.innerHTML =
+            '<div style="background:#e9f7ee;border:1px solid #bbf7d0;border-radius:10px;padding:16px;color:#166534;font-size:14px;">' +
+            'Todo en orden: no hay pagos cobrados sin su pedido.</div>';
+          return;
+        }
+
+        let html = '<div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:13px;color:#78350f;">' +
+          'Estos clientes ya pagaron pero su pedido no entró. Los de menos de 30 minutos el sistema los mete solo; ' +
+          'estos son más viejos, así que conviene hablarles antes de mandarlos a la cocina.</div>';
+
+        pagos.forEach(p => {
+          const prods = (p.productos || []).map(pr =>
+            (pr.cantidad > 1 ? pr.cantidad + "x " : "") + pr.nombre).join(", ");
+          const msj = encodeURIComponent("Hola " + p.cliente + ", te escribimos de La Cabaña. Vimos que tu pago de $" +
+            p.total + " sí se hizo pero tu pedido no nos llegó. ¿Sigues por aquí para prepararlo?");
+
+          html += '<div style="background:#fff;border:1px solid #eee;border-radius:10px;padding:12px 14px;margin-bottom:8px;">';
+          html += '<div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;">';
+          html += '<div style="min-width:0;flex:1;">';
+          html += '<div style="font-size:15px;font-weight:700;">' + p.cliente + '</div>';
+          html += '<div style="font-size:12px;color:#999;">' + p.telefono + ' &middot; ' + p.cuando + ' (hace ' + p.minutos + ' min)</div>';
+          html += '<div style="font-size:13px;color:#666;margin-top:3px;">' + prods + '</div>';
+          html += '<div style="font-size:11px;color:#bbb;">folio de pago ' + p.folioPago + '</div>';
+          html += '</div>';
+          html += '<div style="font-size:17px;font-weight:700;color:#4caf50;white-space:nowrap;">$' + p.total + '</div>';
+          html += '</div>';
+          html += '<div class="ficha-fila" style="margin-top:10px;">';
+          html += '<a href="https://wa.me/52' + p.telefono + '?text=' + msj + '" target="_blank" class="btn-mini" style="background:#25d366;text-decoration:none;display:inline-block;">WhatsApp</a>';
+          html += '<button class="btn-mini" style="background:#0e3a5c;" onclick="enviarPagoACocina(\'' + p.ref + '\')">Mandar a cocina</button>';
+          html += '</div>';
+          html += '</div>';
+        });
+
+        contenedor.innerHTML = html;
+      })
+      .catch(() => {
+        contenedor.innerHTML = '<div class="sin-datos">No se pudo consultar Mercado Pago</div>';
+      });
+  }
+
+  function enviarPagoACocina(ref) {
+    if (!confirm("El pedido va a entrar a cocina ahora mismo. ¿Seguro?")) return;
+    fetch("/pagos-sin-pedido/" + encodeURIComponent(ref) + "/enviar", { method: "POST" })
+      .then(r => r.json())
+      .then(d => {
+        if (!d.ok) { alert(d.error || "No se pudo mandar"); return; }
+        alert("Listo. El pedido entró con el código " + d.codigo);
+        navPagosSinPedido();
+      })
+      .catch(() => alert("Error de conexión"));
   }
 
   // ===== ESCANEOS DEL QR =====

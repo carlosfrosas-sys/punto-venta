@@ -361,18 +361,44 @@ async function guardarPedido(pedido) {
 }
 
 async function guardarPedidoPendiente(ref, datos) {
-  pedidosPendientes.set(ref, datos);
+  // creadoEn sirve para el barrido que recupera pagos sin pedido
+  const conFecha = { creadoEn: Date.now(), ...datos };
+  pedidosPendientes.set(ref, conFecha);
   if (db) {
     try {
       await db.collection("pedidos_pendientes").updateOne(
         { ref },
-        { $set: { ref, ...datos } },
+        { $set: { ref, ...conFecha } },
         { upsert: true }
       );
     } catch (e) {
       console.error("Error guardando pedido pendiente:", e.message);
     }
   }
+}
+
+// Todos los pendientes, de la base si hay y si no de memoria
+async function listarPedidosPendientes() {
+  if (db) {
+    try {
+      const docs = await db.collection("pedidos_pendientes").find().toArray();
+      return docs.map(d => {
+        const { _id, ...resto } = d;
+        return resto;
+      });
+    } catch (e) {
+      console.error("Error listando pedidos pendientes:", e.message);
+    }
+  }
+  return [...pedidosPendientes.entries()].map(([ref, datos]) => ({ ref, ...datos }));
+}
+
+// Los refs viejos no traen creadoEn, pero lo llevan en el nombre:
+// "pedido_1757000000000_ab12cd"
+function cuandoSeCreo(pendiente) {
+  if (pendiente.creadoEn) return pendiente.creadoEn;
+  const m = String(pendiente.ref || "").match(/^pedido_(\d{13})_/);
+  return m ? parseInt(m[1], 10) : 0;
 }
 
 async function obtenerPedidoPendiente(ref) {
@@ -771,6 +797,8 @@ app.post("/crear-preferencia", async (req, res) => {
           currency_id: "MXN"
         }],
         external_reference: ref,
+        // Con esto Mercado Pago avisa aunque el cliente cierre la página
+        notification_url: BASE_URL + "/webhook-mp",
         back_urls: {
           success: BASE_URL + "/pago-exitoso",
           failure: BASE_URL + "/pago-fallido",
@@ -814,11 +842,29 @@ async function buscarPaymentPorReferencia(external_reference) {
 }
 
 // Lógica compartida: confirma pago MP y crea pedido real
+// El mismo pago puede llegar por varios lados a la vez: el navegador del
+// cliente, el aviso de Mercado Pago y el barrido. Esta llave evita que dos
+// de ellos creen el pedido al mismo tiempo.
+const confirmacionesEnCurso = new Set();
+
 async function confirmarPagoOnline(external_reference, payment_id) {
   if (!external_reference) {
     return { ok: false, error: "datos_faltantes" };
   }
 
+  if (confirmacionesEnCurso.has(external_reference)) {
+    return { ok: false, error: "confirmacion_en_curso" };
+  }
+  confirmacionesEnCurso.add(external_reference);
+
+  try {
+    return await confirmarPagoOnlineInterno(external_reference, payment_id);
+  } finally {
+    confirmacionesEnCurso.delete(external_reference);
+  }
+}
+
+async function confirmarPagoOnlineInterno(external_reference, payment_id) {
   let paymentData;
   const payment = new Payment(mpClient);
   if (payment_id) {
@@ -832,6 +878,14 @@ async function confirmarPagoOnline(external_reference, payment_id) {
 
   if (paymentData.status !== "approved") {
     return { ok: false, error: "pago_no_aprobado", status: paymentData.status };
+  }
+
+  // Si el pedido de este cobro ya entró, no se crea otro
+  const folio = paymentData.id ? String(paymentData.id) : "";
+  const yaEntro = folio && pedidos.find(p => p.folioPago === folio);
+  if (yaEntro) {
+    await eliminarPedidoPendiente(external_reference);
+    return { ok: true, pedidoId: yaEntro.id, codigo: yaEntro.codigo, nuevoRef: null, repetido: true };
   }
 
   const pendiente = await obtenerPedidoPendiente(external_reference);
@@ -872,6 +926,124 @@ async function confirmarPagoOnline(external_reference, payment_id) {
   return { ok: true, pedidoId: pedido.id, nuevoRef: nuevoRefMP, codigo: pedido.codigo };
 }
 
+// ---- Red de seguridad de los pagos en línea ----
+// El pedido se creaba solo si el navegador del cliente alcanzaba a avisar.
+// Si se cerraba la página, se iba la señal o se bloqueaba el celular,
+// Mercado Pago cobraba y el pedido nunca entraba a cocina. Ahora hay dos
+// caminos más: el aviso que manda Mercado Pago y un barrido cada minuto.
+
+// Aviso de Mercado Pago. Se responde de inmediato y se trabaja después:
+// si tarda, Mercado Pago lo da por fallido y lo reintenta de más.
+// Del aviso solo se toma el número de pago; todo lo demás se le pregunta
+// a Mercado Pago, así que un aviso inventado no crea ningún pedido.
+app.post("/webhook-mp", (req, res) => {
+  res.sendStatus(200);
+
+  const tipo = (req.body && req.body.type) || req.query.type;
+  const id = (req.body && req.body.data && req.body.data.id) || req.query["data.id"];
+  if (tipo !== "payment" || !id) return;
+
+  (async () => {
+    try {
+      const pago = await new Payment(mpClient).get({ id });
+      if (!pago || pago.status !== "approved" || !pago.external_reference) return;
+
+      const r = await confirmarPagoOnline(pago.external_reference, id);
+      if (r.ok && !r.repetido) {
+        console.log("Pedido recuperado por aviso de Mercado Pago:", r.codigo);
+      }
+    } catch (e) {
+      console.error("Error atendiendo aviso de Mercado Pago:", e.message);
+    }
+  })();
+});
+
+// Un pago que se cobró hace poco y no tiene pedido casi siempre es alguien
+// esperando su comida en el mostrador: ese se recupera solo. Uno de hace
+// horas ya no se manda a cocina, se reporta para hablarle al cliente.
+const MINUTOS_RECUPERACION = 30;
+
+async function recuperarPagosSinPedido() {
+  if (!mpClient || (!process.env.MERCADOPAGO_ACCESS_TOKEN_ONLINE && !process.env.MERCADOPAGO_ACCESS_TOKEN)) return;
+
+  try {
+    const ahora = Date.now();
+    const pendientes = await listarPedidosPendientes();
+
+    for (const p of pendientes) {
+      const edad = ahora - cuandoSeCreo(p);
+
+      // Menos de dos minutos: el cliente todavía puede estar pagando
+      if (edad < 2 * 60 * 1000) continue;
+
+      if (edad > MINUTOS_RECUPERACION * 60 * 1000) {
+        // Ya no se manda solo; sale en el reporte de pagos sin pedido
+        if (edad > 7 * 24 * 60 * 60 * 1000) await eliminarPedidoPendiente(p.ref);
+        continue;
+      }
+
+      const pago = await buscarPaymentPorReferencia(p.ref);
+      if (!pago || pago.status !== "approved") continue;
+
+      const r = await confirmarPagoOnline(p.ref, pago.id);
+      if (r.ok && !r.repetido) {
+        console.log("Pedido recuperado por el barrido:", r.codigo, "-", p.cliente);
+      }
+    }
+  } catch (e) {
+    console.error("Error recuperando pagos sin pedido:", e.message);
+  }
+}
+
+setInterval(recuperarPagosSinPedido, 60 * 1000);
+// Tras un reinicio o un deploy puede haber quedado alguno a medias
+setTimeout(recuperarPagosSinPedido, 15 * 1000);
+global.__barrido = recuperarPagosSinPedido;   // para dispararlo en pruebas
+
+// Pagos cobrados que nunca se volvieron pedido y ya son muy viejos para
+// mandarlos a cocina. Con el teléfono a la mano para hablarle al cliente.
+app.get("/pagos-sin-pedido", soloAdmin, async (req, res) => {
+  try {
+    const pendientes = await listarPedidosPendientes();
+    const ahora = Date.now();
+    const cobrados = [];
+
+    for (const p of pendientes) {
+      const edad = ahora - cuandoSeCreo(p);
+      if (edad < 2 * 60 * 1000) continue;
+
+      const pago = await buscarPaymentPorReferencia(p.ref);
+      if (!pago || pago.status !== "approved") continue;
+
+      cobrados.push({
+        ref: p.ref,
+        cliente: p.cliente,
+        telefono: p.telefono,
+        total: p.total,
+        productos: p.productos || [],
+        folioPago: String(pago.id),
+        cuando: new Date(cuandoSeCreo(p)).toLocaleString("es-MX", { timeZone: "America/Mexico_City" }),
+        minutos: Math.round(edad / 60000)
+      });
+    }
+
+    res.json({ pagos: cobrados });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Mandar a cocina un pago que se quedó atorado, ya revisado por el dueño
+app.post("/pagos-sin-pedido/:ref/enviar", soloAdmin, async (req, res) => {
+  try {
+    const r = await confirmarPagoOnline(req.params.ref, null);
+    if (!r.ok) return res.status(400).json(r);
+    res.json(r);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Bricks con tarjeta: el brick solo tokeniza, el cobro se crea aquí.
 // (Con saldo/cuenta de Mercado Pago el cobro lo hace MP y se confirma
 // por /confirmar-pago-online, que solo busca el pago ya existente.)
@@ -899,7 +1071,8 @@ app.post("/procesar-pago-tarjeta", async (req, res) => {
         payment_method_id: formData.payment_method_id,
         issuer_id: formData.issuer_id,
         payer: formData.payer,
-        external_reference
+        external_reference,
+        notification_url: BASE_URL + "/webhook-mp"
       },
       // La llave incluye el token de la tarjeta: si el cliente da doble clic
       // no se cobra dos veces, pero si reintenta con otra tarjeta (token
@@ -917,7 +1090,14 @@ app.post("/procesar-pago-tarjeta", async (req, res) => {
     }
 
     const confirmado = await confirmarPagoOnline(external_reference, cobro.id);
-    if (!confirmado.ok) return res.status(400).json(confirmado);
+
+    // El cobro ya se hizo. Si el pedido no se pudo crear en este momento,
+    // NO se le dice que falló: lo volvería a pagar. El barrido lo mete a
+    // cocina en menos de dos minutos.
+    if (!confirmado.ok) {
+      console.error("Cobro aprobado sin pedido (lo recupera el barrido):", external_reference, confirmado.error);
+      return res.json({ ok: true, status: "approved", pendienteDeRegistro: true });
+    }
 
     res.json({ ok: true, status: "approved", ...confirmado });
   } catch (e) {
@@ -930,9 +1110,25 @@ app.post("/procesar-pago-tarjeta", async (req, res) => {
 app.post("/confirmar-pago-online", async (req, res) => {
   const { external_reference, payment_id } = req.body;
   try {
-    const result = await confirmarPagoOnline(external_reference, payment_id);
-    if (!result.ok) return res.status(400).json(result);
-    res.json(result);
+    let result = await confirmarPagoOnline(external_reference, payment_id);
+
+    // Si el aviso de Mercado Pago o el barrido lo están metiendo en este
+    // mismo momento, se espera tantito y se vuelve a ver
+    if (result.error === "confirmacion_en_curso") {
+      await new Promise(r => setTimeout(r, 1500));
+      result = await confirmarPagoOnline(external_reference, payment_id);
+    }
+
+    if (result.ok) return res.json(result);
+
+    // El dinero sí se cobró: decirle que falló haría que pagara otra vez.
+    // El barrido mete el pedido en menos de dos minutos.
+    if (result.error === "pedido_pendiente_no_encontrado" || result.error === "confirmacion_en_curso") {
+      console.error("Pago aprobado sin pedido (lo recupera el barrido):", external_reference, result.error);
+      return res.json({ ok: true, status: "approved", pendienteDeRegistro: true });
+    }
+
+    return res.status(400).json(result);
   } catch (e) {
     console.error("Error confirmando pago online:", e.message);
     res.status(500).json({ ok: false, error: "server_error" });
