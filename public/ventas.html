@@ -1946,14 +1946,12 @@ function hacerLogin() {
           html += '<div style="font-size:13px;color:#666;margin-top:3px;">' + prods + '</div>';
           html += '<div style="font-size:11px;color:#bbb;">folio de pago ' + p.folioPago + '</div>';
           html += '</div>';
-          html += '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">';
-          html += '<span style="font-size:17px;font-weight:700;color:#4caf50;white-space:nowrap;">$' + p.total + '</span>';
-          html += '<button class="btn-eliminar" title="Quitar de la lista" onclick="quitarPagoAtorado(\'' + p.ref + '\')">&#10005;</button>';
-          html += '</div>';
+          html += '<div style="font-size:17px;font-weight:700;color:#4caf50;white-space:nowrap;">$' + p.total + '</div>';
           html += '</div>';
           html += '<div class="ficha-fila" style="margin-top:10px;">';
           html += '<a href="https://wa.me/52' + p.telefono + '?text=' + msj + '" target="_blank" class="btn-mini" style="background:#25d366;text-decoration:none;display:inline-block;">WhatsApp</a>';
           html += '<button class="btn-mini" style="background:#0e3a5c;" onclick="enviarPagoACocina(\'' + p.ref + '\')">Mandar a cocina</button>';
+          html += '<button class="btn-mini" style="background:#ef4444;" onclick="quitarPagoAtorado(\'' + p.ref + '\')">&#10005; Ya se resolvió</button>';
           html += '</div>';
           html += '</div>';
         });
@@ -1966,12 +1964,22 @@ function hacerLogin() {
   }
 
   function quitarPagoAtorado(ref) {
-    if (!confirm("Se quita de la lista y deja de avisar en entrega.\n\nEl cobro sigue en Mercado Pago: hazlo solo si ya le devolviste el dinero, ya le entregaste su pedido o el cliente ya no vino.")) return;
+    if (!confirm("El pago ya entró, así que se registra como venta entregada del día en que el cliente pagó, y deja de avisar en entrega.\n\nÚsalo cuando ya le diste su pedido o ya lo arreglaste con él.")) return;
 
-    fetch("/pagos-sin-pedido/" + encodeURIComponent(ref), { method: "DELETE" })
+    const pass = prompt("Ingresa la contrasena para cerrarlo:");
+    if (!pass) return;
+
+    fetch("/pagos-sin-pedido/" + encodeURIComponent(ref), {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: pass })
+    })
       .then(r => r.json())
       .then(d => {
-        if (!d.ok) { alert(d.error || "No se pudo quitar"); return; }
+        if (!d.ok) { alert(d.error || "No se pudo cerrar"); return; }
+        alert(d.registrado
+          ? "Listo, quedó registrado como venta."
+          : "Se quitó de la lista, pero no se pudo registrar como venta. Revísalo en Mercado Pago.");
         navPagosSinPedido();
       })
       .catch(() => alert("Error de conexión"));

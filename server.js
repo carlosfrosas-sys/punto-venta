@@ -847,7 +847,7 @@ async function buscarPaymentPorReferencia(external_reference) {
 // de ellos creen el pedido al mismo tiempo.
 const confirmacionesEnCurso = new Set();
 
-async function confirmarPagoOnline(external_reference, payment_id) {
+async function confirmarPagoOnline(external_reference, payment_id, opciones) {
   if (!external_reference) {
     return { ok: false, error: "datos_faltantes" };
   }
@@ -858,13 +858,13 @@ async function confirmarPagoOnline(external_reference, payment_id) {
   confirmacionesEnCurso.add(external_reference);
 
   try {
-    return await confirmarPagoOnlineInterno(external_reference, payment_id);
+    return await confirmarPagoOnlineInterno(external_reference, payment_id, opciones || {});
   } finally {
     confirmacionesEnCurso.delete(external_reference);
   }
 }
 
-async function confirmarPagoOnlineInterno(external_reference, payment_id) {
+async function confirmarPagoOnlineInterno(external_reference, payment_id, opciones) {
   let paymentData;
   const payment = new Payment(mpClient);
   if (payment_id) {
@@ -897,6 +897,12 @@ async function confirmarPagoOnlineInterno(external_reference, payment_id) {
     ? "[PAGO ONLINE] " + pendiente.nota
     : "[PAGO ONLINE]";
 
+  // Al registrar un pago atorado el pedido se anota en el día en que el
+  // cliente pagó, no en el que se descubrió, para que el corte cuadre
+  const cuando = opciones.comoVenta ? (cuandoSeCreo(pendiente) || Date.now()) : Date.now();
+  const fechaPedido = new Date(cuando).toLocaleDateString("es-MX", { timeZone: "America/Mexico_City", year: "numeric", month: "2-digit", day: "2-digit" });
+  const horaPedido = new Date(cuando).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" });
+
   const pedido = {
     id: idCounter++,
     cliente: pendiente.cliente + " (Tel: " + pendiente.telefono + ")",
@@ -907,11 +913,18 @@ async function confirmarPagoOnlineInterno(external_reference, payment_id) {
     origen: "cliente",
     estado: "pendiente",
     codigo: generarCodigoPedido(),
-    creadoEn: Date.now(),
+    creadoEn: cuando,
     folioPago: paymentData.id ? String(paymentData.id) : "",
-    fecha: fechaHoy(),
-    horaEnvio: horaMXAhora()
+    fecha: fechaPedido,
+    horaEnvio: horaPedido
   };
+
+  // El dinero ya entró: se registra como venta sin pasar por cocina
+  if (opciones.comoVenta) {
+    pedido.estado = "Entregado";
+    pedido.horaEntrega = horaPedido;
+    pedido.entregadoEn = cuando;
+  }
 
   pedidos.push(pedido);
   await guardarPedido(pedido);
@@ -1069,14 +1082,26 @@ app.get("/pedidos/online-hoy", (req, res) => {
   });
 });
 
-// Quitar un pago atorado de la lista, ya resuelto por fuera (se le devolvió
-// el dinero, el cliente ya no vino, se le entregó a mano). El cobro sigue
-// en Mercado Pago; esto solo deja de reclamarlo en las pantallas.
+// Cerrar un pago atorado. El dinero ya entró, así que no se tira: se anota
+// como venta entregada, en el día en que el cliente pagó, y deja de salir
+// en las pantallas. Pide contraseña como los demás borrados.
 app.delete("/pagos-sin-pedido/:ref", soloAdmin, async (req, res) => {
+  if (req.body.password !== PASS_ELIMINAR) {
+    return res.status(401).json({ error: "Contraseña incorrecta" });
+  }
+
   try {
-    await eliminarPedidoPendiente(req.params.ref);
+    const r = await confirmarPagoOnline(req.params.ref, null, { comoVenta: true });
     pagosAtorados = pagosAtorados.filter(p => p.ref !== req.params.ref);
-    res.json({ ok: true });
+
+    // Si el cobro ya no se puede confirmar con Mercado Pago, al menos se
+    // deja de reclamar; el dato del cobro sigue en la cuenta
+    if (!r.ok) {
+      await eliminarPedidoPendiente(req.params.ref);
+      return res.json({ ok: true, registrado: false, motivo: r.error });
+    }
+
+    res.json({ ok: true, registrado: true, pedidoId: r.pedidoId, codigo: r.codigo });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
