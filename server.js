@@ -963,11 +963,20 @@ app.post("/webhook-mp", (req, res) => {
 // horas ya no se manda a cocina, se reporta para hablarle al cliente.
 const MINUTOS_RECUPERACION = 30;
 
+// Los atorados quedan guardados aquí para que las pantallas los pinten sin
+// preguntarle a Mercado Pago en cada refresco
+let pagosAtorados = [];
+let ultimaRevisionViejos = 0;
+
 async function recuperarPagosSinPedido() {
   if (!mpClient || (!process.env.MERCADOPAGO_ACCESS_TOKEN_ONLINE && !process.env.MERCADOPAGO_ACCESS_TOKEN)) return;
 
   try {
     const ahora = Date.now();
+    // Los viejos se revisan cada 5 minutos: no cambian de un momento a otro
+    // y cada uno es una consulta a Mercado Pago
+    const tocaRevisarViejos = ahora - ultimaRevisionViejos > 5 * 60 * 1000;
+    const atorados = [];
     const pendientes = await listarPedidosPendientes();
 
     for (const p of pendientes) {
@@ -976,19 +985,42 @@ async function recuperarPagosSinPedido() {
       // Menos de dos minutos: el cliente todavía puede estar pagando
       if (edad < 2 * 60 * 1000) continue;
 
-      if (edad > MINUTOS_RECUPERACION * 60 * 1000) {
-        // Ya no se manda solo; sale en el reporte de pagos sin pedido
-        if (edad > 7 * 24 * 60 * 60 * 1000) await eliminarPedidoPendiente(p.ref);
-        continue;
+      const esViejo = edad > MINUTOS_RECUPERACION * 60 * 1000;
+
+      if (esViejo) {
+        if (edad > 7 * 24 * 60 * 60 * 1000) { await eliminarPedidoPendiente(p.ref); continue; }
+        if (!tocaRevisarViejos) continue;
       }
 
       const pago = await buscarPaymentPorReferencia(p.ref);
       if (!pago || pago.status !== "approved") continue;
 
+      if (esViejo) {
+        // Ya no se manda solo a cocina: el cliente probablemente ya se fue
+        atorados.push({
+          ref: p.ref,
+          cliente: p.cliente,
+          telefono: p.telefono,
+          total: p.total,
+          productos: p.productos || [],
+          folioPago: String(pago.id),
+          creadoEn: cuandoSeCreo(p),
+          cuando: new Date(cuandoSeCreo(p)).toLocaleString("es-MX", { timeZone: "America/Mexico_City" }),
+          minutos: Math.round(edad / 60000)
+        });
+        continue;
+      }
+
       const r = await confirmarPagoOnline(p.ref, pago.id);
       if (r.ok && !r.repetido) {
         console.log("Pedido recuperado por el barrido:", r.codigo, "-", p.cliente);
       }
+    }
+
+    if (tocaRevisarViejos) {
+      ultimaRevisionViejos = ahora;
+      pagosAtorados = atorados;
+      if (atorados.length) console.log("Pagos cobrados sin pedido:", atorados.length);
     }
   } catch (e) {
     console.error("Error recuperando pagos sin pedido:", e.message);
@@ -998,39 +1030,43 @@ async function recuperarPagosSinPedido() {
 setInterval(recuperarPagosSinPedido, 60 * 1000);
 // Tras un reinicio o un deploy puede haber quedado alguno a medias
 setTimeout(recuperarPagosSinPedido, 15 * 1000);
-global.__barrido = recuperarPagosSinPedido;   // para dispararlo en pruebas
+// Ganchos para poder probar la recuperación sin esperar los intervalos
+global.__barrido = recuperarPagosSinPedido;
+global.__forzarViejos = () => { ultimaRevisionViejos = 0; };
 
 // Pagos cobrados que nunca se volvieron pedido y ya son muy viejos para
 // mandarlos a cocina. Con el teléfono a la mano para hablarle al cliente.
 app.get("/pagos-sin-pedido", soloAdmin, async (req, res) => {
   try {
-    const pendientes = await listarPedidosPendientes();
-    const ahora = Date.now();
-    const cobrados = [];
-
-    for (const p of pendientes) {
-      const edad = ahora - cuandoSeCreo(p);
-      if (edad < 2 * 60 * 1000) continue;
-
-      const pago = await buscarPaymentPorReferencia(p.ref);
-      if (!pago || pago.status !== "approved") continue;
-
-      cobrados.push({
-        ref: p.ref,
-        cliente: p.cliente,
-        telefono: p.telefono,
-        total: p.total,
-        productos: p.productos || [],
-        folioPago: String(pago.id),
-        cuando: new Date(cuandoSeCreo(p)).toLocaleString("es-MX", { timeZone: "America/Mexico_City" }),
-        minutos: Math.round(edad / 60000)
-      });
-    }
-
-    res.json({ pagos: cobrados });
+    // Al abrir el reporte se vuelve a preguntar, para no ver datos de hace rato
+    ultimaRevisionViejos = 0;
+    await recuperarPagosSinPedido();
+    res.json({ pagos: pagosAtorados });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
+});
+
+// Pedidos en línea del día para la pantalla de entrega, del más nuevo al
+// más viejo. Va sin contraseña como el resto de esa pantalla, así que los
+// pagos atorados salen sin teléfono: ahí solo importa saber que existen.
+app.get("/pedidos/online-hoy", (req, res) => {
+  const hoy = fechaHoy();
+
+  const enLinea = pedidos
+    .filter(p => p.origen === "cliente" && p.fecha === hoy)
+    .sort((a, b) => (b.creadoEn || b.id) - (a.creadoEn || a.id));
+
+  res.json({
+    pedidos: enLinea,
+    atorados: pagosAtorados.map(p => ({
+      cliente: p.cliente,
+      total: p.total,
+      productos: p.productos,
+      cuando: p.cuando,
+      minutos: p.minutos
+    }))
+  });
 });
 
 // Mandar a cocina un pago que se quedó atorado, ya revisado por el dueño
