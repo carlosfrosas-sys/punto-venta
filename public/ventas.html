@@ -1964,16 +1964,9 @@ function hacerLogin() {
   }
 
   function quitarPagoAtorado(ref) {
-    if (!confirm("El pago ya entró, así que se registra como venta entregada del día en que el cliente pagó, y deja de avisar en entrega.\n\nÚsalo cuando ya le diste su pedido o ya lo arreglaste con él.")) return;
+    if (!confirm("Se quita de la lista y queda registrado como venta del día en que el cliente pagó.\n\nSi le devolviste el dinero, después borra esa venta desde la lista del día.")) return;
 
-    const pass = prompt("Ingresa la contrasena para cerrarlo:");
-    if (!pass) return;
-
-    fetch("/pagos-sin-pedido/" + encodeURIComponent(ref), {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password: pass })
-    })
+    fetch("/pagos-sin-pedido/" + encodeURIComponent(ref), { method: "DELETE" })
       .then(r => r.json())
       .then(d => {
         if (!d.ok) { alert(d.error || "No se pudo cerrar"); return; }

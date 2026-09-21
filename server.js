@@ -1083,19 +1083,12 @@ app.get("/pedidos/online-hoy", (req, res) => {
   });
 });
 
-// Estas dos se usan desde ventas (con sesión) y desde entrega, que va sin
-// login a propósito. Por eso basta con la contraseña de eliminar: es la
-// misma que ya se pide para borrar pedidos.
-function conSesionOContrasena(req, res, next) {
-  if (req.get("X-Token") === TOKEN_ADMIN) return next();
-  if (req.body && req.body.password === PASS_ELIMINAR) return next();
-  res.status(401).json({ error: "Contraseña incorrecta" });
-}
-
 // Cerrar un pago atorado. El dinero ya entró, así que no se tira: se anota
 // como venta entregada, en el día en que el cliente pagó, y deja de salir
-// en las pantallas.
-app.delete("/pagos-sin-pedido/:ref", conSesionOContrasena, async (req, res) => {
+// en las pantallas. Si hubo que devolver el dinero, esa venta se borra
+// desde la página de ventas, que ahí sí pide contraseña.
+// Va sin contraseña porque se usa desde entrega, que no tiene login.
+app.delete("/pagos-sin-pedido/:ref", async (req, res) => {
   try {
     const r = await confirmarPagoOnline(req.params.ref, null, { comoVenta: true });
     pagosAtorados = pagosAtorados.filter(p => p.ref !== req.params.ref);
@@ -1113,8 +1106,9 @@ app.delete("/pagos-sin-pedido/:ref", conSesionOContrasena, async (req, res) => {
   }
 });
 
-// Mandar a cocina un pago que se quedó atorado, ya revisado por el dueño
-app.post("/pagos-sin-pedido/:ref/enviar", conSesionOContrasena, async (req, res) => {
+// Mandar a cocina un pago que se quedó atorado, para el cliente que sigue
+// esperando. También se usa desde entrega, así que va sin contraseña.
+app.post("/pagos-sin-pedido/:ref/enviar", async (req, res) => {
   try {
     const r = await confirmarPagoOnline(req.params.ref, null);
     if (!r.ok) return res.status(400).json(r);

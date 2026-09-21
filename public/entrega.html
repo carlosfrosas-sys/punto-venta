@@ -974,14 +974,7 @@
 
     // El cliente está aquí y quiere su comida: el pedido entra a cocina
     function mandarAtoradoACocina(ref) {
-      const pass = prompt("Contraseña para mandarlo a cocina:");
-      if (!pass) return;
-
-      fetch("/pagos-sin-pedido/" + encodeURIComponent(ref) + "/enviar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: pass })
-      })
+      fetch("/pagos-sin-pedido/" + encodeURIComponent(ref) + "/enviar", { method: "POST" })
         .then(r => r.json())
         .then(d => {
           if (!d.ok) { alert(d.error || "No se pudo mandar"); return; }
@@ -991,21 +984,15 @@
         .catch(() => alert("Error de conexión"));
     }
 
-    // Ya se resolvió: el cobro se anota como venta y deja de avisar
+    // Ya se entregó: se quita de aquí y queda anotado como venta del día.
+    // Si hubo que devolver el dinero, esa venta se borra desde ventas.
     function cerrarAtorado(ref) {
-      if (!confirm("El pago ya entró, así que se registra como venta del día en que el cliente pagó y deja de avisar aquí.")) return;
+      if (!confirm("¿Ya se entregó este pedido? Se quita de la lista y queda como venta del día.")) return;
 
-      const pass = prompt("Contraseña para cerrarlo:");
-      if (!pass) return;
-
-      fetch("/pagos-sin-pedido/" + encodeURIComponent(ref), {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: pass })
-      })
+      fetch("/pagos-sin-pedido/" + encodeURIComponent(ref), { method: "DELETE" })
         .then(r => r.json())
         .then(d => {
-          if (!d.ok) { alert(d.error || "No se pudo cerrar"); return; }
+          if (!d.ok) { alert(d.error || "No se pudo quitar"); return; }
           cargarOnline();
         })
         .catch(() => alert("Error de conexión"));
