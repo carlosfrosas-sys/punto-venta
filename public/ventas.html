@@ -1946,7 +1946,10 @@ function hacerLogin() {
           html += '<div style="font-size:13px;color:#666;margin-top:3px;">' + prods + '</div>';
           html += '<div style="font-size:11px;color:#bbb;">folio de pago ' + p.folioPago + '</div>';
           html += '</div>';
-          html += '<div style="font-size:17px;font-weight:700;color:#4caf50;white-space:nowrap;">$' + p.total + '</div>';
+          html += '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">';
+          html += '<span style="font-size:17px;font-weight:700;color:#4caf50;white-space:nowrap;">$' + p.total + '</span>';
+          html += '<button class="btn-eliminar" title="Quitar de la lista" onclick="quitarPagoAtorado(\'' + p.ref + '\')">&#10005;</button>';
+          html += '</div>';
           html += '</div>';
           html += '<div class="ficha-fila" style="margin-top:10px;">';
           html += '<a href="https://wa.me/52' + p.telefono + '?text=' + msj + '" target="_blank" class="btn-mini" style="background:#25d366;text-decoration:none;display:inline-block;">WhatsApp</a>';
@@ -1960,6 +1963,18 @@ function hacerLogin() {
       .catch(() => {
         contenedor.innerHTML = '<div class="sin-datos">No se pudo consultar Mercado Pago</div>';
       });
+  }
+
+  function quitarPagoAtorado(ref) {
+    if (!confirm("Se quita de la lista y deja de avisar en entrega.\n\nEl cobro sigue en Mercado Pago: hazlo solo si ya le devolviste el dinero, ya le entregaste su pedido o el cliente ya no vino.")) return;
+
+    fetch("/pagos-sin-pedido/" + encodeURIComponent(ref), { method: "DELETE" })
+      .then(r => r.json())
+      .then(d => {
+        if (!d.ok) { alert(d.error || "No se pudo quitar"); return; }
+        navPagosSinPedido();
+      })
+      .catch(() => alert("Error de conexión"));
   }
 
   function enviarPagoACocina(ref) {

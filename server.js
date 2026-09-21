@@ -1069,6 +1069,19 @@ app.get("/pedidos/online-hoy", (req, res) => {
   });
 });
 
+// Quitar un pago atorado de la lista, ya resuelto por fuera (se le devolvió
+// el dinero, el cliente ya no vino, se le entregó a mano). El cobro sigue
+// en Mercado Pago; esto solo deja de reclamarlo en las pantallas.
+app.delete("/pagos-sin-pedido/:ref", soloAdmin, async (req, res) => {
+  try {
+    await eliminarPedidoPendiente(req.params.ref);
+    pagosAtorados = pagosAtorados.filter(p => p.ref !== req.params.ref);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Mandar a cocina un pago que se quedó atorado, ya revisado por el dueño
 app.post("/pagos-sin-pedido/:ref/enviar", soloAdmin, async (req, res) => {
   try {
