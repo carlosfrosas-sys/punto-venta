@@ -895,10 +895,14 @@
       lista.style.display = "block";
       lista.style.marginBottom = "20px";
       lista.innerHTML = '<div style="text-align:center;color:#555;font-size:14px;margin:10px 0;">Cargando...</div>';
+      cargarOnline();
+    }
 
+    function cargarOnline() {
+      const lista = document.getElementById("online-lista");
       fetch("/pedidos/online-hoy")
         .then(res => res.json())
-        .then(renderOnline)
+        .then(d => { renderOnline(d); pintarAvisoAtorados((d.atorados || []).length); })
         .catch(() => {
           lista.innerHTML = '<div style="text-align:center;color:#e05252;font-size:14px;margin:10px 0;">No se pudo cargar</div>';
         });
@@ -919,8 +923,11 @@
           '<div style="font-size:18px;font-weight:700;margin-top:2px;">' + a.cliente + ' &middot; $' + a.total + '</div>' +
           '<div style="font-size:13px;opacity:0.85;margin-top:4px;">' +
             (a.productos || []).map(pr => (pr.cantidad > 1 ? pr.cantidad + "x " : "") + pr.nombre).join(", ") + '</div>' +
-          '<div style="font-size:12px;opacity:0.7;margin-top:6px;">Pagó hace ' + a.minutos + ' min y su pedido no entró. ' +
-            'Revísalo en la página de ventas, en Pagos atorados.</div>';
+          '<div style="font-size:12px;opacity:0.7;margin-top:6px;">Pagó hace ' + a.minutos + ' min y su pedido nunca entró.</div>' +
+          '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">' +
+            '<button onclick="mandarAtoradoACocina(\'' + a.ref + '\')" style="background:#fff;color:#7f1d1d;border:none;border-radius:8px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">Mandar a cocina</button>' +
+            '<button onclick="cerrarAtorado(\'' + a.ref + '\')" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.4);border-radius:8px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">&#10005; Ya se resolvió</button>' +
+          '</div>';
         lista.appendChild(div);
       });
 
@@ -965,25 +972,65 @@
       lista.appendChild(cont);
     }
 
-    // Aviso en el botón aunque nadie lo haya abierto
+    // El cliente está aquí y quiere su comida: el pedido entra a cocina
+    function mandarAtoradoACocina(ref) {
+      const pass = prompt("Contraseña para mandarlo a cocina:");
+      if (!pass) return;
+
+      fetch("/pagos-sin-pedido/" + encodeURIComponent(ref) + "/enviar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: pass })
+      })
+        .then(r => r.json())
+        .then(d => {
+          if (!d.ok) { alert(d.error || "No se pudo mandar"); return; }
+          alert("Listo, entró a cocina con el código " + d.codigo);
+          cargarOnline();
+        })
+        .catch(() => alert("Error de conexión"));
+    }
+
+    // Ya se resolvió: el cobro se anota como venta y deja de avisar
+    function cerrarAtorado(ref) {
+      if (!confirm("El pago ya entró, así que se registra como venta del día en que el cliente pagó y deja de avisar aquí.")) return;
+
+      const pass = prompt("Contraseña para cerrarlo:");
+      if (!pass) return;
+
+      fetch("/pagos-sin-pedido/" + encodeURIComponent(ref), {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: pass })
+      })
+        .then(r => r.json())
+        .then(d => {
+          if (!d.ok) { alert(d.error || "No se pudo cerrar"); return; }
+          cargarOnline();
+        })
+        .catch(() => alert("Error de conexión"));
+    }
+
+    function pintarAvisoAtorados(n) {
+      const btn = document.getElementById("btnOnline");
+      if (n > 0) {
+        btn.innerText = "Online (" + n + ")";
+        btn.style.background = "#ef4444";
+        btn.style.borderColor = "#ef4444";
+        btn.style.color = "#fff";
+      } else {
+        btn.innerText = "Online";
+        btn.style.background = "";
+        btn.style.borderColor = "";
+        btn.style.color = "";
+      }
+    }
+
+    // Aviso en el botón aunque nadie haya abierto la lista
     function revisarAtorados() {
       fetch("/pedidos/online-hoy")
         .then(r => r.json())
-        .then(d => {
-          const btn = document.getElementById("btnOnline");
-          const n = (d.atorados || []).length;
-          if (n > 0) {
-            btn.innerText = "Online (" + n + ")";
-            btn.style.background = "#ef4444";
-            btn.style.borderColor = "#ef4444";
-            btn.style.color = "#fff";
-          } else {
-            btn.innerText = "Online";
-            btn.style.background = "";
-            btn.style.borderColor = "";
-            btn.style.color = "";
-          }
-        })
+        .then(d => pintarAvisoAtorados((d.atorados || []).length))
         .catch(() => {});
     }
 
