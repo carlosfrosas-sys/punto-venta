@@ -41,9 +41,18 @@
       color: #888;
     }
 
-    .btn-entregados {
+    /* Los botones del encabezado van juntos a la derecha. Antes cada uno
+       se posicionaba solo en right:0 y al agregar el segundo quedaron
+       encimados. */
+    .botones-header {
       position: absolute;
       right: 0;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .btn-entregados {
       background: #1a1a1a;
       color: #888;
       border: 1.5px solid #333;
@@ -456,8 +465,10 @@
 
   <div class="header-entrega">
     <h1>Entrega</h1>
-    <button class="btn-entregados" id="btnOnline" onclick="toggleOnline()">Online</button>
-    <button class="btn-entregados" onclick="toggleEntregados()">Entregados</button>
+    <div class="botones-header">
+      <button class="btn-entregados" id="btnOnline" onclick="toggleOnline()">Online</button>
+      <button class="btn-entregados" onclick="toggleEntregados()">Entregados</button>
+    </div>
   </div>
   <div id="online-lista" style="display:none;"></div>
   <div id="entregados-lista" style="display:none;"></div>
