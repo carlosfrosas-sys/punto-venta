@@ -564,6 +564,32 @@
     "Sincro": "Sincronizadas"
   };
 
+  // Orden de los botones en el kiosko: lo del desayuno primero, porque es
+  // con lo que abre el dia, y lo de tomar al final, que es lo ultimo que
+  // uno agrega. Van las claves internas, no las etiquetas.
+  var PRIMEROS_KIOSKO = ["Desayunos", "Paquetes"];
+  var ULTIMOS_KIOSKO = ["Aguas", "Bebidas"];
+
+  function ordenarKiosko(menu) {
+    var orden = {};
+
+    PRIMEROS_KIOSKO.forEach(function (clave) {
+      if (menu[clave]) orden[clave] = menu[clave];
+    });
+
+    Object.keys(menu).forEach(function (clave) {
+      if (PRIMEROS_KIOSKO.indexOf(clave) !== -1) return;
+      if (ULTIMOS_KIOSKO.indexOf(clave) !== -1) return;
+      orden[clave] = menu[clave];
+    });
+
+    ULTIMOS_KIOSKO.forEach(function (clave) {
+      if (menu[clave]) orden[clave] = menu[clave];
+    });
+
+    return orden;
+  }
+
   // Un snack suelto se vuelve su propio boton del menu. La bandera le dice
   // a la pantalla que preguntar: sabor, proteina, indicaciones o nada.
   function snackSuelto(item) {
@@ -659,7 +685,7 @@
         : datos;
     });
 
-    return salida;
+    return ordenarKiosko(salida);
   }
 
   global.MENU = {
