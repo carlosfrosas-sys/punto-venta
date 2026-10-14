@@ -923,22 +923,22 @@ function mostrarOpciones(categoria) {
 
   // Snacks que ahora son su propio botón del menú. Van antes del atajo de
   // "directo" porque cada uno tiene algo que preguntar.
-  if (datos.hotdogs) {
+  if (datos.hotdogs || datos.banderillas) {
     document.getElementById("categorias").style.display = "none";
     document.getElementById("btnVolver").style.display = "block";
-    document.querySelector(".section-title").innerText = "Hot Dogs";
-    mostrarHotDogs(datos.hotdogs);
+    document.querySelector(".section-title").innerText = categoria;
+    mostrarPorPiezas(categoria, datos.hotdogs || datos.banderillas,
+                     datos.hotdogs ? notasHotDog : notasBanderilla);
     return;
   }
 
-  if (datos.nachos || datos.maruchan || datos.banderilla) {
+  if (datos.nachos || datos.maruchan) {
     document.getElementById("categorias").style.display = "none";
     document.getElementById("btnVolver").style.display = "block";
     document.querySelector(".section-title").innerText = categoria;
 
     if (datos.nachos) mostrarProteinasNachos(datos.precio);
-    else if (datos.maruchan) mostrarSaboresMaruchan(datos.precio);
-    else mostrarNotas(categoria, datos.precio, notasBanderilla);
+    else mostrarSaboresMaruchan(datos.precio);
     return;
   }
 
@@ -1105,7 +1105,7 @@ function mostrarOpciones(categoria) {
         if (categoria === "Burguers") {
           mostrarNotas(item.nombre, item.precio, notasHamburguesas);
         } else if (categoria === "Snacks" && item.hotdog) {
-          mostrarOpcionPapasHotDog(item.nombre, item.precio, item.precioConPapas);
+          mostrarOpcionPapas(item.nombre, item.precio, item.precioConPapas, notasHotDog);
         } else if (datos.agrupada) {
           agregarProductoSinNota(item.nombre, item.precio);
         } else if (categoria === "Snacks" && item.paletas) {
@@ -2221,23 +2221,26 @@ function mostrar1PiezaMolletes(datos) {
   });
 }
 
-// Primero cuántos, luego si van con papas. Un hot dog solo y dos con papas
-// eran dos botones distintos en el menú; aquí es una sola pregunta.
-function mostrarHotDogs(opciones) {
+// Hot dogs y banderillas se piden igual: primero cuántos y luego si van
+// con papas. Antes cada combinación era un botón suelto del menú y el
+// cliente tenía que adivinar cuál era cuál.
+function mostrarPorPiezas(titulo, opciones, notas) {
   const cont = document.getElementById("proteinas");
-  cont.innerHTML = "<h3>Hot Dogs</h3><p>¿Cuántos quieres?</p>";
+  cont.innerHTML = "<h3>" + titulo + "</h3><p>¿Cuántos quieres?</p>";
 
   opciones.forEach((o, i) => {
     const btn = document.createElement("button");
-    btn.innerText = (i === 0 ? "1 Hot Dog" : o.nombre) + " - desde $" + o.precio;
-    btn.onclick = () => mostrarOpcionPapasHotDog(o.nombre, o.precio, o.precioConPapas);
+    // El primero es la pieza sola; su nombre en el menú no dice "1"
+    btn.innerText = (i === 0 ? "1 " + o.nombre : o.nombre) +
+                    " - $" + o.precio + " o $" + o.precioConPapas + " con papas";
+    btn.onclick = () => mostrarOpcionPapas(o.nombre, o.precio, o.precioConPapas, notas);
     cont.appendChild(btn);
   });
 }
 
-function mostrarOpcionPapasHotDog(nombre, precioSin, precioCon) {
+function mostrarOpcionPapas(nombre, precioSin, precioCon, notas) {
   const cont = document.getElementById("proteinas");
-  cont.innerHTML = "<h3>" + nombre + "</h3><p>Con papas?</p>";
+  cont.innerHTML = "<h3>" + nombre + "</h3><p>¿Con papas?</p>";
 
   const btnCon = document.createElement("button");
   btnCon.innerText = "Con Papas - $" + precioCon;
@@ -2245,7 +2248,7 @@ function mostrarOpcionPapasHotDog(nombre, precioSin, precioCon) {
   btnCon.style.color = "white";
   btnCon.style.fontSize = "16px";
   btnCon.onclick = () => {
-    mostrarNotas(nombre + " con Papas", precioCon, notasHotDog);
+    mostrarNotas(nombre + " con Papas", precioCon, notas);
   };
 
   const btnSin = document.createElement("button");
@@ -2254,7 +2257,7 @@ function mostrarOpcionPapasHotDog(nombre, precioSin, precioCon) {
   btnSin.style.color = "white";
   btnSin.style.fontSize = "16px";
   btnSin.onclick = () => {
-    mostrarNotas(nombre, precioSin, notasHotDog);
+    mostrarNotas(nombre, precioSin, notas);
   };
 
   cont.appendChild(btnCon);

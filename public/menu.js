@@ -335,8 +335,11 @@
     items: [
       { nombre: "Hot Dog", precio: 17, hotdog: true, precioConPapas: 35 },
       { nombre: "2 Hot Dogs", precio: 34, hotdog: true, precioConPapas: 52 },
-      { nombre: "Banderilla", precio: 27, banderilla: true },
-      { nombre: "Banderilla con Papas", precio: 45, banderilla: true },
+      // En el kiosko estas dos se juntan en un solo boton que pregunta
+      // cuantas y si van con papas; en caja siguen siendo dos botones.
+      // "dobles" son los precios de dos piezas, que solo usa el kiosko.
+      { nombre: "Banderilla", precio: 27, banderilla: true, dobles: { precio: 54, precioConPapas: 72 } },
+      { nombre: "Banderilla con Papas", precio: 45, banderilla: true, conPapas: true },
       { nombre: "Papas a la Francesa", precio: 40 },
       { nombre: "Nachos", precio: 42, nachos: true },
       { nombre: "Maruchan", precio: 25, maruchan: true },
@@ -630,8 +633,23 @@
           };
         }
 
+        // Las banderillas igual: un boton, y adentro cuantas y si con papas.
+        // El precio de una con papas sale del producto que ya existia.
+        var sencilla = datos.items.find(function (i) { return i.banderilla && i.dobles; });
+        var conPapas = datos.items.find(function (i) { return i.banderilla && i.conPapas; });
+
+        if (sencilla) {
+          salida["Banderillas"] = {
+            banderillas: [
+              { nombre: sencilla.nombre, precio: sencilla.precio, precioConPapas: conPapas ? conPapas.precio : sencilla.dobles.precioConPapas },
+              { nombre: "2 Banderillas", precio: sencilla.dobles.precio, precioConPapas: sencilla.dobles.precioConPapas }
+            ]
+          };
+        }
+
         datos.items.forEach(function (item) {
-          if (!item.hotdog) salida[item.nombre] = snackSuelto(item);
+          if (item.hotdog || item.banderilla) return;
+          salida[item.nombre] = snackSuelto(item);
         });
         return;
       }
