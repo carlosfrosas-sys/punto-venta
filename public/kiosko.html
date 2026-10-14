@@ -897,8 +897,12 @@ function volverACategorias() {
 function cargarCategorias() {
   const cont = document.getElementById("categorias");
   for (let categoria in menu) {
-    const btn = document.createElement("button");
     const datosCat = menu[categoria];
+    // Categoría que sigue en el menú pero sin botón propio: sus partes ya
+    // salieron al menú principal
+    if (datosCat.oculto) continue;
+
+    const btn = document.createElement("button");
     // Las categorias que se agregan de un toque muestran su precio,
     // igual que los productos sueltos
     const titulo = datosCat.etiqueta || categoria;
@@ -923,6 +927,15 @@ function mostrarOpciones(categoria) {
 
   // Snacks que ahora son su propio botón del menú. Van antes del atajo de
   // "directo" porque cada uno tiene algo que preguntar.
+  // Botón que es atajo a una parte de otra categoría (los sandwiches)
+  if (datos.atajo) {
+    document.getElementById("categorias").style.display = "none";
+    document.getElementById("btnVolver").style.display = "block";
+    document.querySelector(".section-title").innerText = categoria;
+    mostrarSubcategoria(datos.atajo.categoria, datos.atajo.sub);
+    return;
+  }
+
   if (datos.hotdogs || datos.banderillas) {
     document.getElementById("categorias").style.display = "none";
     document.getElementById("btnVolver").style.display = "block";

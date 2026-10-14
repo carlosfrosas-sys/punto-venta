@@ -650,6 +650,19 @@
 
       // Los snacks se sacan al menu principal, uno por boton. Los hot dogs
       // se juntan en uno solo que luego pregunta piezas y papas.
+      // Los cuatro tipos de sandwich salen al menu principal. La categoria
+      // se queda en el menu pero sin boton: cada uno la sigue usando por
+      // dentro, con sus proteinas y sus indicaciones.
+      if (categoria === "Sandwiches" && datos.subcategorias) {
+        salida[categoria] = Object.assign({}, datos, { oculto: true });
+
+        Object.keys(datos.subcategorias).forEach(function (sub) {
+          var nombre = datos.subcategorias[sub].nombre || sub;
+          salida[nombre] = { atajo: { categoria: categoria, sub: sub } };
+        });
+        return;
+      }
+
       if (categoria === "Snacks" && Array.isArray(datos.items)) {
         var hotdogs = datos.items.filter(function (i) { return i.hotdog; });
 
