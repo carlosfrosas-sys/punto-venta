@@ -902,7 +902,7 @@ function cargarCategorias() {
     // Las categorias que se agregan de un toque muestran su precio,
     // igual que los productos sueltos
     const titulo = datosCat.etiqueta || categoria;
-    btn.innerText = (datosCat.directo && !datosCat.subcategorias && datosCat.precio)
+    btn.innerText = (datosCat.directo && !datosCat.subcategorias && datosCat.precio && !datosCat.ocultarPrecio)
       ? titulo + " - $" + datosCat.precio
       : titulo;
     btn.onclick = () => mostrarOpciones(categoria);

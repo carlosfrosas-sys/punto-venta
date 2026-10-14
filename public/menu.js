@@ -567,7 +567,8 @@
     if (item.nachos) return { precio: item.precio, nachos: true };
     if (item.maruchan) return { precio: item.precio, maruchan: true };
     if (item.banderilla) return { precio: item.precio, banderilla: true };
-    return { precio: item.precio, directo: true };
+    // Es el unico boton del menu que llevaria precio y se veia desparejo
+    return { precio: item.precio, directo: true, ocultarPrecio: true };
   }
 
   function esPaquete(sub) {
