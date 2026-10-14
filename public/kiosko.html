@@ -921,6 +921,27 @@ function mostrarOpciones(categoria) {
     return;
   }
 
+  // Snacks que ahora son su propio botón del menú. Van antes del atajo de
+  // "directo" porque cada uno tiene algo que preguntar.
+  if (datos.hotdogs) {
+    document.getElementById("categorias").style.display = "none";
+    document.getElementById("btnVolver").style.display = "block";
+    document.querySelector(".section-title").innerText = "Hot Dogs";
+    mostrarHotDogs(datos.hotdogs);
+    return;
+  }
+
+  if (datos.nachos || datos.maruchan || datos.banderilla) {
+    document.getElementById("categorias").style.display = "none";
+    document.getElementById("btnVolver").style.display = "block";
+    document.querySelector(".section-title").innerText = categoria;
+
+    if (datos.nachos) mostrarProteinasNachos(datos.precio);
+    else if (datos.maruchan) mostrarSaboresMaruchan(datos.precio);
+    else mostrarNotas(categoria, datos.precio, notasBanderilla);
+    return;
+  }
+
   // DIRECTO (Gringa, Nortena)
   if (datos.directo && !datos.subcategorias) {
     agregarProductoSinNota(categoria, datos.precio);
@@ -2196,6 +2217,20 @@ function mostrar1PiezaMolletes(datos) {
     btn.onclick = () => {
       mostrarPicoDegallo("1pza de Mollete de " + nombre, p1);
     };
+    cont.appendChild(btn);
+  });
+}
+
+// Primero cuántos, luego si van con papas. Un hot dog solo y dos con papas
+// eran dos botones distintos en el menú; aquí es una sola pregunta.
+function mostrarHotDogs(opciones) {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>Hot Dogs</h3><p>¿Cuántos quieres?</p>";
+
+  opciones.forEach((o, i) => {
+    const btn = document.createElement("button");
+    btn.innerText = (i === 0 ? "1 Hot Dog" : o.nombre) + " - desde $" + o.precio;
+    btn.onclick = () => mostrarOpcionPapasHotDog(o.nombre, o.precio, o.precioConPapas);
     cont.appendChild(btn);
   });
 }

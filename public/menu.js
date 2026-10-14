@@ -335,8 +335,8 @@
     items: [
       { nombre: "Hot Dog", precio: 17, hotdog: true, precioConPapas: 35 },
       { nombre: "2 Hot Dogs", precio: 34, hotdog: true, precioConPapas: 52 },
-      { nombre: "Banderilla", precio: 27 },
-      { nombre: "Banderilla con Papas", precio: 45 },
+      { nombre: "Banderilla", precio: 27, banderilla: true },
+      { nombre: "Banderilla con Papas", precio: 45, banderilla: true },
       { nombre: "Papas a la Francesa", precio: 40 },
       { nombre: "Nachos", precio: 42, nachos: true },
       { nombre: "Maruchan", precio: 25, maruchan: true },
@@ -557,8 +557,18 @@
   // se agrega la etiqueta que se le muestra a la gente.
   var ETIQUETAS_KIOSKO = {
     "Aguas": "Aguas Frescas",
-    "Burguers": "Hamburguesas"
+    "Burguers": "Hamburguesas",
+    "Sincro": "Sincronizadas"
   };
+
+  // Un snack suelto se vuelve su propio boton del menu. La bandera le dice
+  // a la pantalla que preguntar: sabor, proteina, indicaciones o nada.
+  function snackSuelto(item) {
+    if (item.nachos) return { precio: item.precio, nachos: true };
+    if (item.maruchan) return { precio: item.precio, maruchan: true };
+    if (item.banderilla) return { precio: item.precio, banderilla: true };
+    return { precio: item.precio, directo: true };
+  }
 
   function esPaquete(sub) {
     return /^Paquete\s/.test(sub);
@@ -603,6 +613,25 @@
 
         salida["Paquetes"] = { subcategorias: paquetes };
         salida["Desayunos"] = { subcategorias: ligeros };
+        return;
+      }
+
+      // Los snacks se sacan al menu principal, uno por boton. Los hot dogs
+      // se juntan en uno solo que luego pregunta piezas y papas.
+      if (categoria === "Snacks" && Array.isArray(datos.items)) {
+        var hotdogs = datos.items.filter(function (i) { return i.hotdog; });
+
+        if (hotdogs.length > 0) {
+          salida["Hot Dogs"] = {
+            hotdogs: hotdogs.map(function (h) {
+              return { nombre: h.nombre, precio: h.precio, precioConPapas: h.precioConPapas };
+            })
+          };
+        }
+
+        datos.items.forEach(function (item) {
+          if (!item.hotdog) salida[item.nombre] = snackSuelto(item);
+        });
         return;
       }
 
