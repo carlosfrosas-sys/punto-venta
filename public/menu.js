@@ -561,14 +561,15 @@
   var ETIQUETAS_KIOSKO = {
     "Aguas": "Aguas Frescas",
     "Burguers": "Hamburguesas",
-    "Sincro": "Sincronizadas"
+    "Sincro": "Sincronizadas",
+    "Café": "Bebidas Calientes"
   };
 
   // Orden de los botones en el kiosko: lo del desayuno primero, porque es
   // con lo que abre el dia, y lo de tomar al final, que es lo ultimo que
   // uno agrega. Van las claves internas, no las etiquetas.
   var PRIMEROS_KIOSKO = ["Desayunos", "Paquetes"];
-  var ULTIMOS_KIOSKO = ["Aguas", "Bebidas"];
+  var ULTIMOS_KIOSKO = ["Aguas", "Bebidas", "Café"];
 
   function ordenarKiosko(menu) {
     var orden = {};
