@@ -244,6 +244,85 @@ async function marcarEnLineaComoTarjeta() {
   console.log("Pedidos en línea marcados como tarjeta:", viejos.length);
 }
 
+// ---- Qué vive en memoria y qué se le pregunta a MongoDB ----
+// En memoria van los últimos días más todo lo que esté sin entregar: es lo
+// que usan cocina, barra, entrega y la caja. Los reportes preguntan a la
+// base, así que el historial completo nunca se carga de golpe y el arranque
+// no se va haciendo más lento con los años.
+const DIAS_EN_MEMORIA = 90;
+
+// Las fechas se guardan como "dd/mm/yyyy", que no se puede comparar por
+// rango, así que se arma la lista de días y se busca por coincidencia.
+function fechasDeLosUltimos(dias) {
+  const lista = [];
+  const d = fechaMXAhora();
+  for (let i = 0; i < dias; i++) {
+    lista.push(d.toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" }));
+    d.setDate(d.getDate() - 1);
+  }
+  return lista;
+}
+
+// Los extremos se llevan a medianoche: si no, la hora del día recorta el
+// rango y el último día se queda fuera.
+function fechasEntre(desde, hasta) {
+  const d = new Date(desde);
+  d.setHours(0, 0, 0, 0);
+  const fin = new Date(hasta);
+  fin.setHours(0, 0, 0, 0);
+
+  const lista = [];
+  while (d <= fin) {
+    lista.push(d.toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" }));
+    d.setDate(d.getDate() + 1);
+  }
+  return lista;
+}
+
+// Busca en la base; si no hay base, en lo que haya en memoria
+async function consultarPedidos(filtroMongo, filtroMemoria, proyeccion) {
+  if (db) {
+    try {
+      const cursor = db.collection("pedidos").find(filtroMongo);
+      if (proyeccion) cursor.project(proyeccion);
+      const docs = await cursor.toArray();
+      docs.forEach(d => delete d._id);
+      return docs;
+    } catch (e) {
+      console.error("Error consultando pedidos:", e.message);
+    }
+  }
+  return pedidos.filter(filtroMemoria);
+}
+
+function entregadosDe(fecha) {
+  return consultarPedidos(
+    { estado: "Entregado", fecha },
+    p => p.estado === "Entregado" && p.fecha === fecha
+  );
+}
+
+function entregadosEnFechas(fechas) {
+  return consultarPedidos(
+    { estado: "Entregado", fecha: { $in: fechas } },
+    p => p.estado === "Entregado" && fechas.indexOf(p.fecha) !== -1
+  );
+}
+
+// Un pedido que ya no está en memoria por viejo: se busca en la base
+async function buscarPedidoPorId(id) {
+  const enMemoria = pedidos.find(p => p.id === id);
+  if (enMemoria) return enMemoria;
+
+  if (db) {
+    try {
+      const doc = await db.collection("pedidos").findOne({ id });
+      if (doc) { delete doc._id; return doc; }
+    } catch (e) { console.error("Error buscando pedido:", e.message); }
+  }
+  return null;
+}
+
 // Sin índices, cada búsqueda recorre toda la colección. Hoy no se nota;
 // con un año de ventas encima sí. Crearlos es idempotente: si ya están,
 // MongoDB no hace nada.
@@ -252,6 +331,8 @@ async function crearIndices() {
     ["pedidos", { id: 1 }],
     ["pedidos", { estado: 1, fecha: 1 }],
     ["pedidos", { origen: 1, fecha: 1 }],
+    ["pedidos", { codigo: 1 }],
+    ["pedidos", { cliente: 1 }],
     ["pedidos_pendientes", { ref: 1 }],
     ["pedidos_eliminados", { fecha: 1 }],
     ["referidos", { codigo: 1 }],
@@ -279,16 +360,29 @@ async function crearIndices() {
 async function cargarPedidos() {
   if (db) {
     try {
-      pedidos = await db.collection("pedidos").find().toArray();
+      // Los últimos días más todo lo que esté sin entregar, sin importar
+      // de cuándo sea: un pedido activo nunca se puede quedar fuera
+      const recientes = fechasDeLosUltimos(DIAS_EN_MEMORIA);
+      pedidos = await db.collection("pedidos").find({
+        $or: [
+          { fecha: { $in: recientes } },
+          { estado: { $in: ["pendiente", "Listo"] } }
+        ]
+      }).toArray();
       pedidos.forEach(p => delete p._id);
-      idCounter = pedidos.length > 0 ? Math.max(...pedidos.map(p => p.id)) + 1 : 1;
-      console.log("Pedidos cargados desde MongoDB:", pedidos.length);
+
+      // El id sigue del último de todos, no del último que se cargó
+      const ultimo = await db.collection("pedidos").find().sort({ id: -1 }).limit(1).toArray();
+      idCounter = ultimo.length > 0 ? ultimo[0].id + 1 : 1;
+
+      console.log("Pedidos en memoria:", pedidos.length, "(últimos " + DIAS_EN_MEMORIA + " días y los activos)");
       await marcarEnLineaComoTarjeta();
     } catch (e) {
       console.error("Error cargando pedidos:", e.message);
     }
     try {
-      pedidosEliminados = await db.collection("pedidos_eliminados").find().toArray();
+      const recientes = fechasDeLosUltimos(DIAS_EN_MEMORIA);
+      pedidosEliminados = await db.collection("pedidos_eliminados").find({ fecha: { $in: recientes } }).toArray();
       pedidosEliminados.forEach(p => delete p._id);
     } catch(e) {}
     try {
@@ -1473,9 +1567,18 @@ app.get("/pedidos", soloAdmin, (req, res) => {
 
 // Comprobante del cliente: se consulta con el código del pedido, que solo
 // tiene quien lo hizo. No devuelve el teléfono ni datos de pago del cliente.
-app.get("/comprobante/:codigo", (req, res) => {
+app.get("/comprobante/:codigo", async (req, res) => {
   const codigo = String(req.params.codigo || "").toUpperCase();
-  const pedido = pedidos.find(p => p.codigo === codigo);
+  let pedido = pedidos.find(p => p.codigo === codigo);
+
+  // El cliente puede volver a su comprobante semanas después, cuando el
+  // pedido ya no está en memoria
+  if (!pedido && db) {
+    try {
+      const doc = await db.collection("pedidos").findOne({ codigo });
+      if (doc) { delete doc._id; pedido = doc; }
+    } catch (e) { console.error("Error buscando comprobante:", e.message); }
+  }
 
   if (!pedido) return res.status(404).json({ error: "no_encontrado" });
 
@@ -1531,10 +1634,18 @@ app.post("/agotados", soloAdmin, (req, res) => {
 });
 
 // ---- Clientes frecuentes (para mandarles cupones por WhatsApp) ----
-app.get("/clientes-frecuentes", soloAdmin, (req, res) => {
+app.get("/clientes-frecuentes", soloAdmin, async (req, res) => {
   const porTelefono = {};
 
-  pedidos.forEach(p => {
+  // Hace falta el historial completo, pero no los productos: se piden solo
+  // los campos que se usan, que es una fracción del peso
+  const entregados = await consultarPedidos(
+    { estado: "Entregado" },
+    p => p.estado === "Entregado",
+    { cliente: 1, total: 1, fecha: 1, entregadoEn: 1, creadoEn: 1, estado: 1 }
+  );
+
+  entregados.forEach(p => {
     const match = (p.cliente || "").match(/^(.+?)\s*\(Tel:\s*(\d+)\)/);
     if (!match) return;                       // pedidos de caja, sin teléfono
     if (p.estado !== "Entregado") return;     // solo pedidos que sí se cobraron
@@ -1832,16 +1943,20 @@ registrarRutasCuenta("trabajadores");
 registrarRutasCuenta("deudores");
 
 // ---- Historial de un cliente (se abre desde la lista de clientes) ----
-app.get("/cliente-historial/:telefono", soloAdmin, (req, res) => {
+app.get("/cliente-historial/:telefono", soloAdmin, async (req, res) => {
   const telefono = String(req.params.telefono || "").replace(/\D/g, "");
   if (!/^\d{10}$/.test(telefono)) {
     return res.status(400).json({ error: "Teléfono inválido" });
   }
 
-  const suyos = pedidos.filter(p => {
-    const m = (p.cliente || "").match(/\(Tel:\s*(\d+)\)/);
-    return m && m[1] === telefono;
-  });
+  // El teléfono va dentro del nombre, como "Maria (Tel: 5511223344)"
+  const suyos = await consultarPedidos(
+    { cliente: { $regex: "\\(Tel: *" + telefono + "\\)" } },
+    p => {
+      const m = (p.cliente || "").match(/\(Tel:\s*(\d+)\)/);
+      return m && m[1] === telefono;
+    }
+  );
 
   // Del más reciente al más viejo. La fecha y la hora son texto, así que se
   // ordenan por su valor real, no alfabéticamente.
@@ -2201,17 +2316,21 @@ app.delete("/pedido/:id", soloAdmin, async (req, res) => {
     return res.status(401).json({ error: "Contraseña incorrecta" });
   }
   const id = parseInt(req.params.id);
+
+  // Puede ser un pedido viejo que ya no está en memoria: se borra igual
+  const pedido = await buscarPedidoPorId(id);
+  if (!pedido) return res.status(404).send("No encontrado");
+
   const idx = pedidos.findIndex(p => p.id === id);
-  if (idx === -1) return res.status(404).send("No encontrado");
 
   // Guardar en historial de eliminados
-  const eliminado = { ...pedidos[idx], eliminadoEn: new Date().toLocaleString("es-MX", { timeZone: "America/Mexico_City" }) };
+  const eliminado = { ...pedido, eliminadoEn: new Date().toLocaleString("es-MX", { timeZone: "America/Mexico_City" }) };
   pedidosEliminados.push(eliminado);
   if (db) {
     try { await db.collection("pedidos_eliminados").insertOne({ ...eliminado }); } catch(e) {}
   }
 
-  pedidos.splice(idx, 1);
+  if (idx !== -1) pedidos.splice(idx, 1);
   if (db) {
     try {
       await db.collection("pedidos").deleteOne({ id });
@@ -2223,13 +2342,22 @@ app.delete("/pedido/:id", soloAdmin, async (req, res) => {
   res.json({ ok: true });
 });
 
-app.get("/ventas/fechas", soloAdmin, (req, res) => {
-  const fechas = [...new Set(pedidos.filter(p => p.estado === "Entregado" && p.fecha).map(p => p.fecha))];
-  res.json(fechas);
+// El árbol de fechas de la página de ventas: todas las fechas con ventas,
+// que puede ser el historial entero. Se le pregunta a la base.
+app.get("/ventas/fechas", soloAdmin, async (req, res) => {
+  if (db) {
+    try {
+      const fechas = await db.collection("pedidos").distinct("fecha", { estado: "Entregado", fecha: { $ne: null } });
+      return res.json(fechas.filter(Boolean));
+    } catch (e) {
+      console.error("Error consultando fechas:", e.message);
+    }
+  }
+  res.json([...new Set(pedidos.filter(p => p.estado === "Entregado" && p.fecha).map(p => p.fecha))]);
 });
 
-app.get("/ventas/fecha/:fecha", soloAdmin, (req, res) => {
-  const entregados = pedidos.filter(p => p.estado === "Entregado" && p.fecha === req.params.fecha);
+app.get("/ventas/fecha/:fecha", soloAdmin, async (req, res) => {
+  const entregados = await entregadosDe(req.params.fecha);
   const total = entregados.reduce((acc, p) => acc + p.total, 0);
 
   // Categorías
@@ -2256,7 +2384,7 @@ app.get("/ventas/fecha/:fecha", soloAdmin, (req, res) => {
   const dateObj = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
   dateObj.setDate(dateObj.getDate() - 1);
   const fechaAnt = dateObj.getDate().toString().padStart(2, "0") + "/" + (dateObj.getMonth() + 1).toString().padStart(2, "0") + "/" + dateObj.getFullYear();
-  const totalAnterior = pedidos.filter(p => p.estado === "Entregado" && p.fecha === fechaAnt).reduce((acc, p) => acc + p.total, 0);
+  const totalAnterior = (await entregadosDe(fechaAnt)).reduce((acc, p) => acc + p.total, 0);
 
   // Producto estrella
   const prods = {};
@@ -2271,7 +2399,21 @@ app.get("/ventas/fecha/:fecha", soloAdmin, (req, res) => {
   res.json({ pedidos: entregados, total, categorias, porHora, totalEfectivo, totalTarjeta, totalAnterior, productoEstrella });
 });
 
-app.get("/total", soloAdmin, (req, res) => {
+// Suma de todo lo vendido en la historia. La hace MongoDB: traer los
+// pedidos para sumarlos aquí sería cargar el historial completo.
+app.get("/total", soloAdmin, async (req, res) => {
+  if (db) {
+    try {
+      const r = await db.collection("pedidos").aggregate([
+        { $match: { estado: "Entregado" } },
+        { $group: { _id: null, total: { $sum: "$total" } } }
+      ]).toArray();
+      return res.json({ total: r.length > 0 ? r[0].total : 0 });
+    } catch (e) {
+      console.error("Error sumando total:", e.message);
+    }
+  }
+
   const total = pedidos
     .filter(p => p.estado === "Entregado")
     .reduce((acc, p) => acc + p.total, 0);
@@ -2327,7 +2469,7 @@ function detectarCategoria(nombre) {
   return "Otros";
 }
 
-app.get("/ventas/productos-vendidos", soloAdmin, (req, res) => {
+app.get("/ventas/productos-vendidos", soloAdmin, async (req, res) => {
   const periodo = req.query.periodo || "dia";
   const fecha = req.query.fecha;
   const ahora = fechaMXAhora();
@@ -2335,24 +2477,14 @@ app.get("/ventas/productos-vendidos", soloAdmin, (req, res) => {
   let entregados;
 
   if (periodo === "dia") {
-    const fechaFiltro = fecha || fechaHoy();
-    entregados = pedidos.filter(p => p.estado === "Entregado" && p.fecha === fechaFiltro);
+    entregados = await entregadosDe(fecha || fechaHoy());
   } else if (periodo === "semana") {
     const hace7dias = new Date(ahora);
     hace7dias.setDate(hace7dias.getDate() - 6);
-    hace7dias.setHours(0, 0, 0, 0);
-    entregados = pedidos.filter(p => {
-      if (p.estado !== "Entregado" || !p.fecha) return false;
-      return parseFechaMX(p.fecha) >= hace7dias;
-    });
+    entregados = await entregadosEnFechas(fechasEntre(hace7dias, ahora));
   } else if (periodo === "mes") {
-    const mesActual = (ahora.getMonth() + 1).toString().padStart(2, "0");
-    const anioActual = ahora.getFullYear().toString();
-    entregados = pedidos.filter(p => {
-      if (p.estado !== "Entregado" || !p.fecha) return false;
-      const partes = p.fecha.split("/");
-      return partes[1] === mesActual && partes[2] === anioActual;
-    });
+    const primero = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
+    entregados = await entregadosEnFechas(fechasEntre(primero, ahora));
   } else {
     return res.status(400).send("Periodo inválido");
   }
@@ -2515,32 +2647,7 @@ app.get("/ventas/semanal", soloAdmin, async (req, res) => {
   hace7dias.setDate(hace7dias.getDate() - 6);
   hace7dias.setHours(0, 0, 0, 0);
 
-  let entregados;
-
-  if (db) {
-    try {
-      const fechasValidas = [];
-      for (let d = new Date(hace7dias); d <= ahora; d.setDate(d.getDate() + 1)) {
-        const dd = d.getDate().toString().padStart(2, "0");
-        const mm = (d.getMonth() + 1).toString().padStart(2, "0");
-        const yyyy = d.getFullYear();
-        fechasValidas.push(dd + "/" + mm + "/" + yyyy);
-      }
-      entregados = await db.collection("pedidos").find({ estado: "Entregado", fecha: { $in: fechasValidas } }).toArray();
-      entregados.forEach(p => delete p._id);
-    } catch (e) {
-      console.error("Error query semanal MongoDB:", e.message);
-      entregados = null;
-    }
-  }
-
-  if (!entregados) {
-    entregados = pedidos.filter(p => {
-      if (p.estado !== "Entregado" || !p.fecha) return false;
-      return parseFechaMX(p.fecha) >= hace7dias;
-    });
-  }
-
+  const entregados = await entregadosEnFechas(fechasEntre(hace7dias, ahora));
   const total = entregados.reduce((acc, p) => acc + p.total, 0);
 
   const porDia = {};
@@ -2553,15 +2660,12 @@ app.get("/ventas/semanal", soloAdmin, async (req, res) => {
   const totalEfectivo = entregados.filter(p => p.metodoPago !== "tarjeta").reduce((acc, p) => acc + p.total, 0);
   const totalTarjeta = entregados.filter(p => p.metodoPago === "tarjeta").reduce((acc, p) => acc + p.total, 0);
 
-  // Comparativo: semana anterior
+  // Comparativo: la semana de antes, los 7 días que terminan antes de esta
   const hace14dias = new Date(ahora);
   hace14dias.setDate(hace14dias.getDate() - 13);
-  hace14dias.setHours(0, 0, 0, 0);
-  const entregadosAnt = pedidos.filter(p => {
-    if (p.estado !== "Entregado" || !p.fecha) return false;
-    const f = parseFechaMX(p.fecha);
-    return f >= hace14dias && f < hace7dias;
-  });
+  const finAnterior = new Date(hace7dias);
+  finAnterior.setDate(finAnterior.getDate() - 1);
+  const entregadosAnt = await entregadosEnFechas(fechasEntre(hace14dias, finAnterior));
   const totalAnterior = entregadosAnt.reduce((acc, p) => acc + p.total, 0);
 
   res.json({ pedidos: entregados, total, porDia, totalEfectivo, totalTarjeta, totalAnterior });
@@ -2572,26 +2676,8 @@ app.get("/ventas/mensual", soloAdmin, async (req, res) => {
   const mesActual = (ahora.getMonth() + 1).toString().padStart(2, "0");
   const anioActual = ahora.getFullYear().toString();
 
-  let entregados;
-
-  if (db) {
-    try {
-      entregados = await db.collection("pedidos").find({ estado: "Entregado", fecha: { $regex: "\\/" + mesActual + "\\/" + anioActual + "$" } }).toArray();
-      entregados.forEach(p => delete p._id);
-    } catch (e) {
-      console.error("Error query mensual MongoDB:", e.message);
-      entregados = null;
-    }
-  }
-
-  if (!entregados) {
-    entregados = pedidos.filter(p => {
-      if (p.estado !== "Entregado" || !p.fecha) return false;
-      const partes = p.fecha.split("/");
-      return partes[1] === mesActual && partes[2] === anioActual;
-    });
-  }
-
+  const primeroDelMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
+  const entregados = await entregadosEnFechas(fechasEntre(primeroDelMes, ahora));
   const total = entregados.reduce((acc, p) => acc + p.total, 0);
 
   const porDia = {};
@@ -2610,20 +2696,28 @@ app.get("/ventas/mensual", soloAdmin, async (req, res) => {
   if (mesAnt === 0) { mesAnt = 12; anioAnt--; }
   const mesAntStr = mesAnt.toString().padStart(2, "0");
   const anioAntStr = anioAnt.toString();
-  const entregadosAnt = pedidos.filter(p => {
-    if (p.estado !== "Entregado" || !p.fecha) return false;
-    const partes = p.fecha.split("/");
-    return partes[1] === mesAntStr && partes[2] === anioAntStr;
-  });
+  const primeroAnterior = new Date(anioAnt, mesAnt - 1, 1);
+  const ultimoAnterior = new Date(anioAnt, mesAnt, 0);
+  const entregadosAnt = await entregadosEnFechas(fechasEntre(primeroAnterior, ultimoAnterior));
   const totalAnterior = entregadosAnt.reduce((acc, p) => acc + p.total, 0);
 
   res.json({ pedidos: entregados, total, porDia, totalEfectivo, totalTarjeta, totalAnterior });
 });
 
 // Historial de eliminados
-app.get("/ventas/eliminados/:fecha", soloAdmin, (req, res) => {
-  const elim = pedidosEliminados.filter(p => p.fecha === req.params.fecha);
-  res.json(elim);
+async function eliminadosDe(fecha) {
+  if (db) {
+    try {
+      const docs = await db.collection("pedidos_eliminados").find({ fecha }).toArray();
+      docs.forEach(d => delete d._id);
+      return docs;
+    } catch (e) { console.error("Error consultando eliminados:", e.message); }
+  }
+  return pedidosEliminados.filter(p => p.fecha === fecha);
+}
+
+app.get("/ventas/eliminados/:fecha", soloAdmin, async (req, res) => {
+  res.json(await eliminadosDe(req.params.fecha));
 });
 
 // Gastos
@@ -2759,9 +2853,9 @@ app.delete("/venta-tarjeta/:id", soloAdmin, async (req, res) => {
 });
 
 // Exportar corte de caja como CSV (Excel)
-app.get("/corte/exportar/:fecha", soloAdminOExport, (req, res) => {
+app.get("/corte/exportar/:fecha", soloAdminOExport, async (req, res) => {
   const fecha = req.params.fecha;
-  const entregados = pedidos.filter(p => p.estado === "Entregado" && p.fecha === fecha);
+  const entregados = await entregadosDe(fecha);
   const totalVentas = entregados.reduce((a, p) => a + p.total, 0);
   const totalEfectivo = entregados.filter(p => p.metodoPago !== "tarjeta").reduce((a, p) => a + p.total, 0);
   const totalTarjeta = entregados.filter(p => p.metodoPago === "tarjeta").reduce((a, p) => a + p.total, 0);
@@ -2776,7 +2870,7 @@ app.get("/corte/exportar/:fecha", soloAdminOExport, (req, res) => {
   const fondoCaja = fondo ? fondo.monto : 0;
   const utilidad = totalVentasFinal - totalGastos + totalRetiros;
   const efectivoEnCaja = fondoCaja + totalEfectivo - totalGastos - totalRetiros;
-  const eliminados = pedidosEliminados.filter(p => p.fecha === fecha);
+  const eliminados = await eliminadosDe(fecha);
   const totalElim = eliminados.reduce((a, p) => a + (p.total || 0), 0);
 
   let csv = "\uFEFF";
@@ -2818,32 +2912,22 @@ app.get("/corte/exportar/:fecha", soloAdminOExport, (req, res) => {
   res.send(csv);
 });
 
-app.get("/ventas/exportar/:tipo", soloAdminOExport, (req, res) => {
+app.get("/ventas/exportar/:tipo", soloAdminOExport, async (req, res) => {
   const tipo = req.params.tipo;
+  const ahora = fechaMXAhora();
   let entregados = [];
 
   if (tipo === "dia") {
     const fecha = req.query.fecha;
     if (!fecha) return res.status(400).send("Falta parámetro fecha");
-    entregados = pedidos.filter(p => p.estado === "Entregado" && p.fecha === fecha);
+    entregados = await entregadosDe(fecha);
   } else if (tipo === "semana") {
-    const ahora = fechaMXAhora();
     const hace7dias = new Date(ahora);
     hace7dias.setDate(hace7dias.getDate() - 6);
-    hace7dias.setHours(0, 0, 0, 0);
-    entregados = pedidos.filter(p => {
-      if (p.estado !== "Entregado" || !p.fecha) return false;
-      return parseFechaMX(p.fecha) >= hace7dias;
-    });
+    entregados = await entregadosEnFechas(fechasEntre(hace7dias, ahora));
   } else if (tipo === "mes") {
-    const ahora = fechaMXAhora();
-    const mesActual = (ahora.getMonth() + 1).toString().padStart(2, "0");
-    const anioActual = ahora.getFullYear().toString();
-    entregados = pedidos.filter(p => {
-      if (p.estado !== "Entregado" || !p.fecha) return false;
-      const partes = p.fecha.split("/");
-      return partes[1] === mesActual && partes[2] === anioActual;
-    });
+    const primero = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
+    entregados = await entregadosEnFechas(fechasEntre(primero, ahora));
   } else {
     return res.status(400).send("Tipo inválido");
   }
