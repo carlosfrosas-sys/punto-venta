@@ -550,9 +550,74 @@
     return salida;
   }
 
+  // ---- Menu del kiosko ----
+  // Lo usan clientes que no conocen el menu, asi que las categorias llevan
+  // su nombre completo y los paquetes salen juntos en su propio boton.
+  // Las claves internas NO cambian: las pantallas se guian por ellas y solo
+  // se agrega la etiqueta que se le muestra a la gente.
+  var ETIQUETAS_KIOSKO = {
+    "Aguas": "Aguas Frescas",
+    "Burguers": "Hamburguesas"
+  };
+
+  function esPaquete(sub) {
+    return /^Paquete\s/.test(sub);
+  }
+
+  // El economico vive como producto dentro de Ensaladas; en el kiosko se
+  // presenta como el paquete del dia
+  function sacarEconomico(menu) {
+    var ens = menu["Ensaladas"];
+    if (!ens || !Array.isArray(ens.items)) return null;
+
+    var i = ens.items.findIndex(function (it) { return it && it.economico; });
+    if (i === -1) return null;
+
+    var item = ens.items[i];
+    menu["Ensaladas"] = Object.assign({}, ens, {
+      items: ens.items.filter(function (_, j) { return j !== i; })
+    });
+
+    return { directo: true, economico: true, nombre: "Paquete del Día", precio: item.precio };
+  }
+
+  function paraKiosko(listas) {
+    var base = agrupar(filtrar(aplicarPrecios(construir(listas)), "cliente"));
+    var economico = sacarEconomico(base);
+    var salida = {};
+
+    Object.keys(base).forEach(function (categoria) {
+      var datos = base[categoria];
+
+      // Desayunos se parte en dos: los paquetes aparte y el desayuno ligero
+      if (categoria === "Desayunos" && datos.subcategorias) {
+        var paquetes = {};
+        var ligeros = {};
+
+        Object.keys(datos.subcategorias).forEach(function (sub) {
+          if (esPaquete(sub)) paquetes[sub] = datos.subcategorias[sub];
+          else if (sub === "HotCakes" || sub === "Corn Flakes") ligeros[sub] = datos.subcategorias[sub];
+        });
+
+        if (economico) paquetes["Paquete del Día"] = economico;
+
+        salida["Paquetes"] = { subcategorias: paquetes };
+        salida["Desayunos"] = { subcategorias: ligeros };
+        return;
+      }
+
+      salida[categoria] = ETIQUETAS_KIOSKO[categoria]
+        ? Object.assign({}, datos, { etiqueta: ETIQUETAS_KIOSKO[categoria] })
+        : datos;
+    });
+
+    return salida;
+  }
+
   global.MENU = {
     paraCaja: function (listas) { return filtrar(aplicarPrecios(construir(listas)), "caja"); },
     paraCliente: function (listas) { return agrupar(filtrar(aplicarPrecios(construir(listas)), "cliente")); },
+    paraKiosko: paraKiosko,
 
     // El servidor inyecta aqui los precios guardados al servir este archivo
     usarPrecios: function (precios) { preciosGuardados = precios || {}; },

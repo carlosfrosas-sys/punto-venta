@@ -884,7 +884,7 @@ const tacosSinNota = ["Pastor"];
 const tacosConNotas = ["Bistec", "Pechuga Empanizada", "Pechuga Asada", "Chuleta", "Campechanos"];
 
 // El menu vive en /menu.js, compartido con la otra pantalla
-const menu = MENU.paraCliente({ notasSandwiches });
+const menu = MENU.paraKiosko({ notasSandwiches });
 
 
 function volverACategorias() {
@@ -901,9 +901,10 @@ function cargarCategorias() {
     const datosCat = menu[categoria];
     // Las categorias que se agregan de un toque muestran su precio,
     // igual que los productos sueltos
+    const titulo = datosCat.etiqueta || categoria;
     btn.innerText = (datosCat.directo && !datosCat.subcategorias && datosCat.precio)
-      ? categoria + " - $" + datosCat.precio
-      : categoria;
+      ? titulo + " - $" + datosCat.precio
+      : titulo;
     btn.onclick = () => mostrarOpciones(categoria);
     cont.appendChild(btn);
   }
@@ -929,7 +930,7 @@ function mostrarOpciones(categoria) {
   // Ocultar categorias, mostrar boton volver
   document.getElementById("categorias").style.display = "none";
   document.getElementById("btnVolver").style.display = "block";
-  document.querySelector(".section-title").innerText = categoria;
+  document.querySelector(".section-title").innerText = datos.etiqueta || categoria;
 
   // LICUADOS
   if (categoria === "Licuados") {
@@ -1114,7 +1115,7 @@ function mostrarOpciones(categoria) {
           mostrarPregunta(item.nombre, item.precio, "¿Qué sabor?", "Moka", "Vainilla");
         } else if (categoria === "Bebidas" || categoria === "Café") {
           agregarProductoSinNota(item.nombre, item.precio);
-        } else if (categoria === "Ensaladas" && item.economico) {
+        } else if (item.economico) {
           mostrarEconomico();
         } else if (categoria === "Ensaladas" && (item.nombre === "Codito" || item.nombre === "Verduras")) {
           mostrarOpcionesEnsalada(item.nombre, item.precio);
@@ -1140,6 +1141,11 @@ function mostrarSubcategoria(categoria, sub) {
   const datos = menu[categoria].subcategorias[sub];
 
   if (datos.directo) {
+    // El paquete del día se arma eligiendo proteína y agua
+    if (datos.economico) {
+      mostrarEconomico(datos.nombre, datos.precio);
+      return;
+    }
     if (datos.huevo) {
       mostrarHuevoPaquete(datos);
       return;
@@ -1995,20 +2001,26 @@ function mostrarOpcionesEnsalada(nombre, precio) {
   });
 }
 
-function mostrarEconomico() {
+// El nombre que ve el cliente es "Paquete del Día", pero el producto se
+// sigue llamando Economico: es como lo conocen en cocina y como está en
+// los reportes de todos los días anteriores.
+function mostrarEconomico(titulo, precio) {
   const cont = document.getElementById("proteinas");
-  cont.innerHTML = "<h3>Economico - $45</h3><p>Elige proteina:</p>";
+  const nombre = titulo || "Economico";
+  const costo = precio || 45;
+
+  cont.innerHTML = "<h3>" + nombre + " - $" + costo + "</h3><p>Elige proteina:</p>";
 
   ["Milanesa", "Pechuga"].forEach(proteina => {
     const btn = document.createElement("button");
     btn.innerText = proteina;
     btn.onclick = () => {
-      cont.innerHTML = "<h3>Economico con " + proteina + "</h3><p>Elige bebida:</p>";
+      cont.innerHTML = "<h3>" + nombre + " con " + proteina + "</h3><p>Elige tu agua:</p>";
       ["Horchata", "Jamaica"].forEach(bebida => {
         const btnB = document.createElement("button");
         btnB.innerText = bebida;
         btnB.onclick = () => {
-          agregarProductoSinNota("Economico con " + proteina + ", " + bebida, 45);
+          agregarProductoSinNota("Economico con " + proteina + ", " + bebida, costo);
           cont.innerHTML = "";
         };
         cont.appendChild(btnB);
