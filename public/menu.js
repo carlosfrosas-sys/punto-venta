@@ -627,6 +627,51 @@
     return { directo: true, economico: true, nombre: "Paquete del Día", precio: item.precio };
   }
 
+  // ---- Recargo del menu en linea ----
+  // Mercado Pago se queda una comision de cada pago por internet, asi que
+  // el precio en linea lleva unos pesos encima. En caja y en el kiosko se
+  // cobra el precio normal: ahi el cobro es en mostrador.
+  var RECARGO_EN_LINEA = 2;
+
+  // Claves que son precio de un producto. No entran "extra" (el cargo por
+  // sabor adicional) ni los costos de las indicaciones, que son agregados
+  // y no productos: una carne extra no sube porque el pedido sea en linea.
+  var CLAVES_RECARGO = ["precio", "precioConPapas", "sencillo", "precio1pza"];
+
+  function conRecargo(menu, monto) {
+    if (!monto) return menu;
+
+    function subir(nodo, claveDelPadre) {
+      if (Array.isArray(nodo)) {
+        nodo.forEach(function (hijo) {
+          if (hijo && typeof hijo === "object") subir(hijo, claveDelPadre);
+        });
+        return;
+      }
+      if (!nodo || typeof nodo !== "object") return;
+
+      Object.keys(nodo).forEach(function (clave) {
+        var valor = nodo[clave];
+
+        if (typeof valor === "number") {
+          // En tamaños la clave es el nombre del tamaño, no "precio"
+          var esPrecio = CLAVES_RECARGO.indexOf(clave) !== -1 || claveDelPadre === "tamaños";
+          // El 0 significa "falta preguntar el tamaño", no es un precio
+          if (esPrecio && valor > 0) nodo[clave] = valor + monto;
+          return;
+        }
+
+        if (valor && typeof valor === "object") {
+          if (clave === "notas") return;
+          subir(valor, clave);
+        }
+      });
+    }
+
+    subir(menu, null);
+    return menu;
+  }
+
   function paraKiosko(listas) {
     var base = agrupar(filtrar(aplicarPrecios(construir(listas)), "cliente"));
     var economico = sacarEconomico(base);
@@ -710,11 +755,11 @@
   global.MENU = {
     paraCaja: function (listas) { return filtrar(aplicarPrecios(construir(listas)), "caja"); },
 
-    // Las dos pantallas de cliente (kiosko y pedidos en linea) usan el
-    // mismo menu: nombres completos, paquetes juntos y los snacks afuera.
-    // Quien pide no conoce la casa, da igual si esta en la tablet o en su
-    // celular. paraKiosko se queda como nombre viejo del mismo menu.
-    paraCliente: paraKiosko,
+    // Las dos pantallas de cliente se ven igual (nombres completos,
+    // paquetes juntos, snacks afuera): quien pide no conoce la casa, da
+    // igual si está en la tablet o en su celular. Lo único que cambia es
+    // el precio: en línea lleva el recargo de la comisión.
+    paraCliente: function (listas) { return conRecargo(paraKiosko(listas), RECARGO_EN_LINEA); },
     paraKiosko: paraKiosko,
 
     // El servidor inyecta aqui los precios guardados al servir este archivo
