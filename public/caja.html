@@ -87,6 +87,69 @@
       color: #991b1b;
     }
 
+    /* ===== INTERRUPTOR DEL KIOSKO ===== */
+    .interruptor-kiosko {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: #eee;
+      border: 1.5px solid #ddd;
+      border-radius: 20px;
+      padding: 5px 12px 5px 6px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      color: #999;
+      cursor: pointer;
+      min-height: auto;
+      transition: all 0.2s ease;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .interruptor-kiosko .perilla {
+      width: 34px;
+      height: 18px;
+      border-radius: 10px;
+      background: #c4c4c4;
+      position: relative;
+      transition: background 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .interruptor-kiosko .perilla::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #fff;
+      transition: transform 0.2s ease;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+    }
+
+    .interruptor-kiosko.prendido {
+      background: #e9f7ee;
+      border-color: #16a34a;
+      color: #15803d;
+    }
+
+    .interruptor-kiosko.prendido .perilla { background: #16a34a; }
+    .interruptor-kiosko.prendido .perilla::after { transform: translateX(16px); }
+
+    /* Al dejar presionado, el celular seleccionaba el texto del botón como
+       si se fuera a copiar. Esto lo apaga solo en los botones del menú. */
+    #categorias button,
+    #proteinas button {
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
     /* ===== AGOTADOS: dejar presionado para marcar o quitar ===== */
     /* La barra que se llena avisa que algo está pasando; si se suelta
        antes de que termine, no pasa nada. */
@@ -863,7 +926,13 @@ function hacerLogin() {
   <div class="panel-left">
     <div class="panel-left-header">
       <h1>Caja</h1>
-      <button class="btn-agotados" id="btnAgotados" onclick="abrirAgotados()">Agotados</button>
+      <div style="display:flex;align-items:center;gap:8px;margin-left:auto;">
+        <button class="interruptor-kiosko" id="swKiosko" onclick="alternarKiosko()" title="Prender o apagar el cobro en el kiosko">
+          <span class="perilla"></span>
+          <span class="texto">Kiosko</span>
+        </button>
+        <button class="btn-agotados" id="btnAgotados" onclick="abrirAgotados()">Agotados</button>
+      </div>
     </div>
     <div class="categorias-wrap">
       <button id="btnVolver" onclick="volverACategorias()">&#8592; Categorías</button>
@@ -1117,6 +1186,39 @@ function buscarAgotadoEnBoton(btn) {
   return null;
 }
 
+// ===== INTERRUPTOR DEL KIOSKO =====
+// Apagarlo deja la pantalla del kiosko avisando que no está disponible y
+// el servidor rechaza cualquier cobro nuevo desde ahí.
+let kioskoPrendido = true;
+
+function pintarInterruptorKiosko() {
+  const sw = document.getElementById("swKiosko");
+  if (!sw) return;
+  sw.classList.toggle("prendido", kioskoPrendido);
+  sw.querySelector(".texto").innerText = kioskoPrendido ? "Kiosko" : "Kiosko apagado";
+}
+
+function alternarKiosko() {
+  const nuevo = !kioskoPrendido;
+  if (!nuevo && !confirm("¿Apagar el cobro en el kiosko?\n\nLa pantalla va a avisar que no está disponible y no va a poder cobrar.")) return;
+
+  fetch("/kiosko/estado", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ activo: nuevo })
+  })
+    .then(r => r.json())
+    .then(d => { kioskoPrendido = !!d.activo; pintarInterruptorKiosko(); })
+    .catch(() => alert("No se pudo cambiar el kiosko"));
+}
+
+function cargarEstadoKiosko() {
+  fetch("/kiosko/estado")
+    .then(r => r.json())
+    .then(d => { kioskoPrendido = !!d.activo; pintarInterruptorKiosko(); })
+    .catch(() => {});
+}
+
 // ===== DEJAR PRESIONADO PARA AGOTAR O REVIVIR =====
 // Tres segundos sobre un producto lo pone agotado, y otros tres lo
 // regresan. Es para no abrir el modal y escribir el nombre a media venta.
@@ -1234,6 +1336,7 @@ function iniciarObserverAgotados() {
     }).observe(c, { childList: true, subtree: true });
   });
   actualizarBotonAgotados();
+  cargarEstadoKiosko();
   // Cargar agotados desde servidor (gana sobre localStorage)
   sincronizarAgotadosDesdeServidor();
   // Escuchar cambios de otros dispositivos
@@ -1242,6 +1345,11 @@ function iniciarObserverAgotados() {
   sckAgotados.on("preciosActualizados", () => { __preciosPendientes = true; revisarPreciosPendientes(); });
     sckAgotados.on("agotadosActualizados", (arr) => {
       if (Array.isArray(arr)) aplicarAgotadosLocal(arr);
+    });
+    // Otra caja lo prendió o apagó
+    sckAgotados.on("kioskoActivo", (activo) => {
+      kioskoPrendido = !!activo;
+      pintarInterruptorKiosko();
     });
     sckAgotados.on("connect", () => sincronizarAgotadosDesdeServidor());
   }

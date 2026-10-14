@@ -665,6 +665,15 @@
   </div>
 </div>
 
+<!-- Cuando lo apagan desde caja -->
+<div id="kioskoApagado" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#0f3d2c;z-index:99990;align-items:center;justify-content:center;text-align:center;padding:24px;">
+  <div>
+    <div style="font-size:64px;">🕐</div>
+    <div style="font-size:30px;font-weight:800;color:#fff;margin-top:12px;">Autoservicio no disponible</div>
+    <div style="font-size:18px;color:#b7e4c7;margin-top:10px;line-height:1.5;">Por favor pasa a la caja<br>para hacer tu pedido.</div>
+  </div>
+</div>
+
 <!-- El equipo desbloquea el kiosko una vez y se queda abierto -->
 <div id="loginOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#0f3d2c;z-index:99998;align-items:center;justify-content:center;padding:20px;">
   <div style="background:#fff;border-radius:16px;padding:26px;max-width:340px;width:100%;">
@@ -885,6 +894,30 @@ const tacosConNotas = ["Bistec", "Pechuga Empanizada", "Pechuga Asada", "Chuleta
 
 // El menu vive en /menu.js, compartido con la otra pantalla
 const menu = MENU.paraKiosko({ notasSandwiches });
+
+// ===== PRENDIDO O APAGADO DESDE CAJA =====
+// Mientras está apagado se tapa todo: no tiene sentido dejar que alguien
+// arme su pedido para avisarle al final que no se puede cobrar.
+function pintarKioskoApagado(activo) {
+  document.getElementById("kioskoApagado").style.display = activo ? "none" : "flex";
+  if (!activo) cerrarResumen();
+}
+
+function revisarKioskoActivo() {
+  fetch("/kiosko/estado")
+    .then(r => r.json())
+    .then(d => pintarKioskoApagado(d.activo !== false))
+    .catch(() => {});
+}
+
+revisarKioskoActivo();
+setInterval(revisarKioskoActivo, 60000);
+
+if (typeof io === "function") {
+  const sckKiosko = io();
+  sckKiosko.on("kioskoActivo", activo => pintarKioskoApagado(!!activo));
+  sckKiosko.on("connect", revisarKioskoActivo);
+}
 
 
 function volverACategorias() {

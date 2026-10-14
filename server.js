@@ -254,6 +254,10 @@ async function cargarPedidos() {
       } catch(e) {}
     }
     try {
+      const doc = await db.collection("config").findOne({ _id: "kiosko" });
+      if (doc && typeof doc.activo === "boolean") kioskoActivo = doc.activo;
+    } catch(e) {}
+    try {
       const dias = await db.collection("escaneos_qr").find().toArray();
       dias.forEach(d => { delete d._id; escaneos[d.fecha] = d; });
       console.log("Días con escaneos cargados:", dias.length);
@@ -289,6 +293,12 @@ async function cargarPedidos() {
   try {
     if (Object.keys(escaneos).length === 0 && fs.existsSync(BACKUP_ESCANEOS_PATH)) {
       escaneos = JSON.parse(fs.readFileSync(BACKUP_ESCANEOS_PATH, "utf8"));
+    }
+  } catch(e) {}
+  try {
+    if (fs.existsSync(BACKUP_KIOSKO_PATH)) {
+      const guardado = JSON.parse(fs.readFileSync(BACKUP_KIOSKO_PATH, "utf8"));
+      if (typeof guardado.activo === "boolean") kioskoActivo = guardado.activo;
     }
   } catch(e) {}
   for (const tipo of ["trabajadores", "deudores"]) {
@@ -429,6 +439,40 @@ async function eliminarPedidoPendiente(ref) {
     }
   }
 }
+
+// ---- Interruptor del kiosko ----
+// Se apaga desde caja cuando no hay quien atienda la terminal o se cierra
+// antes. Queda guardado para que un reinicio no lo vuelva a encender solo.
+let kioskoActivo = true;
+const BACKUP_KIOSKO_PATH = path.join(BACKUP_DIR, "kiosko-backup.json");
+
+function guardarEstadoKiosko() {
+  try {
+    if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR);
+    fs.writeFileSync(BACKUP_KIOSKO_PATH, JSON.stringify({ activo: kioskoActivo }));
+  } catch (e) { console.error("Error guardando estado del kiosko:", e.message); }
+
+  if (db) {
+    db.collection("config").updateOne(
+      { _id: "kiosko" },
+      { $set: { activo: kioskoActivo, actualizado: new Date() } },
+      { upsert: true }
+    ).catch(e => console.error("Error guardando kiosko en MongoDB:", e.message));
+  }
+}
+
+// La pantalla del kiosko lo consulta, así que va sin contraseña
+app.get("/kiosko/estado", (req, res) => {
+  res.set("Cache-Control", "no-store");
+  res.json({ activo: kioskoActivo });
+});
+
+app.post("/kiosko/estado", soloAdmin, (req, res) => {
+  kioskoActivo = !!(req.body && req.body.activo);
+  guardarEstadoKiosko();
+  io.emit("kioskoActivo", kioskoActivo);
+  res.json({ activo: kioskoActivo });
+});
 
 // ---- Escaneos del QR ----
 // Se guarda un resumen por día (no visitas sueltas): cuántas veces se abrió
@@ -1296,6 +1340,12 @@ function etiquetaHora(h, corta) {
 app.post("/pedido", soloAdmin, async (req, res) => {
   const esKiosko = req.body.origen === "kiosko";
 
+  // Un cobro ya hecho sí se registra; lo que se frena es empezar uno nuevo
+  // con el kiosko apagado
+  if (esKiosko && !kioskoActivo && req.body.metodoPago !== "tarjeta") {
+    return res.status(403).json({ error: "El kiosko está apagado" });
+  }
+
   const pedido = {
     id: idCounter++,
     cliente: req.body.cliente,
@@ -1851,6 +1901,10 @@ app.post("/cobrar-terminal", soloAdmin, async (req, res) => {
   const { amount, reference, terminal } = req.body;
   if (!amount || amount < 5) return res.status(400).json({ error: "Monto mínimo $5" });
   if (!MP_TOKEN_PRESENCIAL) return res.status(500).json({ error: "Mercado Pago presencial no configurado" });
+
+  if (terminal === "kiosko" && !kioskoActivo) {
+    return res.status(403).json({ error: "El kiosko está apagado", apagado: true });
+  }
 
   const term = terminalDe(terminal);
   if (!term.device) {
