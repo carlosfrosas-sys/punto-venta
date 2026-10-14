@@ -562,7 +562,8 @@
     "Aguas": "Aguas Frescas",
     "Burguers": "Hamburguesas",
     "Sincro": "Sincronizadas",
-    "Café": "Bebidas Calientes"
+    "Café": "Bebidas Calientes",
+    "Bebidas": "Refrescos"
   };
 
   // Orden de los botones en el kiosko: lo del desayuno primero, porque es
