@@ -87,6 +87,44 @@
       color: #991b1b;
     }
 
+    /* ===== AGOTADOS: dejar presionado para marcar o quitar ===== */
+    /* La barra que se llena avisa que algo está pasando; si se suelta
+       antes de que termine, no pasa nada. */
+    button.presionando {
+      position: relative;
+      overflow: hidden;
+    }
+
+    button.presionando::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      height: 5px;
+      width: 0;
+      background: #ef4444;
+      animation: llenarAgotado 3s linear forwards;
+    }
+
+    @keyframes llenarAgotado {
+      to { width: 100%; }
+    }
+
+    #avisoAgotado {
+      position: fixed;
+      left: 50%;
+      bottom: 28px;
+      transform: translateX(-50%);
+      color: #fff;
+      padding: 14px 22px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      z-index: 99999;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+      pointer-events: none;
+    }
+
     /* ===== AGOTADOS (botón con producto agotado) ===== */
     button.agotado-marca {
       background: #fee2e2 !important;
@@ -1079,7 +1117,83 @@ function buscarAgotadoEnBoton(btn) {
   return null;
 }
 
+// ===== DEJAR PRESIONADO PARA AGOTAR O REVIVIR =====
+// Tres segundos sobre un producto lo pone agotado, y otros tres lo
+// regresan. Es para no abrir el modal y escribir el nombre a media venta.
+const SEGUNDOS_AGOTADO = 3;
+
+function avisoAgotado(texto, color) {
+  let aviso = document.getElementById("avisoAgotado");
+  if (!aviso) {
+    aviso = document.createElement("div");
+    aviso.id = "avisoAgotado";
+    document.body.appendChild(aviso);
+  }
+  aviso.innerText = texto;
+  aviso.style.background = color;
+  aviso.style.display = "block";
+
+  clearTimeout(avisoAgotado._t);
+  avisoAgotado._t = setTimeout(() => { aviso.style.display = "none"; }, 2200);
+}
+
+// Si el botón ya está agotado se quita lo que lo tiene así, que puede ser
+// un ingrediente: "Tacos Dorados" está agotado porque falta el pollo, y
+// lo que hay que revivir es el pollo.
+function alternarAgotadoDeBoton(btn) {
+  const causa = buscarAgotadoEnBoton(btn);
+
+  if (causa) {
+    setAgotados(getAgotados().filter(a => a !== causa));
+    avisoAgotado(causa.toUpperCase() + " ya está disponible", "#16a34a");
+    return;
+  }
+
+  const nombre = nombreLimpioBoton(btn);
+  if (!nombre) return;
+
+  const lista = getAgotados();
+  if (!lista.includes(nombre)) lista.push(nombre);
+  setAgotados(lista);
+  avisoAgotado(nombre.toUpperCase() + " quedó agotado", "#ef4444");
+}
+
+function engancharPresionLarga(btn) {
+  if (btn.dataset.presionHook) return;
+  btn.dataset.presionHook = "1";
+
+  let temporizador = null;
+
+  function soltar() {
+    if (temporizador) { clearTimeout(temporizador); temporizador = null; }
+    btn.classList.remove("presionando");
+    window.removeEventListener("pointerup", soltar);
+    // Se bloqueó al cumplirse la presión; al soltar se libera
+    if (btn.disabled) setTimeout(() => { btn.disabled = false; }, 250);
+  }
+
+  function cumplir() {
+    temporizador = null;
+    btn.classList.remove("presionando");
+    // El dedo sigue abajo: bloquear el botón evita que al soltar se agregue
+    // el producto al pedido
+    btn.disabled = true;
+    alternarAgotadoDeBoton(btn);
+    if (navigator.vibrate) navigator.vibrate(60);
+  }
+
+  btn.addEventListener("pointerdown", () => {
+    if (btn.disabled) return;
+    btn.classList.add("presionando");
+    window.addEventListener("pointerup", soltar);
+    temporizador = setTimeout(cumplir, SEGUNDOS_AGOTADO * 1000);
+  });
+
+  btn.addEventListener("pointercancel", soltar);
+}
+
 function decorarBoton(btn) {
+  engancharPresionLarga(btn);
   const ag = buscarAgotadoEnBoton(btn);
   if (!ag) {
     if (btn.dataset.agotadoAplicado) {
