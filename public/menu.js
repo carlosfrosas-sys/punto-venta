@@ -606,6 +606,10 @@
     return /^Paquete\s/.test(sub);
   }
 
+  // Lo que queda en Desayunos del kiosko. Los paquetes se van a su propio
+  // boton, asi que aqui solo va el desayuno suelto.
+  var DESAYUNO_KIOSKO = ["HotCakes", "Corn Flakes", "Avocado Toast"];
+
   // El economico vive como producto dentro de Ensaladas; en el kiosko se
   // presenta como el paquete del dia
   function sacarEconomico(menu) {
@@ -638,7 +642,7 @@
 
         Object.keys(datos.subcategorias).forEach(function (sub) {
           if (esPaquete(sub)) paquetes[sub] = datos.subcategorias[sub];
-          else if (sub === "HotCakes" || sub === "Corn Flakes") ligeros[sub] = datos.subcategorias[sub];
+          else if (DESAYUNO_KIOSKO.indexOf(sub) !== -1) ligeros[sub] = datos.subcategorias[sub];
         });
 
         if (economico) paquetes["Paquete del Día"] = economico;
