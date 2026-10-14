@@ -168,11 +168,27 @@ const BACKUP_PATH = path.join(BACKUP_DIR, "pedidos-backup.json");
 const BACKUP_GASTOS_PATH = path.join(BACKUP_DIR, "gastos-backup.json");
 const BACKUP_AGOTADOS_PATH = path.join(BACKUP_DIR, "agotados-backup.json");
 
+// El respaldo en disco es la red por si MongoDB no responde, y el disco de
+// Render se borra en cada deploy. Guardar el historial completo cada cinco
+// minutos iba a ir pesando más y más, así que solo se respaldan los últimos
+// días: es lo que haría falta recuperar a mano. El historial vive en Mongo.
+const DIAS_RESPALDO = 15;
+
+function pedidosRecientes() {
+  const limite = Date.now() - DIAS_RESPALDO * 24 * 60 * 60 * 1000;
+  return pedidos.filter(p => {
+    if (p.creadoEn) return p.creadoEn >= limite;
+    if (!p.fecha) return true;
+    const f = parseFechaMX(p.fecha);
+    return isNaN(f) ? true : f.getTime() >= limite;
+  });
+}
+
 function respaldarDatos() {
   try {
     if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR);
-    fs.writeFileSync(BACKUP_PATH, JSON.stringify(pedidos, null, 2));
-    fs.writeFileSync(BACKUP_GASTOS_PATH, JSON.stringify(gastos, null, 2));
+    fs.writeFileSync(BACKUP_PATH, JSON.stringify(pedidosRecientes()));
+    fs.writeFileSync(BACKUP_GASTOS_PATH, JSON.stringify(gastos));
   } catch(e) { console.error("Error respaldo:", e.message); }
 }
 setInterval(respaldarDatos, 5 * 60 * 1000);
@@ -193,6 +209,8 @@ async function conectarDB() {
     db = mongoClient.db("pdv");
     console.log("Conectado a MongoDB");
 
+    await crearIndices();
+
     mongoClient.on("close", () => {
       console.log("MongoDB desconectado, reintentando...");
       db = null;
@@ -205,6 +223,59 @@ async function conectarDB() {
   }
 }
 
+// Los pedidos en línea de antes no guardaban método de pago, así que el
+// corte los contaba como efectivo y esperaba dinero que nunca estuvo en el
+// cajón. Se cobran por Mercado Pago, o sea tarjeta.
+async function marcarEnLineaComoTarjeta() {
+  const viejos = pedidos.filter(p => p.origen === "cliente" && !p.metodoPago);
+  if (viejos.length === 0) return;
+
+  viejos.forEach(p => { p.metodoPago = "tarjeta"; });
+
+  if (db) {
+    try {
+      await db.collection("pedidos").updateMany(
+        { origen: "cliente", metodoPago: { $exists: false } },
+        { $set: { metodoPago: "tarjeta" } }
+      );
+    } catch (e) { console.error("Error marcando pedidos en línea:", e.message); }
+  }
+
+  console.log("Pedidos en línea marcados como tarjeta:", viejos.length);
+}
+
+// Sin índices, cada búsqueda recorre toda la colección. Hoy no se nota;
+// con un año de ventas encima sí. Crearlos es idempotente: si ya están,
+// MongoDB no hace nada.
+async function crearIndices() {
+  const indices = [
+    ["pedidos", { id: 1 }],
+    ["pedidos", { estado: 1, fecha: 1 }],
+    ["pedidos", { origen: 1, fecha: 1 }],
+    ["pedidos_pendientes", { ref: 1 }],
+    ["pedidos_eliminados", { fecha: 1 }],
+    ["referidos", { codigo: 1 }],
+    ["referidos_usados", { telefono: 1 }],
+    ["cupones_usados", { codigo: 1 }],
+    ["escaneos_qr", { fecha: 1 }],
+    ["gastos", { fecha: 1 }],
+    ["retiros", { fecha: 1 }],
+    ["ventas_tarjeta", { fecha: 1 }],
+    ["fondos_caja", { fecha: 1 }],
+    ["trabajadores", { id: 1 }],
+    ["deudores", { id: 1 }]
+  ];
+
+  for (const [coleccion, llave] of indices) {
+    try {
+      await db.collection(coleccion).createIndex(llave);
+    } catch (e) {
+      console.error("Error creando índice en " + coleccion + ":", e.message);
+    }
+  }
+  console.log("Índices de MongoDB listos");
+}
+
 async function cargarPedidos() {
   if (db) {
     try {
@@ -212,6 +283,7 @@ async function cargarPedidos() {
       pedidos.forEach(p => delete p._id);
       idCounter = pedidos.length > 0 ? Math.max(...pedidos.map(p => p.id)) + 1 : 1;
       console.log("Pedidos cargados desde MongoDB:", pedidos.length);
+      await marcarEnLineaComoTarjeta();
     } catch (e) {
       console.error("Error cargando pedidos:", e.message);
     }
@@ -256,6 +328,13 @@ async function cargarPedidos() {
     try {
       const doc = await db.collection("config").findOne({ _id: "kiosko" });
       if (doc && typeof doc.activo === "boolean") kioskoActivo = doc.activo;
+    } catch(e) {}
+    try {
+      const doc = await db.collection("config").findOne({ _id: "agotados" });
+      if (doc && Array.isArray(doc.lista)) {
+        agotados = doc.lista;
+        console.log("Agotados cargados:", agotados.length);
+      }
     } catch(e) {}
     try {
       const dias = await db.collection("escaneos_qr").find().toArray();
@@ -316,11 +395,21 @@ async function cargarPedidos() {
   cargarPreciosBackup();
 }
 
+// Los agotados viven en MongoDB: el disco de Render se borra en cada
+// deploy, y antes la lista se perdía hasta que alguien abría caja.
 function guardarAgotados() {
   try {
     if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR);
     fs.writeFileSync(BACKUP_AGOTADOS_PATH, JSON.stringify(agotados, null, 2));
   } catch(e) { console.error("Error guardando agotados:", e.message); }
+
+  if (db) {
+    db.collection("config").updateOne(
+      { _id: "agotados" },
+      { $set: { lista: agotados, actualizado: new Date() } },
+      { upsert: true }
+    ).catch(e => console.error("Error guardando agotados en MongoDB:", e.message));
+  }
 }
 
 // ---- Precios editados desde la página de ventas ----
@@ -770,6 +859,7 @@ app.post("/crear-preferencia", async (req, res) => {
         nota: notaFinal,
         paraLlevar: paraLlevar || false,
         origen: "cliente",
+        metodoPago: "tarjeta",
         estado: "pendiente",
         codigo: generarCodigoPedido(),
         creadoEn: Date.now(),
@@ -811,6 +901,7 @@ app.post("/crear-preferencia", async (req, res) => {
         nota: notaConCupon,
         paraLlevar: paraLlevar || false,
         origen: "cliente",
+        metodoPago: "tarjeta",
         estado: "pendiente",
         codigo: generarCodigoPedido(),
         creadoEn: Date.now(),
@@ -955,6 +1046,7 @@ async function confirmarPagoOnlineInterno(external_reference, payment_id, opcion
     nota: notaFinal,
     paraLlevar: pendiente.paraLlevar || false,
     origen: "cliente",
+    metodoPago: "tarjeta",
     estado: "pendiente",
     codigo: generarCodigoPedido(),
     creadoEn: cuando,
@@ -2221,7 +2313,8 @@ function detectarCategoria(nombre) {
   if (n.includes("gringa")) return "Gringas";
   if (n.includes("nortena")) return "Norteñas";
   if (n.includes("sincronizada")) return "Sincronizadas";
-  if (n.includes("ensalada")) return "Ensaladas";
+  // El paquete del día se vende como "Economico con ...": es de ensaladas
+  if (n.includes("ensalada") || n.includes("economico")) return "Ensaladas";
   if (n.includes("hot dog")) return "Snacks";
   if (n.includes("banderilla")) return "Snacks";
   if (n.includes("papas")) return "Snacks";

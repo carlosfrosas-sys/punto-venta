@@ -608,7 +608,7 @@
 
   // Lo que queda en Desayunos del kiosko. Los paquetes se van a su propio
   // boton, asi que aqui solo va el desayuno suelto.
-  var DESAYUNO_KIOSKO = ["HotCakes", "Corn Flakes", "Avocado Toast"];
+  var DESAYUNO_KIOSKO = ["Orden de Huevo", "HotCakes", "Corn Flakes", "Avocado Toast"];
 
   // El economico vive como producto dentro de Ensaladas; en el kiosko se
   // presenta como el paquete del dia
@@ -709,7 +709,12 @@
 
   global.MENU = {
     paraCaja: function (listas) { return filtrar(aplicarPrecios(construir(listas)), "caja"); },
-    paraCliente: function (listas) { return agrupar(filtrar(aplicarPrecios(construir(listas)), "cliente")); },
+
+    // Las dos pantallas de cliente (kiosko y pedidos en linea) usan el
+    // mismo menu: nombres completos, paquetes juntos y los snacks afuera.
+    // Quien pide no conoce la casa, da igual si esta en la tablet o en su
+    // celular. paraKiosko se queda como nombre viejo del mismo menu.
+    paraCliente: paraKiosko,
     paraKiosko: paraKiosko,
 
     // El servidor inyecta aqui los precios guardados al servir este archivo

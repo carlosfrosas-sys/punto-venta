@@ -1016,13 +1016,18 @@ function volverACategorias() {
 function cargarCategorias() {
   const cont = document.getElementById("categorias");
   for (let categoria in menu) {
-    const btn = document.createElement("button");
     const datosCat = menu[categoria];
+    // Categoría que sigue en el menú pero sin botón propio: sus partes ya
+    // salieron al menú principal
+    if (datosCat.oculto) continue;
+
+    const btn = document.createElement("button");
     // Las categorias que se agregan de un toque muestran su precio,
     // igual que los productos sueltos
-    btn.innerText = (datosCat.directo && !datosCat.subcategorias && datosCat.precio)
-      ? categoria + " - $" + datosCat.precio
-      : categoria;
+    const titulo = datosCat.etiqueta || categoria;
+    btn.innerText = (datosCat.directo && !datosCat.subcategorias && datosCat.precio && !datosCat.ocultarPrecio)
+      ? titulo + " - $" + datosCat.precio
+      : titulo;
     btn.onclick = () => mostrarOpciones(categoria);
     cont.appendChild(btn);
   }
@@ -1039,6 +1044,34 @@ function mostrarOpciones(categoria) {
     return;
   }
 
+// Botón que es atajo a una parte de otra categoría (los sandwiches)
+  if (datos.atajo) {
+    document.getElementById("categorias").style.display = "none";
+    document.getElementById("btnVolver").style.display = "block";
+    document.querySelector(".section-title").innerText = categoria;
+    mostrarSubcategoria(datos.atajo.categoria, datos.atajo.sub);
+    return;
+  }
+
+  if (datos.hotdogs || datos.banderillas) {
+    document.getElementById("categorias").style.display = "none";
+    document.getElementById("btnVolver").style.display = "block";
+    document.querySelector(".section-title").innerText = categoria;
+    mostrarPorPiezas(categoria, datos.hotdogs || datos.banderillas,
+                     datos.hotdogs ? notasHotDog : notasBanderilla);
+    return;
+  }
+
+  if (datos.nachos || datos.maruchan) {
+    document.getElementById("categorias").style.display = "none";
+    document.getElementById("btnVolver").style.display = "block";
+    document.querySelector(".section-title").innerText = categoria;
+
+    if (datos.nachos) mostrarProteinasNachos(datos.precio);
+    else mostrarSaboresMaruchan(datos.precio);
+    return;
+  }
+
   // DIRECTO (Gringa, Nortena)
   if (datos.directo && !datos.subcategorias) {
     agregarProductoSinNota(categoria, datos.precio);
@@ -1048,7 +1081,7 @@ function mostrarOpciones(categoria) {
   // Ocultar categorias, mostrar boton volver
   document.getElementById("categorias").style.display = "none";
   document.getElementById("btnVolver").style.display = "block";
-  document.querySelector(".section-title").innerText = categoria;
+  document.querySelector(".section-title").innerText = datos.etiqueta || categoria;
 
   // LICUADOS
   if (categoria === "Licuados") {
@@ -1202,7 +1235,7 @@ function mostrarOpciones(categoria) {
         if (categoria === "Burguers") {
           mostrarNotas(item.nombre, item.precio, notasHamburguesas);
         } else if (categoria === "Snacks" && item.hotdog) {
-          mostrarOpcionPapasHotDog(item.nombre, item.precio, item.precioConPapas);
+          mostrarOpcionPapas(item.nombre, item.precio, item.precioConPapas, notasHotDog);
         } else if (datos.agrupada) {
           agregarProductoSinNota(item.nombre, item.precio);
         } else if (categoria === "Snacks" && item.paletas) {
@@ -1233,7 +1266,7 @@ function mostrarOpciones(categoria) {
           mostrarPregunta(item.nombre, item.precio, "¿Qué sabor?", "Moka", "Vainilla");
         } else if (categoria === "Bebidas" || categoria === "Café") {
           agregarProductoSinNota(item.nombre, item.precio);
-        } else if (categoria === "Ensaladas" && item.economico) {
+        } else if (item.economico) {
           mostrarEconomico();
         } else if (categoria === "Ensaladas" && (item.nombre === "Codito" || item.nombre === "Verduras")) {
           mostrarOpcionesEnsalada(item.nombre, item.precio);
@@ -1259,6 +1292,11 @@ function mostrarSubcategoria(categoria, sub) {
   const datos = menu[categoria].subcategorias[sub];
 
   if (datos.directo) {
+    // El paquete del día se arma eligiendo proteína y agua
+    if (datos.economico) {
+      mostrarEconomico(datos.nombre, datos.precio);
+      return;
+    }
     if (datos.huevo) {
       mostrarHuevoPaquete(datos);
       return;
@@ -1915,44 +1953,88 @@ function mostrarIngredientesTortaMulti() {
   cont.appendChild(btnSig);
 }
 
+// Esta pantalla es la que más confunde a quien no conoce el sistema: ve una
+// lista de "Sin esto, sin lo otro" y no sabe si tiene que elegir algo. Por
+// eso arriba va la pregunta en grande y el botón siempre dice qué va a pasar.
 function mostrarNotas(nombre, precio, opciones, siguiente) {
   const cont = document.getElementById("proteinas");
-  cont.innerHTML = "<h3>" + nombre + " - $" + precio + "</h3><p>Selecciona las opciones:</p>";
+
+  const quitar = opciones.filter(o => typeof o !== "object");
+  const agregar = opciones.filter(o => typeof o === "object");
+
+  // "¿Con todo?" solo tiene sentido si todo lo que se puede tocar es quitar
+  // algo. En bebidas las opciones son "Sin Azúcar" y "Poca Azúcar".
+  const esComida = quitar.length > 0 && quitar.every(o => /^sin /i.test(o));
+  const pregunta = esComida ? "¿CON TODO?" : "¿ASÍ ESTÁ BIEN?";
+  const textoTodo = esComida ? "SÍ, CON TODO" : "SÍ, ASÍ ESTÁ BIEN";
+
+  cont.innerHTML =
+    '<h3 style="margin-bottom:2px;">' + nombre + '</h3>' +
+    '<p style="font-size:20px;font-weight:700;color:#0f3d2c;margin:0 0 14px;">$' + precio + '</p>' +
+    '<div style="background:#e9f7ee;border:2px solid #16a34a;border-radius:14px;padding:14px;text-align:center;margin-bottom:14px;">' +
+      '<div style="font-size:30px;font-weight:800;color:#0f3d2c;letter-spacing:1px;">' + pregunta + '</div>' +
+      '<div style="font-size:15px;color:#3f6b53;margin-top:4px;">' +
+        (esComida ? "Ya viene completo. Solo toca lo que <b>no</b> quieras." : "Toca solo si quieres cambiarle algo.") +
+      '</div>' +
+    '</div>';
 
   const seleccionadas = new Set();
   let precioExtra = 0;
+  let btnListo;
 
-  opciones.forEach(opcion => {
-    const esObjeto = typeof opcion === "object";
-    const texto = esObjeto ? opcion.nombre + " +$" + opcion.precio : opcion;
-    const btn = document.createElement("button");
-    btn.innerText = texto;
-    btn.style.background = "#e5e7eb";
-    btn.style.color = "#111827";
-    btn.onclick = () => {
-      if (seleccionadas.has(texto)) {
-        seleccionadas.delete(texto);
-        if (esObjeto) precioExtra -= opcion.precio;
-        btn.style.background = "#e5e7eb";
-        btn.style.color = "#111827";
-      } else {
-        seleccionadas.add(texto);
-        if (esObjeto) precioExtra += opcion.precio;
-        btn.style.background = esObjeto ? "#16a34a" : "#ef4444";
-        btn.style.color = "white";
-      }
-    };
-    cont.appendChild(btn);
-  });
+  // El botón dice en todo momento qué va a agregar, para que nadie se quede
+  // dudando de si su cambio se registró
+  function actualizarBoton() {
+    if (seleccionadas.size === 0) {
+      btnListo.innerText = textoTodo;
+      return;
+    }
+    // Los extras traen su precio en el nombre; en el botón va una sola vez
+    const cambios = Array.from(seleccionadas)
+      .map(t => t.replace(/\s*\+\$\d+/, ""))
+      .join(", ");
+    btnListo.innerText = "AGREGAR: " + cambios.toUpperCase() +
+      (precioExtra > 0 ? "  (+$" + precioExtra + ")" : "");
+  }
 
-  const btnAgregar = document.createElement("button");
-  btnAgregar.innerText = "Agregar al pedido";
-  btnAgregar.style.background = "#16a34a";
-  btnAgregar.style.color = "white";
-  btnAgregar.style.fontSize = "16px";
-  btnAgregar.style.marginTop = "10px";
-  btnAgregar.style.width = "100%";
-  btnAgregar.onclick = () => {
+  function pintarGrupo(titulo, lista, esExtra) {
+    if (lista.length === 0) return;
+
+    const encabezado = document.createElement("div");
+    encabezado.style.cssText = "font-size:14px;font-weight:700;color:#6d9c81;margin:10px 0 6px;";
+    encabezado.innerText = titulo;
+    cont.appendChild(encabezado);
+
+    lista.forEach(opcion => {
+      const texto = esExtra ? opcion.nombre + " +$" + opcion.precio : opcion;
+      const btn = document.createElement("button");
+      btn.innerText = texto;
+      btn.style.background = "#e5e7eb";
+      btn.style.color = "#111827";
+      btn.onclick = () => {
+        if (seleccionadas.has(texto)) {
+          seleccionadas.delete(texto);
+          if (esExtra) precioExtra -= opcion.precio;
+          btn.style.background = "#e5e7eb";
+          btn.style.color = "#111827";
+        } else {
+          seleccionadas.add(texto);
+          if (esExtra) precioExtra += opcion.precio;
+          btn.style.background = esExtra ? "#16a34a" : "#ef4444";
+          btn.style.color = "white";
+        }
+        actualizarBoton();
+      };
+      cont.appendChild(btn);
+    });
+  }
+
+  pintarGrupo(esComida ? "Toca lo que NO quieras:" : "Puedes cambiarle:", quitar, false);
+  pintarGrupo("¿Le agregamos algo?", agregar, true);
+
+  btnListo = document.createElement("button");
+  btnListo.style.cssText = "background:#16a34a;color:#fff;font-size:19px;font-weight:800;margin-top:16px;width:100%;min-height:64px;border-radius:14px;line-height:1.25;";
+  btnListo.onclick = () => {
     const nota = Array.from(seleccionadas).join(", ");
     const precioFinal = precio + precioExtra;
     if (siguiente) {
@@ -1965,7 +2047,8 @@ function mostrarNotas(nombre, precio, opciones, siguiente) {
       scrollACategorias();
     }
   };
-  cont.appendChild(btnAgregar);
+  actualizarBoton();
+  cont.appendChild(btnListo);
 }
 
 function mostrarHuevoPaquete(datos) {
@@ -2069,20 +2152,26 @@ function mostrarOpcionesEnsalada(nombre, precio) {
   });
 }
 
-function mostrarEconomico() {
+// El nombre que ve el cliente es "Paquete del Día", pero el producto se
+// sigue llamando Economico: es como lo conocen en cocina y como está en
+// los reportes de todos los días anteriores.
+function mostrarEconomico(titulo, precio) {
   const cont = document.getElementById("proteinas");
-  cont.innerHTML = "<h3>Economico - $45</h3><p>Elige proteina:</p>";
+  const nombre = titulo || "Economico";
+  const costo = precio || 45;
+
+  cont.innerHTML = "<h3>" + nombre + " - $" + costo + "</h3><p>Elige proteina:</p>";
 
   ["Milanesa", "Pechuga"].forEach(proteina => {
     const btn = document.createElement("button");
     btn.innerText = proteina;
     btn.onclick = () => {
-      cont.innerHTML = "<h3>Economico con " + proteina + "</h3><p>Elige bebida:</p>";
+      cont.innerHTML = "<h3>" + nombre + " con " + proteina + "</h3><p>Elige tu agua:</p>";
       ["Horchata", "Jamaica"].forEach(bebida => {
         const btnB = document.createElement("button");
         btnB.innerText = bebida;
         btnB.onclick = () => {
-          agregarProductoSinNota("Economico con " + proteina + ", " + bebida, 45);
+          agregarProductoSinNota("Economico con " + proteina + ", " + bebida, costo);
           cont.innerHTML = "";
         };
         cont.appendChild(btnB);
@@ -2262,9 +2351,196 @@ function mostrar1PiezaMolletes(datos) {
   });
 }
 
-function mostrarOpcionPapasHotDog(nombre, precioSin, precioCon) {
+function mostrarSaboresBebida(nombre, precio, sabores) {
   const cont = document.getElementById("proteinas");
-  cont.innerHTML = "<h3>" + nombre + "</h3><p>Con papas?</p>";
+  const tieneMultiPrecio = sabores.some(s => typeof s === "object");
+  cont.innerHTML = tieneMultiPrecio ? "<h3>" + nombre + "</h3><p>Elige sabor:</p>" : "<h3>" + nombre + " - $" + precio + "</h3><p>Elige sabor:</p>";
+
+  sabores.forEach(sabor => {
+    const esObjeto = typeof sabor === "object";
+    const nombreSabor = esObjeto ? sabor.nombre : sabor;
+    const precioSabor = esObjeto ? sabor.precio : precio;
+    const btn = document.createElement("button");
+    btn.innerText = nombreSabor + " - $" + precioSabor;
+    btn.onclick = () => {
+      agregarProductoSinNota(nombre + " " + nombreSabor, precioSabor);
+      cont.innerHTML = "";
+    };
+    cont.appendChild(btn);
+  });
+}
+
+function mostrarTamanosAguaNatural() {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>Agua - Elige tamano:</h3>";
+
+  const tamanos = [
+    { nombre: "1/2 Litro", precio: 12 },
+    { nombre: "1 Litro", precio: 16 },
+    { nombre: "1.5 Litros", precio: 20 },
+    { nombre: "2 Litros", precio: 25 }
+  ];
+
+  tamanos.forEach(t => {
+    const btn = document.createElement("button");
+    btn.innerText = t.nombre + " - $" + t.precio;
+    btn.onclick = () => {
+      agregarProductoSinNota("Agua " + t.nombre, t.precio);
+      cont.innerHTML = "";
+    };
+    cont.appendChild(btn);
+  });
+}
+
+function mostrarProteinasNachos(precio) {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>Elige proteina:</h3>";
+
+  // Sencillos
+  const btnS = document.createElement("button");
+  btnS.innerText = "Sencillos - $35";
+  btnS.onclick = () => {
+    agregarProductoSinNota("Nachos Sencillos", 35);
+    cont.innerHTML = "";
+  };
+  cont.appendChild(btnS);
+
+  const proteinas = ["Chorizo", "Pastor", "Arrachera"];
+
+  proteinas.forEach(p => {
+    const btn = document.createElement("button");
+    btn.innerText = p + " - $" + precio;
+    btn.onclick = () => {
+      agregarProductoSinNota("Nachos de " + p, precio);
+      cont.innerHTML = "";
+    };
+    cont.appendChild(btn);
+  });
+}
+
+function precio1Pieza(precio) {
+  return Math.round(precio / 2) + 2;
+}
+
+function mostrar1PiezaTacos(items) {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>Tacos - 1 Pieza:</h3>";
+
+  items.forEach(item => {
+    const p1 = precio1Pieza(item.precio);
+    const btn = document.createElement("button");
+    btn.innerText = item.nombre + " - $" + p1;
+    btn.onclick = () => {
+      const nombre = item.nombre === "Tacos Dorados" ? "1pza de Taco Dorado" : "1pza de Taco de " + item.nombre;
+      if (item.nombre === "Tacos Dorados") {
+        mostrarNotas(nombre, p1, notasTacosDorados);
+      } else if (item.nombre === "Alambre") {
+        agregarProductoSinNota(nombre, p1);
+      } else if (item.nombre === "Arrachera") {
+        mostrarNotas(nombre, p1, notasTacosArrachera);
+      } else {
+        mostrarNotas(nombre, p1, notasTacos);
+      }
+    };
+    cont.appendChild(btn);
+  });
+}
+
+function mostrar1PiezaProteina(categoria, datos, notas) {
+  const cont = document.getElementById("proteinas");
+  const esBurrito = categoria === "Burritos";
+  const prefijo = esBurrito ? "1pza de Burrito de " : "1pza de " + categoria.slice(0, -1) + " de ";
+
+  cont.innerHTML = "<h3>" + categoria + " - 1 Pieza:</h3>";
+
+  if (datos.sencillo) {
+    const p1 = precio1Pieza(datos.sencillo);
+    const btnSenc = document.createElement("button");
+    btnSenc.innerText = "Sencillo - $" + p1;
+    btnSenc.onclick = () => {
+      const nombre = esBurrito ? "1pza de Burrito Sencillo" : "1pza de " + categoria.slice(0, -1) + " Sencillo";
+      mostrarNotas(nombre, p1, notas);
+    };
+    cont.appendChild(btnSenc);
+  }
+
+  datos.proteinas.forEach(p => {
+    const esObjeto = typeof p === "object";
+    const nombre = esObjeto ? p.nombre : p;
+    const precio = esObjeto ? p.precio : datos.precio;
+    const p1 = precio1Pieza(precio);
+
+    const btn = document.createElement("button");
+    btn.innerText = nombre + " - $" + p1;
+    btn.onclick = () => {
+      mostrarNotas(prefijo + nombre, p1, notas);
+    };
+    cont.appendChild(btn);
+  });
+}
+
+function mostrar1PiezaItems(prefijo, items) {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>" + prefijo.trim() + " - 1 Pieza:</h3>";
+
+  items.forEach(item => {
+    const p1 = item.precio1pza || precio1Pieza(item.precio);
+    const btn = document.createElement("button");
+    btn.innerText = item.nombre + " - $" + p1;
+    btn.onclick = () => {
+      agregarProductoSinNota("1pza de Sincronizada de " + item.nombre, p1);
+    };
+    cont.appendChild(btn);
+  });
+}
+
+function mostrar1PiezaMolletes(datos) {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>Molletes - 1 Pieza:</h3>";
+
+  const p1Senc = precio1Pieza(datos.sencillo);
+  const btnSenc = document.createElement("button");
+  btnSenc.innerText = "Sencillo - $" + p1Senc;
+  btnSenc.onclick = () => {
+    mostrarPicoDegallo("1pza de Mollete Sencillo", p1Senc);
+  };
+  cont.appendChild(btnSenc);
+
+  datos.proteinas.forEach(p => {
+    const esObjeto = typeof p === "object";
+    const nombre = esObjeto ? p.nombre : p;
+    const precio = esObjeto ? p.precio : datos.precio;
+    const p1 = precio1Pieza(precio);
+
+    const btn = document.createElement("button");
+    btn.innerText = nombre + " - $" + p1;
+    btn.onclick = () => {
+      mostrarPicoDegallo("1pza de Mollete de " + nombre, p1);
+    };
+    cont.appendChild(btn);
+  });
+}
+
+// Hot dogs y banderillas se piden igual: primero cuántos y luego si van
+// con papas. Antes cada combinación era un botón suelto del menú y el
+// cliente tenía que adivinar cuál era cuál.
+function mostrarPorPiezas(titulo, opciones, notas) {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>" + titulo + "</h3><p>¿Cuántos quieres?</p>";
+
+  opciones.forEach((o, i) => {
+    const btn = document.createElement("button");
+    // El primero es la pieza sola; su nombre en el menú no dice "1"
+    btn.innerText = (i === 0 ? "1 " + o.nombre : o.nombre) +
+                    " - $" + o.precio + " o $" + o.precioConPapas + " con papas";
+    btn.onclick = () => mostrarOpcionPapas(o.nombre, o.precio, o.precioConPapas, notas);
+    cont.appendChild(btn);
+  });
+}
+
+function mostrarOpcionPapas(nombre, precioSin, precioCon, notas) {
+  const cont = document.getElementById("proteinas");
+  cont.innerHTML = "<h3>" + nombre + "</h3><p>¿Con papas?</p>";
 
   const btnCon = document.createElement("button");
   btnCon.innerText = "Con Papas - $" + precioCon;
@@ -2272,16 +2548,16 @@ function mostrarOpcionPapasHotDog(nombre, precioSin, precioCon) {
   btnCon.style.color = "white";
   btnCon.style.fontSize = "16px";
   btnCon.onclick = () => {
-    mostrarNotas(nombre + " con Papas", precioCon, notasHotDog);
+    mostrarNotas(nombre + " con Papas", precioCon, notas);
   };
 
   const btnSin = document.createElement("button");
   btnSin.innerText = "Sin Papas - $" + precioSin;
-  btnSin.style.background = "#2563eb";
+  btnSin.style.background = "#16a34a";
   btnSin.style.color = "white";
   btnSin.style.fontSize = "16px";
   btnSin.onclick = () => {
-    mostrarNotas(nombre, precioSin, notasHotDog);
+    mostrarNotas(nombre, precioSin, notas);
   };
 
   cont.appendChild(btnCon);
