@@ -18,6 +18,86 @@
       touch-action: manipulation;
     }
 
+    /* ===== PANTALLA DE DESCANSO ===== */
+    /* Va arriba del menú y del resumen, pero debajo del aviso de kiosko
+       apagado y de la activación, que mandan sobre todo. */
+    #pantallaInicio {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 9800;
+      background: linear-gradient(160deg, #0f3d2c 0%, #16a34a 100%);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+      cursor: pointer;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .inicio-marca {
+      font-size: 42px;
+      font-weight: 300;
+      letter-spacing: 10px;
+      text-transform: uppercase;
+      line-height: 1.1;
+    }
+
+    .inicio-servicio {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: 7px;
+      text-transform: uppercase;
+      opacity: 0.8;
+      margin-top: 4px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.25);
+    }
+
+    .inicio-pregunta {
+      font-size: 48px;
+      font-weight: 800;
+      line-height: 1.15;
+      margin-top: 28px;
+    }
+
+    .inicio-boton {
+      margin-top: 36px;
+      background: #fff;
+      color: #0f3d2c;
+      font-size: 26px;
+      font-weight: 800;
+      padding: 22px 48px;
+      border-radius: 60px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+      animation: latir 2.2s ease-in-out infinite;
+    }
+
+    @keyframes latir {
+      0%, 100% { transform: scale(1); }
+      50%      { transform: scale(1.05); }
+    }
+
+    .inicio-pie {
+      margin-top: 28px;
+      font-size: 16px;
+      opacity: 0.75;
+    }
+
+    @media (max-width: 768px) {
+      .inicio-marca { font-size: 30px; letter-spacing: 6px; }
+      .inicio-servicio { font-size: 14px; letter-spacing: 5px; }
+      .inicio-pregunta { font-size: 32px; }
+      .inicio-boton { font-size: 20px; padding: 18px 34px; }
+      .inicio-pie { font-size: 14px; }
+    }
+
     body {
       font-family: 'Segoe UI', Arial, sans-serif;
       background: #f1faf4;
@@ -663,6 +743,15 @@
       <button id="btnConfirmar" onclick="cobrarEnTerminal()" style="flex:2;background:#16a34a;color:#fff;border:none;border-radius:12px;padding:16px;font-size:17px;font-weight:700;font-family:inherit;cursor:pointer;">Pagar con tarjeta</button>
     </div>
   </div>
+</div>
+
+<!-- Pantalla de descanso: lo primero que ve quien se acerca -->
+<div id="pantallaInicio" onclick="empezarPedido()">
+  <div class="inicio-marca">La Cabaña</div>
+  <div class="inicio-servicio">Autoservicio</div>
+  <div class="inicio-pregunta">¿Listo para ordenar?</div>
+  <div class="inicio-boton">Presiona para empezar</div>
+  <div class="inicio-pie">Arma tu pedido y paga con tarjeta en la terminal</div>
 </div>
 
 <!-- Cuando lo apagan desde caja -->
@@ -2629,6 +2718,46 @@ function ponerEnPuntoDeVenta(deviceId) {
     .catch(() => alert("Error de conexión"));
 }
 
+// ===== PANTALLA DE DESCANSO E INACTIVIDAD =====
+// Si alguien se va a medio pedido, la pantalla no se puede quedar con su
+// comida esperando: a los 5 minutos sin tocar nada se limpia y vuelve al
+// inicio, lista para el siguiente.
+const MINUTOS_INACTIVIDAD = 5;
+let temporizadorInactividad = null;
+
+function enDescanso() {
+  return document.getElementById("pantallaInicio").style.display !== "none";
+}
+
+function empezarPedido() {
+  document.getElementById("pantallaInicio").style.display = "none";
+  reiniciarInactividad();
+}
+
+function volverAInicio() {
+  clearTimeout(temporizadorInactividad);
+  temporizadorInactividad = null;
+
+  cancelarPedido();
+  document.getElementById("resumenModal").style.display = "none";
+  document.getElementById("pantallaInicio").style.display = "flex";
+}
+
+function reiniciarInactividad() {
+  clearTimeout(temporizadorInactividad);
+  if (enDescanso()) return;
+
+  temporizadorInactividad = setTimeout(() => {
+    // Si está pagando en la terminal no se le puede borrar el pedido
+    if (_cobroPolling) { reiniciarInactividad(); return; }
+    volverAInicio();
+  }, MINUTOS_INACTIVIDAD * 60 * 1000);
+}
+
+// Cualquier toque cuenta como que sigue ahí
+document.addEventListener("pointerdown", () => { if (!enDescanso()) reiniciarInactividad(); }, true);
+document.addEventListener("keydown", () => { if (!enDescanso()) reiniciarInactividad(); }, true);
+
 // ===== REVISAR Y COBRAR =====
 function totalConLlevar() {
   return document.getElementById("paraLlevar").checked ? total + 10 : total;
@@ -2816,11 +2945,8 @@ function mostrarGracias(pedido) {
       : '') +
     '<div style="font-size:14px;color:#64748b;margin-top:12px;">Espera a que te llamen. 5 a 10 minutos.</div>', false);
 
-  // La pantalla se limpia sola para el siguiente cliente
-  setTimeout(() => {
-    document.getElementById("resumenModal").style.display = "none";
-    cancelarPedido();
-  }, 12000);
+  // La pantalla se limpia sola y queda lista para el siguiente cliente
+  setTimeout(volverAInicio, 12000);
 }
 
 cargarCategorias();
