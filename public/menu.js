@@ -570,7 +570,11 @@
   // con lo que abre el dia, y lo de tomar al final, que es lo ultimo que
   // uno agrega. Van las claves internas, no las etiquetas.
   var PRIMEROS_KIOSKO = ["Desayunos", "Paquetes"];
-  var ULTIMOS_KIOSKO = ["Aguas", "Bebidas", "Café"];
+
+  // Todo lo de tomar va junto al final, bajo su propio encabezado, para
+  // que se vea de un golpe que esa parte del menu son bebidas
+  var BEBIDAS_KIOSKO = ["Aguas", "Bebidas", "Café", "Licuados"];
+  var ULTIMOS_KIOSKO = BEBIDAS_KIOSKO;
 
   function ordenarKiosko(menu) {
     var orden = {};
@@ -586,7 +590,10 @@
     });
 
     ULTIMOS_KIOSKO.forEach(function (clave) {
-      if (menu[clave]) orden[clave] = menu[clave];
+      if (!menu[clave]) return;
+      // La pantalla usa esta marca para poner el encabezado "Bebidas"
+      // antes del primer botón del grupo
+      orden[clave] = Object.assign({}, menu[clave], { seccion: "Bebidas" });
     });
 
     return orden;

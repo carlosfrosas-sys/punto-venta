@@ -128,13 +128,42 @@
       min-height: 52px;
     }
 
+
+    /* Separador del grupo de bebidas dentro de la rejilla de categorías */
+    .seccion-menu {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 6px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #0e3a5c;
+      opacity: 0.6;
+    }
+
+    .seccion-menu::before,
+    .seccion-menu::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: #b8d8e8;
+    }
+
     #categorias button {
       background: #fff;
       color: #007bb5;
       border: 1.5px solid #b8d8e8;
       box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-      font-size: 20px;
-      min-height: 52px;
+      /* Se achica solo según el ancho: con el tamaño fijo los nombres
+         largos se cortaban en tablet */
+      font-size: clamp(13px, 1.5vw, 18px);
+      min-height: 50px;
+      padding: 8px 6px;
+      line-height: 1.15;
+      overflow-wrap: anywhere;
     }
 
     #categorias button:hover {
@@ -148,11 +177,14 @@
       color: #111827;
       border: 1.5px solid #d1d5db;
       box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-      font-size: 20px;
+      font-size: clamp(13px, 1.5vw, 18px);
       min-height: 52px;
       flex: 1 1 calc(33.33% - 6px);
       min-width: 0;
       text-align: center;
+      padding: 8px 6px;
+      line-height: 1.15;
+      overflow-wrap: anywhere;
     }
 
     #proteinas button:hover {
@@ -1015,11 +1047,22 @@ function volverACategorias() {
 
 function cargarCategorias() {
   const cont = document.getElementById("categorias");
+  let seccionPintada = null;
+
   for (let categoria in menu) {
     const datosCat = menu[categoria];
     // Categoría que sigue en el menú pero sin botón propio: sus partes ya
     // salieron al menú principal
     if (datosCat.oculto) continue;
+
+    // Encabezado del grupo, una sola vez antes de su primer botón
+    if (datosCat.seccion && datosCat.seccion !== seccionPintada) {
+      seccionPintada = datosCat.seccion;
+      const titulo = document.createElement("div");
+      titulo.className = "seccion-menu";
+      titulo.innerText = datosCat.seccion;
+      cont.appendChild(titulo);
+    }
 
     const btn = document.createElement("button");
     // Las categorias que se agregan de un toque muestran su precio,
