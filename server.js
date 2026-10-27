@@ -1119,7 +1119,16 @@ app.post("/crear-preferencia", async (req, res) => {
   const telefono = textoSeguro(req.body.telefono);
   const nota = textoSeguro(req.body.nota);
   const prods = limpiarProfundo(req.body.productos);
-  const monto = Number(req.body.total);
+  // El total se saca de los productos y no del que manda el celular: así no
+  // se puede pagar menos cambiando solo el total. Para llevar son $10.
+  const montoCliente = Number(req.body.total);
+  const sumaProductos = Array.isArray(prods)
+    ? prods.reduce((acc, p) => acc + (Number(p && p.precio) || 0), 0)
+    : 0;
+  const monto = Math.round((sumaProductos + (paraLlevar ? 10 : 0)) * 100) / 100;
+  if (Math.abs(monto - montoCliente) > 0.01) {
+    console.error("Total del pedido en línea no cuadra con sus productos:", montoCliente, "vs", monto);
+  }
   const dispositivo = limpiarDispositivo(req.body.dispositivo);
 
   // El horario se revisa aquí, no solo en la página: así no entra un pedido
@@ -1129,7 +1138,8 @@ app.post("/crear-preferencia", async (req, res) => {
     return res.status(403).json({ error: horario.mensaje, cerrado: true, horario: horario.horario });
   }
 
-  if (!cliente || !telefono || !Array.isArray(prods) || prods.length === 0 || !(monto > 0) || !isFinite(monto)) {
+  const preciosValidos = Array.isArray(prods) && prods.every(p => p && isFinite(Number(p.precio)) && Number(p.precio) >= 0);
+  if (!cliente || !telefono || !Array.isArray(prods) || prods.length === 0 || !preciosValidos || !(monto > 0) || !isFinite(monto)) {
     return res.status(400).json({ error: "Datos incompletos" });
   }
 
