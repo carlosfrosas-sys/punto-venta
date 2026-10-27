@@ -3,6 +3,7 @@ const express = require("express");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const vm = require("vm");
 const { Server } = require("socket.io");
 const { MongoClient } = require("mongodb");
 const QRCode = require("qrcode");
@@ -1100,6 +1101,129 @@ function textoSeguro(valor) {
   return typeof valor === "string" ? valor.replace(/[<>"'`]/g, "").slice(0, 300) : valor;
 }
 
+// ---- Revisión de precios de los pedidos en línea ----
+// El precio de cada producto lo arma la página del cliente, así que alguien
+// con conocimientos podría mandarlo más barato. No se rechaza el pedido (si
+// la revisión se equivoca se perdería una venta): se marca para que en
+// entrega lo revisen. Se compara contra el precio mínimo que el menú le da a
+// ese producto; los extras solo suben el precio, así que nunca cuentan en contra.
+const PALABRAS_VACIAS = new Set(["de", "con", "la", "el", "los", "las", "y", "a", "al", "en", "del"]);
+
+function sinAcentosMin(s) {
+  return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+// Cada palabra se corta a su raíz para que "Licuado" y "Licuados" coincidan
+function raicesDe(texto) {
+  return sinAcentosMin(texto).replace(/[^a-z0-9.\/ ]/g, " ").split(/\s+/)
+    .filter(w => w && !PALABRAS_VACIAS.has(w))
+    .map(w => w.length > 4 ? w.slice(0, Math.max(4, w.length - 2)) : w);
+}
+
+// El menú tal como lo ve el cliente en línea (con el recargo y los precios
+// editados), leído del mismo menu.js que usan las pantallas
+let referenciaPrecios = { clave: null, hojas: [] };
+
+function hojasDelMenuEnLinea() {
+  const clave = JSON.stringify(menuPrecios);
+  if (referenciaPrecios.clave === clave) return referenciaPrecios.hojas;
+
+  const ctx = { window: {} };
+  vm.createContext(ctx);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, "public", "menu.js"), "utf8"), ctx);
+  ctx.window.MENU.usarPrecios(menuPrecios);
+  const menu = ctx.window.MENU.paraCliente({ notasSandwiches: [] });
+
+  // Cada hoja es algo con precio: req son las palabras que tiene que traer
+  // el nombre del producto y cat las de su categoría, que suman si están
+  const hojas = [];
+  let categoriaActual = "";
+  const agregar = (req, cat, precio, extra) => {
+    if (typeof precio !== "number" || precio <= 0) return;
+    const r = [...new Set(req.flatMap(raicesDe))];
+    const c = [...new Set(cat.flatMap(raicesDe))].filter(x => !r.includes(x));
+    hojas.push({ req: r, cat: c, precio, categoria: categoriaActual, ...extra });
+  };
+  function recorrer(nombre, d, catPadre) {
+    if (!d || typeof d !== "object") return;
+    const cat = [...catPadre, nombre, d.etiqueta].filter(Boolean);
+    // El paquete del día se vende como "Economico con ..."
+    if (d.economico) agregar(["economico"], [], d.precio);
+    if (d.directo || (d.precio && !d.proteinas && !d.items && !d.sabores && !d.subcategorias)) agregar([d.nombre || nombre], catPadre, d.precio);
+    if (d.sencillo) agregar([nombre, "sencill"], catPadre, d.sencillo, { sencillo: true });
+    if (Array.isArray(d.proteinas)) d.proteinas.forEach(p => typeof p === "object" ? agregar([p.nombre], cat, p.precio) : agregar([p], cat, d.precio));
+    if (Array.isArray(d.items)) d.items.forEach(it => {
+      agregar([it.nombre], cat, it.precio, it.precio1pza ? { pieza: it.precio1pza } : {});
+      if (Array.isArray(it.sabores)) it.sabores.forEach(sb => typeof sb === "object" && agregar([it.nombre, sb.nombre], cat, sb.precio));
+      if (it.dobles) agregar([it.nombre], cat, it.dobles.precio);
+    });
+    if (d.sabores && d.precio) agregar([nombre], catPadre, d.precio);
+    if (d.tamaños) Object.keys(d.tamaños).forEach(t => agregar([nombre, t], catPadre, d.tamaños[t]));
+    if (d.subcategorias) Object.keys(d.subcategorias).forEach(sub => recorrer(sub, d.subcategorias[sub], cat));
+    [].concat(d.hotdogs || [], d.banderillas || []).forEach(h => agregar([h.nombre], cat, h.precio));
+  }
+  Object.keys(menu).forEach(c => { categoriaActual = c; recorrer(c, menu[c], []); });
+
+  // Una palabra suelta que sale en varias categorías ("Pollo", "Jamón") es
+  // ambigua: para esas se pide además el nombre de la categoría
+  const categoriasDe = {};
+  hojas.forEach(h => h.req.forEach(r => { (categoriasDe[r] = categoriasDe[r] || new Set()).add(h.categoria); }));
+  hojas.forEach(h => {
+    if (h.req.length === 1 && categoriasDe[h.req[0]].size > 1 && h.cat.length) {
+      h.req = h.req.concat(h.cat);
+      h.cat = [];
+    }
+  });
+
+  referenciaPrecios = { clave, hojas };
+  return hojas;
+}
+
+function coincideRaiz(raicesProducto, r) {
+  return raicesProducto.some(w => w === r || (r.length >= 4 && w.length >= 4 && (w.startsWith(r) || r.startsWith(w))));
+}
+
+// Precio mínimo que el menú le da a un producto, o null si no se reconoce
+// (entonces no se avisa nada)
+function precioMinimoDelMenu(nombre, hojas) {
+  const n = sinAcentosMin(nombre);
+  // El agua natural tiene sus tamaños aparte en la página: no se revisa
+  if (/^agua (\d|1\/2)/.test(n)) return null;
+  const pieza = /^1pza de /.test(n);
+  const rp = raicesDe(n.replace(/^1pza de /, ""));
+  let mejor = null, mejorPuntos = -1;
+  for (const h of hojas) {
+    if (!h.req.length || !h.req.every(r => coincideRaiz(rp, r))) continue;
+    const puntos = h.req.length + h.cat.filter(r => coincideRaiz(rp, r)).length;
+    if (puntos > mejorPuntos || (puntos === mejorPuntos && h.precio < mejor.precio)) { mejor = h; mejorPuntos = puntos; }
+  }
+  if (!mejor) return null;
+  // "Sencillos" siempre es más barato: si no se reconoció como sencillo, no se adivina
+  if (/sencill/.test(n) && !mejor.sencillo) return null;
+  return pieza ? (mejor.pieza || Math.round(mejor.precio / 2) + 2) : mejor.precio;
+}
+
+// Productos que llegaron más baratos de lo que marca el menú
+function revisarPreciosEnLinea(productos) {
+  try {
+    const hojas = hojasDelMenuEnLinea();
+    const alertas = [];
+    for (const p of productos) {
+      const cantidad = Number(p.cantidad) > 0 ? Number(p.cantidad) : 1;
+      const unitario = Number(p.precio) / cantidad;
+      const minimo = precioMinimoDelMenu(p.nombre, hojas);
+      if (minimo !== null && unitario < minimo - 0.01) {
+        alertas.push({ nombre: p.nombre, pagado: Math.round(unitario * 100) / 100, menu: minimo });
+      }
+    }
+    if (alertas.length) console.error("Pedido en línea con precio más bajo que el menú:", JSON.stringify(alertas));
+    return alertas;
+  } catch (e) {
+    console.error("No se pudieron revisar los precios:", e.message);
+    return [];
+  }
+}
+
 function limpiarProfundo(valor, nivel = 0) {
   if (nivel > 5) return undefined;
   if (typeof valor === "string") return textoSeguro(valor);
@@ -1142,6 +1266,8 @@ app.post("/crear-preferencia", async (req, res) => {
   if (!cliente || !telefono || !Array.isArray(prods) || prods.length === 0 || !preciosValidos || !(monto > 0) || !isFinite(monto)) {
     return res.status(400).json({ error: "Datos incompletos" });
   }
+
+  const alertaPrecio = revisarPreciosEnLinea(prods);
 
   // Validar cupón
   const cuponUpper = cupon ? cupon.trim().toUpperCase() : "";
@@ -1198,6 +1324,7 @@ app.post("/crear-preferencia", async (req, res) => {
         horaEnvio: horaMXAhora()
       };
 
+      if (alertaPrecio && alertaPrecio.length) pedido.alertaPrecio = alertaPrecio;
       pedidos.push(pedido);
       await guardarPedido(pedido);
       if (CUPONES_1USO[cuponUpper]) await marcarCuponUsado(cuponUpper);
@@ -1239,6 +1366,7 @@ app.post("/crear-preferencia", async (req, res) => {
         fecha: fechaHoy(),
         horaEnvio: horaMXAhora()
       };
+      if (alertaPrecio && alertaPrecio.length) pedido.alertaPrecio = alertaPrecio;
       pedidos.push(pedido);
       await guardarPedido(pedido);
 
@@ -1274,7 +1402,7 @@ app.post("/crear-preferencia", async (req, res) => {
       }
     });
 
-    await guardarPedidoPendiente(ref, { cliente, telefono, productos: prods, total: montoFinal, nota: notaConCupon, paraLlevar: paraLlevar || false, cupon: cuponUpper, esReferido, referidoEnviado, dispositivo });
+    await guardarPedidoPendiente(ref, { cliente, telefono, productos: prods, total: montoFinal, nota: notaConCupon, paraLlevar: paraLlevar || false, cupon: cuponUpper, esReferido, referidoEnviado, dispositivo, alertaPrecio });
 
     res.json({
       preference_id: result.id,
@@ -1403,6 +1531,7 @@ async function confirmarPagoOnlineInterno(external_reference, payment_id, opcion
     : await cuponParaCompartir(pendiente.telefono, pendiente.dispositivo);
   if (nuevoRefMP) pedido.nuevoRef = nuevoRefMP;
 
+  if (pendiente.alertaPrecio && pendiente.alertaPrecio.length) pedido.alertaPrecio = pendiente.alertaPrecio;
   pedidos.push(pedido);
   await guardarPedido(pedido);
   if (pendiente.cupon && CUPONES_1USO[pendiente.cupon]) await marcarCuponUsado(pendiente.cupon);

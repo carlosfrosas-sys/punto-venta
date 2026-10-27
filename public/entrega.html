@@ -234,6 +234,22 @@
       opacity: 0.35;
     }
 
+    .alerta-precio {
+      font-size: 13px;
+      font-weight: 700;
+      color: #f59e0b;
+      background: #2a1f00;
+      border: 1px solid #f59e0b;
+      border-radius: 6px;
+      padding: 4px 8px;
+      margin-top: 6px;
+    }
+
+    .alerta-precio span {
+      font-weight: 500;
+      color: #fcd34d;
+    }
+
     .cupon-usado {
       font-size: 11px;
       color: #94a3b8;
@@ -683,6 +699,14 @@
     function notaEntrega(p) {
       return (p.nota || "").replace(/\[CUPON[^\]]*\]\s*/g, "").trim();
     }
+    // El servidor marca los pedidos en línea con algún producto más barato
+    // que el menú; se cobra la diferencia o se revisa con el cliente
+    function avisoPrecio(p) {
+      if (!Array.isArray(p.alertaPrecio) || !p.alertaPrecio.length) return "";
+      const detalle = p.alertaPrecio.map(a => `${a.nombre}: pagó $${a.pagado}, menú $${a.menu}`).join("<br>");
+      return `<div class="alerta-precio">⚠️ Revisar precio<br><span>${detalle}</span></div>`;
+    }
+
     function usoCupon(p) {
       return !!p.cuponKiosko || /\[CUPON/.test(p.nota || "");
     }
@@ -732,7 +756,7 @@
               </li>`
             ).join("")}
           </ul>
-          ${notaEntrega(pedido) ? `<div class="nota-general">${notaEntrega(pedido)}</div>` : ""}${usoCupon(pedido) ? `<div class="cupon-usado">Se usó cupón</div>` : ""}
+          ${notaEntrega(pedido) ? `<div class="nota-general">${notaEntrega(pedido)}</div>` : ""}${usoCupon(pedido) ? `<div class="cupon-usado">Se usó cupón</div>` : ""}${avisoPrecio(pedido)}
         </div>
         ${pedido.paraLlevar ? `<div class="para-llevar">Para llevar</div>` : ""}
         <div class="pedido-meta">
@@ -974,7 +998,7 @@
                 </li>`
               ).join("")}
             </ul>
-            ${notaEntrega(p) ? `<div class="nota-general">${notaEntrega(p)}</div>` : ""}${usoCupon(p) ? `<div class="cupon-usado">Se usó cupón</div>` : ""}
+            ${notaEntrega(p) ? `<div class="nota-general">${notaEntrega(p)}</div>` : ""}${usoCupon(p) ? `<div class="cupon-usado">Se usó cupón</div>` : ""}${avisoPrecio(p)}
             <div class="entrega-info">
               ${p.codigo ? "Código " + p.codigo + " &middot; " : ""}${p.horaEnvio || ""}
               ${entregado ? " &middot; entregado " + (p.horaEntrega || "") : " &middot; " + (p.estado === "Listo" ? "listo" : "en preparación")}
@@ -1097,7 +1121,7 @@
                 </li>`
               ).join("")}
             </ul>
-            ${notaEntrega(p) ? `<div class="nota-general">${notaEntrega(p)}</div>` : ""}${usoCupon(p) ? `<div class="cupon-usado">Se usó cupón</div>` : ""}
+            ${notaEntrega(p) ? `<div class="nota-general">${notaEntrega(p)}</div>` : ""}${usoCupon(p) ? `<div class="cupon-usado">Se usó cupón</div>` : ""}${avisoPrecio(p)}
             <div class="entrega-info">${p.fecha || ""} ${p.horaEntrega || ""}</div>
           </div>
           <button class="btn-regresar" onclick="regresarPedido(${p.id}, this)">Regresar</button>
