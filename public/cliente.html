@@ -1414,7 +1414,7 @@ function mostrarSubcategoria(categoria, sub) {
 function mostrarSaboresAgua() {
   const cont = document.getElementById("proteinas");
   const seleccionados = [];
-  const extraPrecio = 5;
+  const extraPrecio = menu["Aguas"].extra;
   let conChia = false;
 
   cont.innerHTML = "<h3>Elige sabores:</h3><p>El primero es base, cada extra +$" + extraPrecio + "</p>";
@@ -1467,7 +1467,7 @@ function mostrarSaboresAgua() {
 
 function mostrarTamanosAgua(sabores, conChia) {
   const cont = document.getElementById("proteinas");
-  const extraPrecio = 5;
+  const extraPrecio = menu["Aguas"].extra;
   const extrasCount = sabores.length > 1 ? sabores.length - 1 : 0;
   const nombreBase = "Agua de " + sabores[0];
   const conExtras = sabores.length > 1 ? " con " + sabores.slice(1).join(", ") : "";
