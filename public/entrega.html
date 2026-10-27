@@ -717,9 +717,14 @@
       return nombre + '<span class="codigo-pedido">' + p.codigo + '</span>';
     }
 
+    // Nombre y teléfono de cada pedido en línea, para armar el WhatsApp en
+    // el mismo toque del botón (ver marcarListo)
+    const clientesWA = new Map();
+
     function mostrarPedido(pedido) {
       if (pedidosMostrados.has(pedido.id)) return;
       pedidosMostrados.add(pedido.id);
+      clientesWA.set(pedido.id, pedido.cliente || "");
 
       const esOnline = pedido.origen === "cliente";
       const esListo = pedido.estado === "Listo";
@@ -801,6 +806,19 @@
         });
     };
 
+    // En iPad y iPhone se abre la app de WhatsApp directo; en computadora,
+    // WhatsApp Web en otra pestaña
+    function abrirWhatsApp(telefono, texto) {
+      const esIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+      const mensaje = encodeURIComponent(texto);
+      if (esIOS) {
+        window.location.href = "whatsapp://send?phone=52" + telefono + "&text=" + mensaje;
+      } else {
+        window.open("https://wa.me/52" + telefono + "?text=" + mensaje, "_blank");
+      }
+    }
+
     window.marcarListo = function(id) {
       const btn = document.querySelector("#pedido-" + id + " .btn-listo");
       if (btn) {
@@ -809,24 +827,17 @@
         btn.innerText = "...";
       }
 
-      // Abrir ventana inmediatamente (en el click) para evitar bloqueo de popups
-      const waWindow = window.open("", "_blank");
+      // WhatsApp se abre en el mismo toque y directo con el mensaje. Antes
+      // se abría una ventana en blanco y luego se le cambiaba la dirección,
+      // pero en el iPad esa ventana se quedaba en blanco.
+      // El cliente viene como "Nombre (Tel: 5512345678)"
+      const match = (clientesWA.get(id) || "").match(/^(.+?)\s*\(Tel:\s*(\d+)\)/);
+      if (match) abrirWhatsApp(match[2], "Hola " + match[1].trim() + ", su pedido en La Cabaña está listo. Puede pasar a recogerlo.");
 
       fetch("/pedido/listo/" + id, { method: "POST" })
         .then(res => res.json())
-        .then(pedido => {
+        .then(() => {
           if (btn) btn.innerText = "Listo";
-
-          // Extraer teléfono y nombre del campo cliente: "Nombre (Tel: 5512345678)"
-          const match = pedido.cliente.match(/^(.+?)\s*\(Tel:\s*(\d+)\)/);
-          if (match) {
-            const nombre = match[1].trim();
-            const telefono = match[2];
-            const mensaje = encodeURIComponent("Hola " + nombre + ", su pedido en La Cabaña está listo. Puede pasar a recogerlo.");
-            waWindow.location.href = "https://wa.me/52" + telefono + "?text=" + mensaje;
-          } else if (waWindow) {
-            waWindow.close();
-          }
         })
         .catch(() => {
           if (btn) { btn.disabled = false; btn.style.opacity = "1"; btn.innerText = "Listo (WA)"; }
