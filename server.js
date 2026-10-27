@@ -1162,7 +1162,10 @@ async function confirmarPagoOnlineInterno(external_reference, payment_id, opcion
   const yaEntro = folio && pedidos.find(p => p.folioPago === folio);
   if (yaEntro) {
     await eliminarPedidoPendiente(external_reference);
-    return { ok: true, pedidoId: yaEntro.id, codigo: yaEntro.codigo, nuevoRef: null, repetido: true };
+    // El cupón para compartir se generó cuando entró; se vuelve a dar porque
+    // muchas veces el aviso de Mercado Pago gana y quien llega aquí es la
+    // página del cliente, que es la que se lo tiene que enseñar
+    return { ok: true, pedidoId: yaEntro.id, codigo: yaEntro.codigo, nuevoRef: yaEntro.nuevoRef || null, repetido: true };
   }
 
   const pendiente = await obtenerPedidoPendiente(external_reference);
@@ -1204,13 +1207,17 @@ async function confirmarPagoOnlineInterno(external_reference, payment_id, opcion
     pedido.entregadoEn = cuando;
   }
 
+  // Se canjea antes de guardar para que el pedido se quede con el cupón
+  // nuevo y se le pueda volver a mostrar si confirma por segunda vez
+  const nuevoRefMP = (pendiente.esReferido && pendiente.cupon)
+    ? await canjearReferido(pendiente.cupon, pendiente.telefono, pendiente.referidoEnviado)
+    : null;
+  if (nuevoRefMP) pedido.nuevoRef = nuevoRefMP;
+
   pedidos.push(pedido);
   await guardarPedido(pedido);
   if (pendiente.cupon && CUPONES_1USO[pendiente.cupon]) await marcarCuponUsado(pendiente.cupon);
 
-  const nuevoRefMP = (pendiente.esReferido && pendiente.cupon)
-    ? await canjearReferido(pendiente.cupon, pendiente.telefono, pendiente.referidoEnviado)
-    : null;
   io.emit("nuevoPedido", pedido);
   await eliminarPedidoPendiente(external_reference);
 
