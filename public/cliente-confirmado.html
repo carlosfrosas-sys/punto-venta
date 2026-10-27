@@ -255,16 +255,17 @@
       <div id="detalleMeta" class="detalle-meta"></div>
     </div>
     <div id="refBox" class="ref-box" style="display:none;">
-      <p>¡Ya tienes tu cupón para regalar! 🎁 Pásaselo a un compañero y se lleva 10% de descuento en su primer pedido:</p>
+      <p>¡Tienes un cupón para regalar! 🎁 Mándaselo a quien quieras y se lleva 10% de descuento en su pedido en línea:</p>
       <div id="refLink" class="ref-link"></div>
       <div class="ref-buttons">
-        <button class="btn-copiar" onclick="copiarLink()">Copiar link</button>
-        <a id="btnWhatsapp" class="btn-whatsapp" target="_blank">Compartir por WhatsApp</a>
+        <button class="btn-copiar" onclick="copiarLink()">Copiar</button>
+        <a id="btnWhatsapp" class="btn-whatsapp" target="_blank" rel="noopener">Mandar por WhatsApp</a>
       </div>
     </div>
     <a href="/cliente">Hacer otro pedido</a>
   </div>
   <script>
+    let mensajeCupon = "";
     (function() {
       const params = new URLSearchParams(window.location.search);
       const ref = params.get("ref");
@@ -272,10 +273,11 @@
         const link = window.location.origin + "/cliente?ref=" + ref;
         document.getElementById("refLink").innerText = link;
         document.getElementById("refBox").style.display = "block";
-        const mensaje = "¡Te paso este cupón de La Cabaña! 🔥\n\n" +
-          "Pide en línea y te llevas 10% de descuento en tu primer pedido:\n" + link + "\n\n" +
+        mensajeCupon = "¡Te paso este cupón de La Cabaña! 🔥\n\n" +
+          "Pide en línea y te llevas 10% de descuento:\n" + link + "\n\n" +
           "Es de un solo uso, aprovéchalo 😉";
-        document.getElementById("btnWhatsapp").href = "https://wa.me/?text=" + encodeURIComponent(mensaje);
+        // wa.me abre WhatsApp con el mensaje listo y deja elegir el contacto
+        document.getElementById("btnWhatsapp").href = "https://wa.me/?text=" + encodeURIComponent(mensajeCupon);
       }
     })();
     // ---- Comprobante del pedido ----
@@ -378,13 +380,32 @@
       setInterval(consultar, 60000);         // por si ya quedo listo o entregado
     })();
 
+    // Copia el mensaje completo con el link, para pegarlo en cualquier chat
     function copiarLink() {
-      const link = document.getElementById("refLink").innerText;
-      navigator.clipboard.writeText(link).then(() => {
+      const texto = mensajeCupon || document.getElementById("refLink").innerText;
+      const listo = () => {
         const btn = document.querySelector(".btn-copiar");
         btn.innerText = "¡Copiado!";
-        setTimeout(() => { btn.innerText = "Copiar link"; }, 2000);
-      });
+        setTimeout(() => { btn.innerText = "Copiar"; }, 2000);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(texto).then(listo).catch(() => copiarALaAntigua(texto, listo));
+      } else {
+        copiarALaAntigua(texto, listo);
+      }
+    }
+
+    // Algunos navegadores no dejan usar el portapapeles moderno
+    function copiarALaAntigua(texto, listo) {
+      const area = document.createElement("textarea");
+      area.value = texto;
+      area.setAttribute("readonly", "");
+      area.style.position = "fixed";
+      area.style.opacity = "0";
+      document.body.appendChild(area);
+      area.select();
+      try { if (document.execCommand("copy")) listo(); } catch (e) {}
+      document.body.removeChild(area);
     }
   </script>
 </body>
