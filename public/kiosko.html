@@ -2990,6 +2990,9 @@ function cobrarEnTerminal(cuponRevisado) {
       }
 
       _cobroOrderId = d.id;
+      // Con el folio del cobro el servidor reconoce los reintentos y no
+      // duplica el pedido si el primero sí había entrado
+      pedido.idCobro = d.id;
       mostrarEstado('<div style="font-size:19px;font-weight:700;color:#0f3d2c;">Pasa tu tarjeta en la terminal</div>' +
         '<div style="font-size:15px;color:#64748b;margin-top:6px;">Total: $' + monto + '</div>' +
         '<div style="font-size:14px;color:#334155;background:#fef3c7;border-radius:10px;padding:10px 12px;margin-top:12px;">Si la terminal no se enciende automáticamente, favor de presionar el botón del lado izquierdo de la terminal y seleccionar <b>Punto de venta</b> en la misma.</div>' +
