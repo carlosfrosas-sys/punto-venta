@@ -650,12 +650,46 @@ app.get("/kiosko/estado", (req, res) => {
   res.json({ activo: kioskoActivo });
 });
 
-app.post("/kiosko/estado", soloAdmin, (req, res) => {
-  kioskoActivo = !!(req.body && req.body.activo);
+function cambiarEstadoKiosko(activo) {
+  kioskoActivo = activo;
   guardarEstadoKiosko();
   io.emit("kioskoActivo", kioskoActivo);
+}
+
+app.post("/kiosko/estado", soloAdmin, (req, res) => {
+  cambiarEstadoKiosko(!!(req.body && req.body.activo));
   res.json({ activo: kioskoActivo });
 });
+
+// Horario automático: a las 9:00 p.m. se apaga y a las 7:00 a.m. se prende.
+// Solo actúa en esos minutos, así que si caja lo apaga o lo prende a mano
+// durante el día, se respeta hasta el siguiente cambio de horario. Si ya
+// estaba como debía quedar, no se toca.
+const HORARIO_KIOSKO = [
+  { minuto: 7 * 60, activo: true },   // 7:00 a.m.
+  { minuto: 21 * 60, activo: false }  // 9:00 p.m.
+];
+// Margen por si el chequeo se retrasa o el servidor reinicia justo en la hora
+const MARGEN_HORARIO_KIOSKO = 5;
+let ultimoCambioHorarioKiosko = null;
+
+function revisarHorarioKiosko() {
+  const ahora = fechaMXAhora();
+  const minutos = ahora.getHours() * 60 + ahora.getMinutes();
+  const hoy = ahora.getFullYear() + "-" + (ahora.getMonth() + 1) + "-" + ahora.getDate();
+  for (const cambio of HORARIO_KIOSKO) {
+    if (minutos < cambio.minuto || minutos >= cambio.minuto + MARGEN_HORARIO_KIOSKO) continue;
+    const clave = hoy + "@" + cambio.minuto;
+    if (ultimoCambioHorarioKiosko === clave) return;
+    ultimoCambioHorarioKiosko = clave;
+    if (kioskoActivo !== cambio.activo) {
+      cambiarEstadoKiosko(cambio.activo);
+      console.log("Kiosko " + (cambio.activo ? "encendido" : "apagado") + " por horario");
+    }
+    return;
+  }
+}
+setInterval(revisarHorarioKiosko, 30 * 1000);
 
 // ---- Escaneos del QR ----
 // Se guarda un resumen por día (no visitas sueltas): cuántas veces se abrió
