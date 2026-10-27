@@ -234,6 +234,12 @@
       opacity: 0.35;
     }
 
+    .cupon-usado {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: 4px;
+    }
+
     .nota-general {
       font-size: 14px;
       color: #fbbf24;
@@ -672,6 +678,15 @@
     // En entrega se muestra el codigo del pedido en lugar del telefono:
     // es lo que el cliente enseña al recoger. El telefono sigue guardado
     // en el pedido para el mensaje de WhatsApp y para la pagina de ventas.
+    // La nota trae la marca del cupón ([CUPON CODIGO -10%]); en entrega solo
+    // se avisa discreto que se usó uno, sin el código ni el porcentaje
+    function notaEntrega(p) {
+      return (p.nota || "").replace(/\[CUPON[^\]]*\]\s*/g, "").trim();
+    }
+    function usoCupon(p) {
+      return !!p.cuponKiosko || /\[CUPON/.test(p.nota || "");
+    }
+
     function nombreParaEntrega(p) {
       if (!p.codigo) return p.cliente;
       const nombre = (p.cliente || "").replace(/\s*\(Tel:.*$/, "");
@@ -717,7 +732,7 @@
               </li>`
             ).join("")}
           </ul>
-          ${pedido.nota ? `<div class="nota-general">${pedido.nota}</div>` : ""}
+          ${notaEntrega(pedido) ? `<div class="nota-general">${notaEntrega(pedido)}</div>` : ""}${usoCupon(pedido) ? `<div class="cupon-usado">Se usó cupón</div>` : ""}
         </div>
         ${pedido.paraLlevar ? `<div class="para-llevar">Para llevar</div>` : ""}
         <div class="pedido-meta">
@@ -959,7 +974,7 @@
                 </li>`
               ).join("")}
             </ul>
-            ${p.nota ? `<div class="nota-general">${p.nota}</div>` : ""}
+            ${notaEntrega(p) ? `<div class="nota-general">${notaEntrega(p)}</div>` : ""}${usoCupon(p) ? `<div class="cupon-usado">Se usó cupón</div>` : ""}
             <div class="entrega-info">
               ${p.codigo ? "Código " + p.codigo + " &middot; " : ""}${p.horaEnvio || ""}
               ${entregado ? " &middot; entregado " + (p.horaEntrega || "") : " &middot; " + (p.estado === "Listo" ? "listo" : "en preparación")}
@@ -1082,7 +1097,7 @@
                 </li>`
               ).join("")}
             </ul>
-            ${p.nota ? `<div class="nota-general">${p.nota}</div>` : ""}
+            ${notaEntrega(p) ? `<div class="nota-general">${notaEntrega(p)}</div>` : ""}${usoCupon(p) ? `<div class="cupon-usado">Se usó cupón</div>` : ""}
             <div class="entrega-info">${p.fecha || ""} ${p.horaEntrega || ""}</div>
           </div>
           <button class="btn-regresar" onclick="regresarPedido(${p.id}, this)">Regresar</button>
