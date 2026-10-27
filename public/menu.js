@@ -215,7 +215,11 @@
 
   "Licuados": {
     precio: 32,
-    sabores: ["Fresa","Chocolate","Plátano","Guayaba","Mamey","Avena"]
+    sabores: ["Fresa","Chocolate","Plátano","Guayaba","Mamey","Avena"],
+    // Van aparte de los sabores: precio propio y sin sabores extra
+    items: [
+      { nombre: "Café Frío", precio: 35 }
+    ]
   },
 
   "Mollequiles": {

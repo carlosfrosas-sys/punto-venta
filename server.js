@@ -2511,7 +2511,7 @@ function detectarCategoria(nombre) {
   if (n.includes("nachos")) return "Snacks";
   if (n.includes("maruchan")) return "Snacks";
   if (n.includes("agua de") || n.includes("agua ")) return "Aguas";
-  if (n.includes("licuado")) return "Licuados";
+  if (n.includes("licuado") || n.includes("cafe frio")) return "Licuados";
   if (n.includes("cafe") || n.includes("capuccino") || n.includes("espumoso") || n.includes("agua caliente")) return "Café";
   if (n.includes("coca") || n.includes("boing") || n.includes("fuze") || n.includes("jumex") || n.includes("gatorade") || n.includes("monster") || n.includes("redbull") || n.includes("volt") || n.includes("electrolit") || n.includes("yakult") || n.includes("panzoncita") || n.includes("penafielita") || n.includes("del valle") || n.includes("refresco") || n.includes("santa clara") || n.includes("arizona") || n.includes("bonafont")) return "Bebidas";
   return "Otros";

@@ -1497,7 +1497,21 @@ function mostrarSaboresLicuado() {
   const extraPrecio = 5;
   const precioBase = menu["Licuados"].precio;
 
-  cont.innerHTML = "<h3>Elige sabores - $" + precioBase + ":</h3><p>Extra +$" + extraPrecio + " (Avena +$4)</p>";
+  cont.innerHTML = "";
+
+  (menu["Licuados"].items || []).forEach(item => {
+    const btn = document.createElement("button");
+    btn.innerText = item.nombre + " $" + item.precio;
+    btn.style.background = "#7c3aed";
+    btn.style.color = "white";
+    btn.style.fontWeight = "700";
+    btn.style.marginBottom = "10px";
+    btn.style.width = "100%";
+    btn.onclick = () => mostrarNotas(item.nombre, item.precio, ["Sin Azucar", "Poca Azucar"]);
+    cont.appendChild(btn);
+  });
+
+  cont.insertAdjacentHTML("beforeend", "<h3>Elige sabores - $" + precioBase + ":</h3><p>Extra +$" + extraPrecio + " (Avena +$4)</p>");
 
   menu["Licuados"].sabores.forEach(sabor => {
     const btn = document.createElement("button");
