@@ -1954,6 +1954,18 @@ function mostrarSaboresLicuado(esLitro) {
     btnLitro.style.width = "100%";
     btnLitro.onclick = () => mostrarSaboresLicuado(true);
     cont.appendChild(btnLitro);
+
+    (menu["Licuados"].items || []).forEach(item => {
+      const btn = document.createElement("button");
+      btn.innerText = item.nombre + " $" + item.precio;
+      btn.style.background = "#7c3aed";
+      btn.style.color = "white";
+      btn.style.fontWeight = "700";
+      btn.style.marginBottom = "10px";
+      btn.style.width = "100%";
+      btn.onclick = () => mostrarNotas(item.nombre, item.precio, ["Sin Azúcar", "Poca Azúcar"]);
+      cont.appendChild(btn);
+    });
   } else {
     const titulo = document.createElement("h3");
     titulo.innerText = "Licuado Litro $55";

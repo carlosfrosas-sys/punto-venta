@@ -650,12 +650,60 @@ app.get("/kiosko/estado", (req, res) => {
   res.json({ activo: kioskoActivo });
 });
 
-app.post("/kiosko/estado", soloAdmin, (req, res) => {
-  kioskoActivo = !!(req.body && req.body.activo);
+function cambiarEstadoKiosko(activo) {
+  kioskoActivo = activo;
   guardarEstadoKiosko();
   io.emit("kioskoActivo", kioskoActivo);
+}
+
+app.post("/kiosko/estado", soloAdmin, (req, res) => {
+  cambiarEstadoKiosko(!!(req.body && req.body.activo));
   res.json({ activo: kioskoActivo });
 });
+
+// Horario automático: lunes a viernes se prende a las 7:00 a.m. y se apaga
+// a las 9:00 p.m.; el sábado se apaga a la 1:30 p.m. y el domingo no se
+// prende (a las 7:00 a.m. se confirma apagado por si alguien lo dejó prendido).
+// Solo actúa en esos minutos, así que si caja lo apaga o lo prende a mano
+// durante el día, se respeta hasta el siguiente cambio de horario. Si ya
+// estaba como debía quedar, no se toca.
+const ENTRE_SEMANA_KIOSKO = [
+  { minuto: 7 * 60, activo: true },   // 7:00 a.m.
+  { minuto: 21 * 60, activo: false }  // 9:00 p.m.
+];
+const HORARIO_KIOSKO = {
+  0: [{ minuto: 7 * 60, activo: false }],  // domingo
+  1: ENTRE_SEMANA_KIOSKO,
+  2: ENTRE_SEMANA_KIOSKO,
+  3: ENTRE_SEMANA_KIOSKO,
+  4: ENTRE_SEMANA_KIOSKO,
+  5: ENTRE_SEMANA_KIOSKO,
+  6: [
+    { minuto: 7 * 60, activo: true },          // 7:00 a.m.
+    { minuto: 13 * 60 + 30, activo: false }    // 1:30 p.m.
+  ]
+};
+// Margen por si el chequeo se retrasa o el servidor reinicia justo en la hora
+const MARGEN_HORARIO_KIOSKO = 5;
+let ultimoCambioHorarioKiosko = null;
+
+function revisarHorarioKiosko() {
+  const ahora = fechaMXAhora();
+  const minutos = ahora.getHours() * 60 + ahora.getMinutes();
+  const hoy = ahora.getFullYear() + "-" + (ahora.getMonth() + 1) + "-" + ahora.getDate();
+  for (const cambio of HORARIO_KIOSKO[ahora.getDay()]) {
+    if (minutos < cambio.minuto || minutos >= cambio.minuto + MARGEN_HORARIO_KIOSKO) continue;
+    const clave = hoy + "@" + cambio.minuto;
+    if (ultimoCambioHorarioKiosko === clave) return;
+    ultimoCambioHorarioKiosko = clave;
+    if (kioskoActivo !== cambio.activo) {
+      cambiarEstadoKiosko(cambio.activo);
+      console.log("Kiosko " + (cambio.activo ? "encendido" : "apagado") + " por horario");
+    }
+    return;
+  }
+}
+setInterval(revisarHorarioKiosko, 30 * 1000);
 
 // ---- Escaneos del QR ----
 // Se guarda un resumen por día (no visitas sueltas): cuántas veces se abrió
@@ -2463,7 +2511,7 @@ function detectarCategoria(nombre) {
   if (n.includes("nachos")) return "Snacks";
   if (n.includes("maruchan")) return "Snacks";
   if (n.includes("agua de") || n.includes("agua ")) return "Aguas";
-  if (n.includes("licuado")) return "Licuados";
+  if (n.includes("licuado") || n.includes("cafe frio")) return "Licuados";
   if (n.includes("cafe") || n.includes("capuccino") || n.includes("espumoso") || n.includes("agua caliente")) return "Café";
   if (n.includes("coca") || n.includes("boing") || n.includes("fuze") || n.includes("jumex") || n.includes("gatorade") || n.includes("monster") || n.includes("redbull") || n.includes("volt") || n.includes("electrolit") || n.includes("yakult") || n.includes("panzoncita") || n.includes("penafielita") || n.includes("del valle") || n.includes("refresco") || n.includes("santa clara") || n.includes("arizona") || n.includes("bonafont")) return "Bebidas";
   return "Otros";
