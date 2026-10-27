@@ -87,7 +87,7 @@ function generarCodigoReferido() {
 // de la página del cliente (en cuanto escribe su número) y el cobro, así
 // las dos dicen lo mismo y no hay sorpresas al pagar.
 // Sin teléfono solo puede decir si el link sirve.
-async function revisarReferido(codigo, telefono) {
+async function revisarReferido(codigo, telefono, dispositivo) {
   if (!db) return { existe: false };
 
   const ref = await db.collection("referidos").findOne({ codigo: String(codigo || "").toUpperCase() });
@@ -95,12 +95,25 @@ async function revisarReferido(codigo, telefono) {
   if (ref.usado) return { existe: true, ok: false, error: "Este link de referido ya fue usado" };
 
   const enviado = ref.enviado === true;
+
+  // El celular donde se le dio el cupón no lo puede usar, aunque escriban
+  // otro número: así no se lo aplica uno mismo inventando un teléfono
+  if (dispositivo && Array.isArray(ref.dispositivos) && ref.dispositivos.includes(dispositivo)) {
+    return { existe: true, ok: false, enviado, error: "Este cupón es para que lo compartas, no para usarlo tú" };
+  }
+
   if (!telefono) return { existe: true, ok: true, enviado };
 
   // creadoPor es el teléfono de quien lo generó; en los cupones viejos
   // ese dato vive en origen
   if ((ref.creadoPor || ref.origen) === telefono) {
     return { existe: true, ok: false, enviado, error: "Este cupón es para que lo compartas, no para usarlo tú" };
+  }
+
+  // Los cupones entre clientes son para traer gente nueva; los que manda
+  // el negocio sí son para quien ya es cliente
+  if (!enviado && await yaEsCliente(telefono)) {
+    return { existe: true, ok: false, enviado, error: "Este cupón es solo para clientes nuevos" };
   }
 
   if (!enviado) {
@@ -113,15 +126,36 @@ async function revisarReferido(codigo, telefono) {
   return { existe: true, ok: true, enviado };
 }
 
+// Un teléfono ya es cliente si alguna vez pidió en línea: o tiene su cupón
+// para compartir, o aparece en un pedido ("Nombre (Tel: 5512345678)")
+async function yaEsCliente(telefono) {
+  // Un teléfono mal escrito no se puede revisar: se trata como cliente
+  if (!/^\d{10}$/.test(String(telefono || ""))) return true;
+  if (pedidos.some(p => typeof p.cliente === "string" && p.cliente.includes("(Tel: " + telefono + ")"))) return true;
+  if (await db.collection("referidos").findOne({ creadoPor: telefono })) return true;
+  return !!(await db.collection("pedidos").findOne({ cliente: { $regex: "\\(Tel: " + telefono + "\\)" } }));
+}
+
+// Identificador que la página del cliente guarda en su celular. Llega del
+// navegador, así que se limpia antes de guardarlo.
+function limpiarDispositivo(valor) {
+  return typeof valor === "string" ? valor.replace(/[^a-zA-Z0-9-]/g, "").slice(0, 64) : "";
+}
+
 // Cupón que el cliente puede pasarle a sus conocidos. Cada teléfono tiene
 // uno solo a la vez: si el que tiene no se ha usado se le vuelve a dar el
 // mismo, y cuando alguien lo usa se le hace otro en su siguiente pedido.
 // Queda a nombre de su teléfono para que no se lo aplique a sí mismo.
-async function cuponParaCompartir(telefono) {
+async function cuponParaCompartir(telefono, dispositivo) {
   if (!db || !telefono) return null;
   try {
     const activo = await db.collection("referidos").findOne({ creadoPor: telefono, usado: false });
-    if (activo) return activo.codigo;
+    if (activo) {
+      if (dispositivo) {
+        await db.collection("referidos").updateOne({ codigo: activo.codigo }, { $addToSet: { dispositivos: dispositivo } });
+      }
+      return activo.codigo;
+    }
 
     let nuevo = generarCodigoReferido();
     while (await db.collection("referidos").findOne({ codigo: nuevo })) {
@@ -131,6 +165,7 @@ async function cuponParaCompartir(telefono) {
       codigo: nuevo,
       origen: telefono,
       creadoPor: telefono,
+      dispositivos: dispositivo ? [dispositivo] : [],
       usado: false,
       fecha: new Date()
     });
@@ -143,7 +178,7 @@ async function cuponParaCompartir(telefono) {
 
 // Marca el cupón de referido como usado y devuelve el que el cliente
 // podrá compartir
-async function canjearReferido(cuponUpper, telefono, enviadoPorNegocio) {
+async function canjearReferido(cuponUpper, telefono, enviadoPorNegocio, dispositivo) {
   if (!db) return null;
   try {
     await db.collection("referidos").updateOne(
@@ -159,7 +194,7 @@ async function canjearReferido(cuponUpper, telefono, enviadoPorNegocio) {
   } catch (e) {
     console.error("Error canjeando referido:", e.message);
   }
-  return cuponParaCompartir(telefono);
+  return cuponParaCompartir(telefono, dispositivo);
 }
 
 // MongoDB
@@ -827,8 +862,9 @@ app.get("/cliente", (req, res) => {
 app.get("/validar-ref/:codigo", async (req, res) => {
   const codigo = req.params.codigo.toUpperCase();
   const tel = typeof req.query.telefono === "string" ? req.query.telefono.trim() : "";
+  const dispositivo = limpiarDispositivo(req.query.dispositivo);
   try {
-    const r = await revisarReferido(codigo, /^\d{10}$/.test(tel) ? tel : "");
+    const r = await revisarReferido(codigo, /^\d{10}$/.test(tel) ? tel : "", dispositivo);
     if (!r.existe) return res.json({ valido: false });
     if (!r.ok) return res.json({ valido: false, mensaje: r.error });
     return res.json({ valido: true, descuento: 10 });
@@ -957,6 +993,7 @@ app.get("/horario-online", (req, res) => {
 // Mercado Pago: crear preferencia de pago
 app.post("/crear-preferencia", async (req, res) => {
   const { cliente, telefono, productos: prods, total: monto, nota, cupon, paraLlevar } = req.body;
+  const dispositivo = limpiarDispositivo(req.body.dispositivo);
 
   // El horario se revisa aquí, no solo en la página: así no entra un pedido
   // por una pestaña que quedó abierta desde antes de cerrar.
@@ -991,7 +1028,7 @@ app.post("/crear-preferencia", async (req, res) => {
   let referidoEnviado = false;
   if (!descuento && cuponUpper.startsWith("REF-") && db) {
     try {
-      const r = await revisarReferido(cuponUpper.replace("REF-", ""), telefono);
+      const r = await revisarReferido(cuponUpper.replace("REF-", ""), telefono, dispositivo);
       if (r.existe) {
         if (!r.ok) return res.status(400).json({ error: r.error });
         descuento = 10;
@@ -1028,7 +1065,7 @@ app.post("/crear-preferencia", async (req, res) => {
       await guardarPedido(pedido);
       if (CUPONES_1USO[cuponUpper]) await marcarCuponUsado(cuponUpper);
 
-      const nuevoCodigoRef = esReferido ? await canjearReferido(cuponUpper, telefono, referidoEnviado) : await cuponParaCompartir(telefono);
+      const nuevoCodigoRef = esReferido ? await canjearReferido(cuponUpper, telefono, referidoEnviado, dispositivo) : await cuponParaCompartir(telefono, dispositivo);
       io.emit("nuevoPedido", pedido);
 
       return res.json({ directo: true, nuevoRef: nuevoCodigoRef, codigo: pedido.codigo });
@@ -1068,7 +1105,7 @@ app.post("/crear-preferencia", async (req, res) => {
       pedidos.push(pedido);
       await guardarPedido(pedido);
 
-      const nuevoCodigoRef2 = esReferido ? await canjearReferido(cuponUpper, telefono, referidoEnviado) : await cuponParaCompartir(telefono);
+      const nuevoCodigoRef2 = esReferido ? await canjearReferido(cuponUpper, telefono, referidoEnviado, dispositivo) : await cuponParaCompartir(telefono, dispositivo);
       io.emit("nuevoPedido", pedido);
       return res.json({ directo: true, nuevoRef: nuevoCodigoRef2, codigo: pedido.codigo });
     } catch (e) {
@@ -1100,7 +1137,7 @@ app.post("/crear-preferencia", async (req, res) => {
       }
     });
 
-    await guardarPedidoPendiente(ref, { cliente, telefono, productos: prods, total: montoFinal, nota: notaConCupon, paraLlevar: paraLlevar || false, cupon: cuponUpper, esReferido, referidoEnviado });
+    await guardarPedidoPendiente(ref, { cliente, telefono, productos: prods, total: montoFinal, nota: notaConCupon, paraLlevar: paraLlevar || false, cupon: cuponUpper, esReferido, referidoEnviado, dispositivo });
 
     res.json({
       preference_id: result.id,
@@ -1225,8 +1262,8 @@ async function confirmarPagoOnlineInterno(external_reference, payment_id, opcion
   // Se canjea antes de guardar para que el pedido se quede con el cupón
   // nuevo y se le pueda volver a mostrar si confirma por segunda vez
   const nuevoRefMP = (pendiente.esReferido && pendiente.cupon)
-    ? await canjearReferido(pendiente.cupon, pendiente.telefono, pendiente.referidoEnviado)
-    : await cuponParaCompartir(pendiente.telefono);
+    ? await canjearReferido(pendiente.cupon, pendiente.telefono, pendiente.referidoEnviado, pendiente.dispositivo)
+    : await cuponParaCompartir(pendiente.telefono, pendiente.dispositivo);
   if (nuevoRefMP) pedido.nuevoRef = nuevoRefMP;
 
   pedidos.push(pedido);

@@ -2803,6 +2803,21 @@ function marcarCuponInvalido(mensaje) {
   actualizarTotalConDescuento();
 }
 
+// Identificador de este celular. Con él el servidor reconoce los cupones
+// que se le dieron aquí, para que no se los apliquen cambiando el número.
+function idDispositivo() {
+  try {
+    let id = localStorage.getItem("dispositivo_id");
+    if (!id) {
+      id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : Date.now().toString(36) + "-" + Math.random().toString(36).slice(2);
+      localStorage.setItem("dispositivo_id", id);
+    }
+    return id;
+  } catch (e) {
+    return "";
+  }
+}
+
 async function revisarCuponConTelefono() {
   if (!cuponAplicado.startsWith("REF-")) return;
 
@@ -2812,7 +2827,7 @@ async function revisarCuponConTelefono() {
 
   try {
     const codigo = cuponAplicado.replace("REF-", "");
-    const res = await fetch("/validar-ref/" + encodeURIComponent(codigo) + "?telefono=" + encodeURIComponent(tel));
+    const res = await fetch("/validar-ref/" + encodeURIComponent(codigo) + "?telefono=" + encodeURIComponent(tel) + "&dispositivo=" + encodeURIComponent(idDispositivo()));
     const data = await res.json();
     if (data.valido) return;
     marcarCuponInvalido(data.mensaje || "Este cupón no se puede usar con este teléfono");
@@ -3116,7 +3131,7 @@ async function iniciarPago() {
     const res = await fetch("/crear-preferencia", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cliente, telefono, productos, total: totalConLlevar, nota, cupon, paraLlevar })
+      body: JSON.stringify({ cliente, telefono, productos, total: totalConLlevar, nota, cupon, paraLlevar, dispositivo: idDispositivo() })
     });
 
     const data = await res.json();
@@ -3170,7 +3185,7 @@ cargarCategorias();
   const params = new URLSearchParams(window.location.search);
   const refCode = params.get("ref");
   if (refCode) {
-    fetch("/validar-ref/" + refCode)
+    fetch("/validar-ref/" + encodeURIComponent(refCode) + "?dispositivo=" + encodeURIComponent(idDispositivo()))
       .then(r => r.json())
       .then(data => {
         const cuponInput = document.getElementById("cupon");
