@@ -501,7 +501,8 @@
         var valor = nodo[clave];
 
         if (typeof valor === "number") {
-          var enTamanos = /\/tamanos$/.test(ruta);
+          // La clave lleva ñ; si no se busca asi, los tamaños no salen en el editor
+          var enTamanos = /\/tamaños$/.test(ruta);
           if (!esClavePrecio(clave) && !enTamanos) return;
           var nombresClave = { precioConPapas: "con papas", sencillo: "sencillo", extra: "extra por sabor" };
           var etiqueta = partes.join(" · ");
@@ -517,7 +518,7 @@
         }
 
         if (valor && typeof valor === "object") {
-          var saltar = clave === "items" || clave === "proteinas" || clave === "subcategorias";
+          var saltar = clave === "items" || clave === "proteinas" || clave === "subcategorias" || clave === "tamaños";
           recorrer(valor, ruta + "/" + clave, saltar ? partes : partes.concat(clave));
         }
       });
