@@ -760,7 +760,7 @@
 
     <div id="resumenLista" style="padding:14px 20px;overflow-y:auto;flex:1;"></div>
 
-    <div style="border-top:2px solid #f1f5f9;padding:14px 20px;">
+    <div id="resumenTotales" style="border-top:2px solid #f1f5f9;padding:14px 20px;">
       <div id="cuponKioskoFila" style="display:flex;gap:8px;margin-bottom:6px;">
         <input id="cuponKioskoInput" type="text" placeholder="¿Tienes cupón? Escríbelo aquí" maxlength="6" autocomplete="off" autocapitalize="characters" style="flex:1;min-width:0;padding:11px 12px;font-size:16px;border:1.5px solid #d1d5db;border-radius:10px;font-family:inherit;text-transform:uppercase;">
         <button onclick="aplicarCuponKiosko()" style="background:#0f3d2c;color:#fff;border:none;border-radius:10px;padding:0 18px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;">Aplicar</button>
@@ -773,7 +773,7 @@
       </div>
     </div>
 
-    <div id="resumenEstado" style="display:none;padding:20px;text-align:center;font-size:15px;line-height:1.5;border-top:1px solid #f1f5f9;"></div>
+    <div id="resumenEstado" style="display:none;padding:20px;text-align:center;font-size:15px;line-height:1.5;border-top:1px solid #f1f5f9;overflow-y:auto;min-height:0;"></div>
 
     <div id="resumenBotones" style="display:flex;gap:10px;padding:14px 20px 18px;">
       <button onclick="cerrarResumen()" style="flex:1;background:#e2e8f0;color:#334155;border:none;border-radius:12px;padding:16px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;">Regresar</button>
@@ -2897,6 +2897,8 @@ function revisarPedido() {
     quitarCuponKiosko("El cupón es para compras de $" + cuponKiosko.minimo + " o más");
   }
   pintarTotalesResumen();
+  document.getElementById("resumenLista").style.display = "";
+  document.getElementById("resumenTotales").style.display = "";
   document.getElementById("cuponKioskoFila").style.display = "flex";
   document.getElementById("resumenEstado").style.display = "none";
   document.getElementById("resumenBotones").style.display = "flex";
@@ -3083,6 +3085,11 @@ function mostrarGracias(pedido) {
       : '') +
     (pedido && pedido.cuponNuevo ? bloqueCuponNuevo(pedido.cuponNuevo) : '') +
     '<button onclick="volverAInicio()" style="margin-top:16px;background:#0f3d2c;color:#fff;border:none;border-radius:12px;padding:13px 34px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;">Listo</button>', false);
+
+  // Ya pagó: la lista y el total ya no hacen falta y le quitaban el lugar
+  // al cupón y al botón Listo en las tablets más chicas
+  document.getElementById("resumenLista").style.display = "none";
+  document.getElementById("resumenTotales").style.display = "none";
 
   // La pantalla se limpia sola y queda lista para el siguiente cliente.
   // Con cupón se deja más tiempo para que alcance a escanear el QR.
