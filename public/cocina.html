@@ -97,7 +97,12 @@
        no cabe) y las indicaciones toman lo que sobra, pegadas a él */
     .prod-nombre {
       flex: 0 0 auto;
-      max-width: calc(100% - 156px);
+      max-width: 100%;
+    }
+
+    /* Con indicaciones se les deja al menos un poco de espacio a un lado */
+    .productos li.con-notas .prod-nombre {
+      max-width: calc(100% - 200px);
     }
 
     .notas-der {
@@ -501,7 +506,7 @@
         <div class="pedido-body">
           <ul class="productos">
             ${productosCocina.map((p, idx) =>
-              `<li data-index="${p._index}">
+              `<li data-index="${p._index}"${notaCocina(p) || (idx === productosCocina.length - 1 && notaPedido(pedido)) ? ' class="con-notas"' : ""}>
                 <span class="prod-nombre"><span class="punto">&#8226;</span> ${p.cantidad && p.cantidad > 1 ? `<span class="qty">${p.cantidad}</span> ` : ""}${p.nombre}</span>
                 ${notaCocina(p) || (idx === productosCocina.length - 1 && notaPedido(pedido)) ? `<span class="notas-der">
                   ${notaCocina(p) ? `<span class="nota">${notaCocina(p)}</span>` : ""}
