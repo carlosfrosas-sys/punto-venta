@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f3d2c">
+  <title>Tu cupón - La Cabaña</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; touch-action: manipulation; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f7f3;
+      color: #3d3d3d;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 32px 24px;
+      max-width: 420px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+    .icon { font-size: 56px; margin-bottom: 10px; }
+    h1 { font-size: 21px; color: #0f3d2c; margin-bottom: 6px; }
+    .sub { font-size: 14px; color: #64748b; margin-bottom: 18px; line-height: 1.45; }
+    .codigo {
+      font-size: 40px;
+      font-weight: 800;
+      letter-spacing: 6px;
+      color: #0f3d2c;
+      background: #e8f5e9;
+      border: 2px dashed #4caf50;
+      border-radius: 14px;
+      padding: 14px 10px;
+      margin-bottom: 14px;
+    }
+    .detalle { font-size: 14px; color: #334155; line-height: 1.6; margin-bottom: 18px; }
+    .vence { font-weight: 700; color: #c2410c; }
+    .botones { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      border: none;
+      padding: 12px 22px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      text-decoration: none;
+      color: #fff;
+    }
+    .btn-copiar { background: #4caf50; }
+    .btn-whatsapp { background: #25d366; }
+    .estado { font-size: 15px; font-weight: 700; color: #c62828; margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+  <div class="card" id="card">
+    <div class="icon">🎁</div>
+    <h1>Tu cupón de La Cabaña</h1>
+    <p class="sub">Cargando...</p>
+  </div>
+
+  <script>
+    let mensajeCupon = "";
+
+    function fechaLegible(fecha) {
+      return new Date(fecha).toLocaleString("es-MX", {
+        timeZone: "America/Mexico_City", weekday: "long", day: "numeric", month: "long",
+        hour: "numeric", minute: "2-digit"
+      });
+    }
+
+    function pintar(c) {
+      const vence = fechaLegible(c.vence);
+      const vencido = new Date(c.vence).getTime() < Date.now();
+      let estado = "";
+      if (c.usado) estado = '<div class="estado">Este cupón ya se usó</div>';
+      else if (vencido) estado = '<div class="estado">Este cupón ya venció</div>';
+
+      mensajeCupon = "🎁 Te comparto un cupón de La Cabaña: " + c.codigo + "\n\n" +
+        c.descuento + "% de descuento en el kiosko, con compra mínima de $" + c.minimo + ".\n" +
+        "Válido hasta el " + vence + ". Escríbelo en el kiosko antes de pagar 😉";
+
+      document.getElementById("card").innerHTML =
+        '<div class="icon">🎁</div>' +
+        '<h1>Tienes un cupón para usar o compartir</h1>' +
+        '<p class="sub">Úsalo tú en tu próxima visita o regálaselo a alguien. Tiene máximo 2 días para usarse.</p>' +
+        estado +
+        '<div class="codigo">' + c.codigo + '</div>' +
+        '<div class="detalle">' + c.descuento + '% de descuento en el kiosko<br>' +
+          'Compra mínima de $' + c.minimo + '<br>' +
+          'Válido hasta el <span class="vence">' + vence + '</span></div>' +
+        (estado ? '' :
+          '<div class="botones">' +
+            '<button class="btn btn-copiar" onclick="copiarCupon()">Copiar</button>' +
+            '<a class="btn btn-whatsapp" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent(mensajeCupon) + '">Mandar por WhatsApp</a>' +
+          '</div>');
+    }
+
+    function noEncontrado() {
+      document.getElementById("card").innerHTML =
+        '<div class="icon">🤔</div><h1>No encontramos este cupón</h1>' +
+        '<p class="sub">Revisa que el código esté completo.</p>';
+    }
+
+    (function () {
+      const codigo = (new URLSearchParams(location.search).get("c") || "").replace(/[^A-Za-z0-9]/g, "");
+      if (!codigo) return noEncontrado();
+      fetch("/cupon-kiosko/" + encodeURIComponent(codigo))
+        .then(r => r.ok ? r.json() : Promise.reject())
+        .then(pintar)
+        .catch(noEncontrado);
+    })();
+
+    // Copia el mensaje completo, listo para pegarlo en cualquier chat
+    function copiarCupon() {
+      const listo = () => {
+        const btn = document.querySelector(".btn-copiar");
+        btn.innerText = "¡Copiado!";
+        setTimeout(() => { btn.innerText = "Copiar"; }, 2000);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(mensajeCupon).then(listo).catch(() => copiarALaAntigua(listo));
+      } else {
+        copiarALaAntigua(listo);
+      }
+    }
+
+    // Algunos navegadores no dejan usar el portapapeles moderno
+    function copiarALaAntigua(listo) {
+      const area = document.createElement("textarea");
+      area.value = mensajeCupon;
+      area.setAttribute("readonly", "");
+      area.style.position = "fixed";
+      area.style.opacity = "0";
+      document.body.appendChild(area);
+      area.select();
+      try { if (document.execCommand("copy")) listo(); } catch (e) {}
+      document.body.removeChild(area);
+    }
+  </script>
+</body>
+</html>
