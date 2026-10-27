@@ -2195,6 +2195,12 @@ app.post("/cobrar-terminal", soloAdmin, async (req, res) => {
       })
     });
     const data = await resp.json();
+    // Mercado Pago no deja mandar un cobro si la terminal ya tiene otro
+    // esperando (409, "already_queued_order..."), por ejemplo uno que alguien
+    // dejó a medias. Se avisa aparte para que la pantalla diga qué hacer.
+    if (resp.status === 409 && /queued/i.test(JSON.stringify(data))) {
+      return res.status(409).json({ error: "La terminal tiene un pago pendiente", pendienteEnTerminal: true });
+    }
     if (!resp.ok) return res.status(resp.status).json(data);
     term.ultimaOrden = data.id;
     res.json(data);

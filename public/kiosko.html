@@ -2881,6 +2881,13 @@ function cobrarEnTerminal() {
   })
     .then(r => r.json().then(d => ({ ok: r.ok, d })))
     .then(({ ok, d }) => {
+      if (!ok && d.pendienteEnTerminal) {
+        mostrarEstado('<div style="color:#c62828;font-weight:700;font-size:17px;">La terminal tiene un pago pendiente</div>' +
+          '<div style="font-size:14px;color:#334155;background:#fef3c7;border-radius:10px;padding:10px 12px;margin-top:10px;">Favor de cancelar en la terminal el pago pendiente y después presiona <b>Intentar de nuevo</b>.</div>', true);
+        btn.disabled = false;
+        btn.innerText = "Intentar de nuevo";
+        return;
+      }
       if (!ok) {
         mostrarEstado('<div style="color:#c62828;font-weight:600;">No se pudo enviar el cobro</div>' +
           '<div style="color:#64748b;font-size:13px;margin-top:6px;">' + escaparTexto(d.message || d.error || "Pide ayuda al personal") + '</div>', true);
