@@ -396,7 +396,8 @@
       { nombre: "Pastor", precio: 50 },
       { nombre: "Pollo con Mole", precio: 50 },
 
-      { nombre: "Arrachera", precio: 55 }
+      { nombre: "Arrachera", precio: 55 },
+      { nombre: "Campechana", precio: 55 }
     ]
   },
 
