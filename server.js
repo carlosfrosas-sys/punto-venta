@@ -83,6 +83,11 @@ function generarCodigoReferido() {
   return codigo;
 }
 
+// Los referidos empezaron de cero en esta fecha: lo que alguien pidió o el
+// cupón de referido que usó antes no cuenta, así quien ya era cliente puede
+// estrenar el programa con el cupón que le pase un conocido.
+const INICIO_REFERIDOS = new Date("2026-10-28T00:00:00-06:00");
+
 // Revisa si un teléfono puede usar un cupón de referido. La usan el aviso
 // de la página del cliente (en cuanto escribe su número) y el cobro, así
 // las dos dicen lo mismo y no hay sorpresas al pagar.
@@ -117,7 +122,7 @@ async function revisarReferido(codigo, telefono, dispositivo) {
   }
 
   if (!enviado) {
-    const yaUso = await db.collection("referidos_usados").findOne({ telefono });
+    const yaUso = await db.collection("referidos_usados").findOne({ telefono, fecha: { $gte: INICIO_REFERIDOS } });
     if (yaUso) {
       return { existe: true, ok: false, enviado, error: "Ya usaste un cupón de referido anteriormente" };
     }
@@ -126,14 +131,16 @@ async function revisarReferido(codigo, telefono, dispositivo) {
   return { existe: true, ok: true, enviado };
 }
 
-// Un teléfono ya es cliente si alguna vez pidió en línea: o tiene su cupón
-// para compartir, o aparece en un pedido ("Nombre (Tel: 5512345678)")
+// Un teléfono ya es cliente si pidió en línea desde que empezaron los
+// referidos: o tiene su cupón para compartir, o aparece en un pedido
+// ("Nombre (Tel: 5512345678)")
 async function yaEsCliente(telefono) {
   // Un teléfono mal escrito no se puede revisar: se trata como cliente
   if (!/^\d{10}$/.test(String(telefono || ""))) return true;
-  if (pedidos.some(p => typeof p.cliente === "string" && p.cliente.includes("(Tel: " + telefono + ")"))) return true;
-  if (await db.collection("referidos").findOne({ creadoPor: telefono })) return true;
-  return !!(await db.collection("pedidos").findOne({ cliente: { $regex: "\\(Tel: " + telefono + "\\)" } }));
+  const desde = INICIO_REFERIDOS.getTime();
+  if (pedidos.some(p => typeof p.cliente === "string" && p.cliente.includes("(Tel: " + telefono + ")") && (p.creadoEn || 0) >= desde)) return true;
+  if (await db.collection("referidos").findOne({ creadoPor: telefono, fecha: { $gte: INICIO_REFERIDOS } })) return true;
+  return !!(await db.collection("pedidos").findOne({ cliente: { $regex: "\\(Tel: " + telefono + "\\)" }, creadoEn: { $gte: desde } }));
 }
 
 // Identificador que la página del cliente guarda en su celular. Llega del
