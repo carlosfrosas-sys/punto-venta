@@ -1481,10 +1481,13 @@ function mostrarTamanosAgua(sabores, conChia) {
     const precioBase = tamanos[tamano];
     const precioTotal = precioBase + (extrasCount * extraPrecio) + (conChia ? 4 : 0);
 
+    // El de 1.5 litros se entrega embotellado, igual que en caja
+    const embotellada = tamano === "1.5 Litros" ? " Embotellada" : "";
+
     const btn = document.createElement("button");
-    btn.innerText = tamano + " - $" + precioTotal;
+    btn.innerText = tamano + embotellada + " - $" + precioTotal;
     btn.onclick = () => {
-      const nombreFinal = nombreBase + conExtras + chiaTxt + " " + tamano;
+      const nombreFinal = nombreBase + conExtras + chiaTxt + " " + tamano + embotellada;
       mostrarNotas(nombreFinal, precioTotal, ["Sin Azucar", "Poca Azucar"]);
     };
     cont.appendChild(btn);

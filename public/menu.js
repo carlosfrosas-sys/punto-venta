@@ -26,7 +26,7 @@
     tamaños: {
       "1/2 Litro": 20,
       "1 Litro": 35,
-      "1.5 Litros": 50
+      "1.5 Litros": 55
     },
     extra: 4
   },
