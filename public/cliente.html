@@ -1281,8 +1281,6 @@ function mostrarOpciones(categoria) {
           mostrarOpcionPapas(item.nombre, item.precio, item.precioConPapas, notasHotDog);
         } else if (datos.agrupada) {
           agregarProductoSinNota(item.nombre, item.precio);
-        } else if (categoria === "Snacks" && item.paletas) {
-          mostrarSaboresPaletas();
         } else if (categoria === "Snacks" && item.maruchan) {
           mostrarSaboresMaruchan(item.precio);
         } else if (categoria === "Snacks" && banderillas.includes(item.nombre)) {
@@ -2605,32 +2603,6 @@ function mostrarOpcionPapas(nombre, precioSin, precioCon, notas) {
 
   cont.appendChild(btnCon);
   cont.appendChild(btnSin);
-}
-
-function mostrarSaboresPaletas() {
-  const cont = document.getElementById("proteinas");
-  cont.innerHTML = "<h3>Paletas</h3><p>Elige sabor:</p>";
-
-  const grupos = [
-    { precio: 25, sabores: ["Limon", "Limon con Chamoy", "Pina", "Fresa"] },
-    { precio: 30, sabores: ["Picafresa", "Pulparindo", "Chemisse Fresa", "Chemisse", "Chemisse de Pina", "Nuez", "Arroz con Leche", "Yogurt", "Oreo", "Skwinkles", "Nutella", "Yakult", "Ferrero", "Bubulubu", "Gansito", "Chocorrol", "Mazapan", "Algodon de Azucar", "Pinguino"] }
-  ];
-
-  grupos.forEach(g => {
-    const titulo = document.createElement("p");
-    titulo.innerText = "$" + g.precio;
-    titulo.style.cssText = "width:100%;margin:8px 0 4px;font-weight:700;color:#0e3a5c;";
-    cont.appendChild(titulo);
-    g.sabores.forEach(sabor => {
-      const btn = document.createElement("button");
-      btn.innerText = sabor;
-      btn.onclick = () => {
-        agregarProductoSinNota("Paleta de " + sabor, g.precio);
-        cont.innerHTML = "";
-      };
-      cont.appendChild(btn);
-    });
-  });
 }
 
 function mostrarSaboresMaruchan(precio) {
