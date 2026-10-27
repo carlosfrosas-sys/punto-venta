@@ -93,19 +93,16 @@
       gap: 16px;
     }
 
-    .productos li:last-child {
-      padding-right: var(--meta-ancho, 0px);
-    }
-
-    /* El nombre no se parte; solo si es larguísimo usa dos renglones */
+    /* El nombre usa todo el ancho que necesite (solo se parte si de plano
+       no cabe) y las indicaciones toman lo que sobra, pegadas a él */
     .prod-nombre {
       flex: 0 0 auto;
-      max-width: 70%;
+      max-width: calc(100% - 156px);
     }
 
     .notas-der {
-      flex: 0 1 auto;
-      min-width: 180px;
+      flex: 1 1 0;
+      min-width: 140px;
       display: flex;
       flex-direction: column;
       gap: 2px;
@@ -140,16 +137,27 @@
       text-transform: uppercase;
     }
 
+    /* Productos a la izquierda y la hora en su propia columna a la derecha,
+       abajo: así ninguna indicación queda debajo de la hora */
     .pedido {
       position: relative;
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+    }
+
+    .pedido > .pedido-body {
+      flex: 1;
+      min-width: 0;
     }
 
     .pedido-meta {
-      position: absolute;
-      right: 12px;
-      bottom: 6px;
+      flex-shrink: 0;
       display: flex;
-      gap: 12px;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0;
+      line-height: 1.2;
       font-size: 18px;
       color: #666;
       margin: 0;
@@ -549,11 +557,6 @@
         }
       }
       if (!insertado) contenedor.appendChild(div);
-
-      // La hora va encimada abajo a la derecha: el último renglón deja ese
-      // espacio libre para que las indicaciones no queden debajo de ella
-      const meta = div.querySelector(".pedido-meta");
-      if (meta) div.style.setProperty("--meta-ancho", (meta.offsetWidth + 16) + "px");
     }
   </script>
 
