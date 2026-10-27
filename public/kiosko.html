@@ -761,6 +761,11 @@
     <div id="resumenLista" style="padding:14px 20px;overflow-y:auto;flex:1;"></div>
 
     <div style="border-top:2px solid #f1f5f9;padding:14px 20px;">
+      <div id="cuponKioskoFila" style="display:flex;gap:8px;margin-bottom:6px;">
+        <input id="cuponKioskoInput" type="text" placeholder="¿Tienes cupón? Escríbelo aquí" maxlength="6" autocomplete="off" autocapitalize="characters" style="flex:1;min-width:0;padding:11px 12px;font-size:16px;border:1.5px solid #d1d5db;border-radius:10px;font-family:inherit;text-transform:uppercase;">
+        <button onclick="aplicarCuponKiosko()" style="background:#0f3d2c;color:#fff;border:none;border-radius:10px;padding:0 18px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;">Aplicar</button>
+      </div>
+      <div id="cuponKioskoInfo" style="display:none;font-size:13px;margin-bottom:6px;"></div>
       <div id="resumenExtras"></div>
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:6px;">
         <span style="font-size:17px;font-weight:700;color:#0f3d2c;">Total a pagar</span>
@@ -2622,6 +2627,10 @@ function toggleParaLlevar() {
 function cancelarPedido() {
   productos = [];
   total = 0;
+  cuponKiosko = null;
+  document.getElementById("cuponKioskoInput").value = "";
+  document.getElementById("cuponKioskoInput").disabled = false;
+  avisoCupon("", false);
   document.getElementById("lista").innerHTML = "";
   document.getElementById("total").innerText = "0";
   document.getElementById("headerTotal").innerText = "$0";
@@ -2768,6 +2777,7 @@ function empezarPedido() {
 function volverAInicio() {
   clearTimeout(temporizadorInactividad);
   temporizadorInactividad = null;
+  clearTimeout(temporizadorGracias);
 
   cancelarPedido();
   document.getElementById("resumenModal").style.display = "none";
@@ -2792,6 +2802,63 @@ document.addEventListener("keydown", () => { if (!enDescanso()) reiniciarInactiv
 // ===== REVISAR Y COBRAR =====
 function totalConLlevar() {
   return document.getElementById("paraLlevar").checked ? total + 10 : total;
+}
+
+// ===== CUPÓN DEL KIOSKO =====
+// El que le salió a alguien en un pedido anterior: { codigo, descuento, minimo }
+var cuponKiosko = null;
+
+function totalAPagar() {
+  const base = totalConLlevar();
+  if (!cuponKiosko) return base;
+  return Math.round(base * (1 - cuponKiosko.descuento / 100) * 100) / 100;
+}
+
+function avisoCupon(texto, bien) {
+  const info = document.getElementById("cuponKioskoInfo");
+  info.style.display = texto ? "block" : "none";
+  info.style.color = bien ? "#15803d" : "#c62828";
+  info.innerText = texto || "";
+}
+
+function quitarCuponKiosko(aviso) {
+  cuponKiosko = null;
+  const input = document.getElementById("cuponKioskoInput");
+  input.value = "";
+  input.disabled = false;
+  avisoCupon(aviso || "", false);
+  pintarTotalesResumen();
+}
+
+function aplicarCuponKiosko() {
+  const input = document.getElementById("cuponKioskoInput");
+  const codigo = input.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (!codigo) { avisoCupon("Escribe tu cupón", false); return; }
+
+  fetch("/kiosko/cupon/" + encodeURIComponent(codigo) + "?total=" + totalConLlevar())
+    .then(r => r.json())
+    .then(d => {
+      if (!d.ok) { cuponKiosko = null; avisoCupon(d.error || "Ese cupón no se puede usar", false); pintarTotalesResumen(); return; }
+      cuponKiosko = { codigo: d.codigo, descuento: d.descuento, minimo: d.minimo };
+      input.value = d.codigo;
+      input.disabled = true;
+      avisoCupon("Cupón aplicado: " + d.descuento + "% de descuento", true);
+      pintarTotalesResumen();
+    })
+    .catch(() => avisoCupon("No se pudo revisar el cupón, intenta de nuevo", false));
+}
+
+function pintarTotalesResumen() {
+  let extras = "";
+  if (document.getElementById("paraLlevar").checked) {
+    extras += '<div style="display:flex;justify-content:space-between;font-size:14px;color:#e65100;"><span>Para llevar</span><span>+$10</span></div>';
+  }
+  if (cuponKiosko) {
+    const ahorro = Math.round((totalConLlevar() - totalAPagar()) * 100) / 100;
+    extras += '<div style="display:flex;justify-content:space-between;font-size:14px;color:#15803d;"><span>Cupón ' + cuponKiosko.codigo + ' (-' + cuponKiosko.descuento + '%)</span><span>-$' + ahorro + '</span></div>';
+  }
+  document.getElementById("resumenExtras").innerHTML = extras;
+  document.getElementById("resumenTotal").innerText = "$" + totalAPagar();
 }
 
 function revisarPedido() {
@@ -2825,12 +2892,12 @@ function revisarPedido() {
     '</div>';
   }).join("");
 
-  const extras = document.getElementById("resumenExtras");
-  extras.innerHTML = document.getElementById("paraLlevar").checked
-    ? '<div style="display:flex;justify-content:space-between;font-size:14px;color:#e65100;"><span>Para llevar</span><span>+$10</span></div>'
-    : "";
-
-  document.getElementById("resumenTotal").innerText = "$" + totalConLlevar();
+  // Si regresó a quitar cosas, el cupón puede ya no alcanzar el mínimo
+  if (cuponKiosko && totalConLlevar() < cuponKiosko.minimo) {
+    quitarCuponKiosko("El cupón es para compras de $" + cuponKiosko.minimo + " o más");
+  }
+  pintarTotalesResumen();
+  document.getElementById("cuponKioskoFila").style.display = "flex";
   document.getElementById("resumenEstado").style.display = "none";
   document.getElementById("resumenBotones").style.display = "flex";
   document.getElementById("btnConfirmar").disabled = false;
@@ -2848,6 +2915,8 @@ function cerrarResumen() {
 }
 
 function mostrarEstado(html, conBotones) {
+  // Mientras cobra o ya cobró ya no se puede cambiar el cupón
+  document.getElementById("cuponKioskoFila").style.display = conBotones ? "flex" : "none";
   document.getElementById("resumenEstado").style.display = "block";
   document.getElementById("resumenEstado").innerHTML = html;
   document.getElementById("resumenBotones").style.display = conBotones ? "flex" : "none";
@@ -2856,23 +2925,47 @@ function mostrarEstado(html, conBotones) {
 let _cobroOrderId = null;
 let _cobroPolling = null;
 
-function cobrarEnTerminal() {
-  const monto = totalConLlevar();
+function cobrarEnTerminal(cuponRevisado) {
+  const btn = document.getElementById("btnConfirmar");
+
+  // El cupón se vuelve a revisar justo antes de cobrar, por si alguien lo
+  // usó mientras tanto en otro pedido
+  if (cuponKiosko && cuponRevisado !== true) {
+    btn.disabled = true;
+    btn.innerText = "Revisando cupón...";
+    fetch("/kiosko/cupon/" + encodeURIComponent(cuponKiosko.codigo) + "?total=" + totalConLlevar())
+      .then(r => r.json())
+      .then(d => {
+        if (d.ok) { cobrarEnTerminal(true); return; }
+        quitarCuponKiosko(d.error || "Ese cupón ya no se puede usar");
+        btn.disabled = false;
+        btn.innerText = "Pagar con tarjeta";
+      })
+      .catch(() => {
+        btn.disabled = false;
+        btn.innerText = "Intentar de nuevo";
+        avisoCupon("No se pudo revisar el cupón, intenta de nuevo", false);
+      });
+    return;
+  }
+
+  const monto = totalAPagar();
   if (monto < 5) { alert("El monto mínimo para tarjeta es $5"); return; }
 
-  const btn = document.getElementById("btnConfirmar");
   btn.disabled = true;
   btn.innerText = "Enviando a la terminal...";
 
+  const nota = document.getElementById("notaPedido").value.trim();
   const pedido = {
     cliente: document.getElementById("cliente").value.trim(),
     productos: [...productos],
     total: monto,
-    nota: document.getElementById("notaPedido").value.trim(),
+    nota: cuponKiosko ? ("[CUPON KIOSKO " + cuponKiosko.codigo + " -" + cuponKiosko.descuento + "%] " + nota).trim() : nota,
     paraLlevar: document.getElementById("paraLlevar").checked,
     metodoPago: "tarjeta",
     origen: "kiosko"
   };
+  if (cuponKiosko) pedido.cuponKiosko = cuponKiosko.codigo;
 
   fetch("/cobrar-terminal", {
     method: "POST",
@@ -2949,6 +3042,7 @@ function cancelarCobro() {
   btn.innerText = "Pagar con tarjeta";
   document.getElementById("resumenEstado").style.display = "none";
   document.getElementById("resumenBotones").style.display = "flex";
+  document.getElementById("cuponKioskoFila").style.display = "flex";
 }
 
 // El pago ya se cobró: el pedido tiene que entrar aunque falle la red,
@@ -2983,10 +3077,33 @@ function mostrarGracias(pedido) {
       ? '<div style="font-size:13px;color:#64748b;margin-top:14px;">Tu código de pedido</div>' +
         '<div style="font-size:44px;font-weight:800;letter-spacing:5px;color:#0f3d2c;">' + codigo + '</div>' +
         '<div style="font-size:15px;font-weight:700;color:#0f3d2c;margin-top:8px;">No es necesario que guardes este código, te llamaremos por tu nombre.</div>'
-      : ''), false);
+      : '') +
+    (pedido && pedido.cuponNuevo ? bloqueCuponNuevo(pedido.cuponNuevo) : '') +
+    '<button onclick="volverAInicio()" style="margin-top:16px;background:#0f3d2c;color:#fff;border:none;border-radius:12px;padding:13px 34px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;">Listo</button>', false);
 
-  // La pantalla se limpia sola y queda lista para el siguiente cliente
-  setTimeout(volverAInicio, 12000);
+  // La pantalla se limpia sola y queda lista para el siguiente cliente.
+  // Con cupón se deja más tiempo para que alcance a escanear el QR.
+  clearTimeout(temporizadorGracias);
+  temporizadorGracias = setTimeout(volverAInicio, pedido && pedido.cuponNuevo ? 40000 : 12000);
+}
+
+var temporizadorGracias = null;
+
+function bloqueCuponNuevo(c) {
+  const vence = new Date(c.vence).toLocaleString("es-MX", {
+    timeZone: "America/Mexico_City", weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit"
+  });
+  return '<div style="margin-top:16px;background:#ecfdf5;border:2px dashed #16a34a;border-radius:14px;padding:14px;">' +
+    '<div style="font-size:16px;font-weight:800;color:#0f3d2c;">🎁 ¡Tienes un cupón para usar o compartir!</div>' +
+    '<div style="font-size:13px;color:#334155;margin-top:4px;">' + c.descuento + '% de descuento en el kiosko, compra mínima de $' + c.minimo + '. Tienes máximo 2 días para usarlo.</div>' +
+    '<div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-top:10px;flex-wrap:wrap;">' +
+      '<img src="/cupon-kiosko/' + encodeURIComponent(c.codigo) + '/qr.svg" alt="QR del cupón" style="width:130px;height:130px;background:#fff;border-radius:8px;">' +
+      '<div style="text-align:left;">' +
+        '<div style="font-size:30px;font-weight:800;letter-spacing:4px;color:#0f3d2c;">' + escaparTexto(c.codigo) + '</div>' +
+        '<div style="font-size:12px;color:#64748b;max-width:190px;">Escanea el QR para guardarlo o mandarlo por WhatsApp. Vence el ' + vence + '</div>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
 }
 
 cargarCategorias();

@@ -5,6 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const { Server } = require("socket.io");
 const { MongoClient } = require("mongodb");
+const QRCode = require("qrcode");
 const { MercadoPagoConfig, Preference, Payment } = require("mercadopago");
 
 const app = express();
@@ -393,6 +394,7 @@ async function crearIndices() {
     ["pedidos_eliminados", { fecha: 1 }],
     ["referidos", { codigo: 1 }],
     ["referidos", { creadoPor: 1, usado: 1 }],
+    ["cupones_kiosko", { codigo: 1 }],
     ["referidos_usados", { telefono: 1 }],
     ["cupones_usados", { codigo: 1 }],
     ["escaneos_qr", { fecha: 1 }],
@@ -761,6 +763,93 @@ function revisarHorarioKiosko() {
   }
 }
 setInterval(revisarHorarioKiosko, 30 * 1000);
+
+// ---- Cupones del kiosko ----
+// Cada pedido del kiosko deja un cupón para la próxima visita: lo puede usar
+// la misma persona o regalarlo. Como el kiosko no sabe quién pide, no se
+// cuida quién lo usa sino cuánto cuesta: un solo uso, vence en 2 días, pide
+// compra mínima y un pedido que usó cupón no genera otro.
+const CUPON_KIOSKO = { descuento: 10, minimo: 55, horas: 48 };
+// Sin MongoDB los cupones viven en memoria
+const cuponesKioskoMem = new Map();
+
+async function buscarCuponKiosko(codigo) {
+  codigo = String(codigo || "").trim().toUpperCase();
+  if (!/^[A-Z0-9]{6}$/.test(codigo)) return null;
+  if (db) return db.collection("cupones_kiosko").findOne({ codigo });
+  return cuponesKioskoMem.get(codigo) || null;
+}
+
+async function crearCuponKiosko(pedidoId) {
+  let codigo = generarCodigoReferido();
+  while (await buscarCuponKiosko(codigo)) codigo = generarCodigoReferido();
+  const cupon = {
+    codigo,
+    descuento: CUPON_KIOSKO.descuento,
+    minimo: CUPON_KIOSKO.minimo,
+    creado: new Date(),
+    vence: new Date(Date.now() + CUPON_KIOSKO.horas * 60 * 60 * 1000),
+    pedidoOrigen: pedidoId,
+    usado: false
+  };
+  if (db) await db.collection("cupones_kiosko").insertOne({ ...cupon });
+  else cuponesKioskoMem.set(codigo, cupon);
+  return cupon;
+}
+
+async function revisarCuponKiosko(codigo, total) {
+  const cupon = await buscarCuponKiosko(codigo);
+  if (!cupon) return { ok: false, error: "Ese cupón no existe" };
+  if (cupon.usado) return { ok: false, error: "Ese cupón ya se usó" };
+  if (new Date(cupon.vence).getTime() < Date.now()) return { ok: false, error: "Ese cupón ya venció" };
+  if (!(Number(total) >= cupon.minimo)) {
+    return { ok: false, error: "Este cupón es para compras de $" + cupon.minimo + " o más" };
+  }
+  return { ok: true, codigo: cupon.codigo, descuento: cupon.descuento, minimo: cupon.minimo, vence: cupon.vence };
+}
+
+// Se marca usado solo si nadie lo usó antes (dos kioskos al mismo tiempo)
+async function canjearCuponKiosko(codigo, pedidoId) {
+  const filtro = { codigo, usado: false };
+  const cambio = { usado: true, usadoEn: new Date(), pedidoUso: pedidoId };
+  if (db) {
+    const r = await db.collection("cupones_kiosko").updateOne(filtro, { $set: cambio });
+    return r.modifiedCount === 1;
+  }
+  const cupon = cuponesKioskoMem.get(codigo);
+  if (!cupon || cupon.usado) return false;
+  Object.assign(cupon, cambio);
+  return true;
+}
+
+app.get("/kiosko/cupon/:codigo", soloAdmin, async (req, res) => {
+  try {
+    res.json(await revisarCuponKiosko(req.params.codigo, req.query.total));
+  } catch (e) {
+    res.status(500).json({ ok: false, error: "No se pudo revisar el cupón" });
+  }
+});
+
+// La página que abre el QR: solo enseña el cupón para guardarlo o mandarlo
+app.get("/cupon-kiosko/:codigo", async (req, res) => {
+  res.set("Cache-Control", "no-store");
+  const cupon = await buscarCuponKiosko(req.params.codigo).catch(() => null);
+  if (!cupon) return res.status(404).json({ error: "no_encontrado" });
+  res.json({ codigo: cupon.codigo, descuento: cupon.descuento, minimo: cupon.minimo, vence: cupon.vence, usado: !!cupon.usado });
+});
+
+// QR del cupón para la pantalla final del kiosko
+app.get("/cupon-kiosko/:codigo/qr.svg", async (req, res) => {
+  const cupon = await buscarCuponKiosko(req.params.codigo).catch(() => null);
+  if (!cupon) return res.status(404).end();
+  // En Render la app va detrás de un proxy: el https real viene en el encabezado
+  const base = process.env.BASE_URL || ((req.get("x-forwarded-proto") || req.protocol) + "://" + req.get("host"));
+  const url = base + "/cupon.html?c=" + cupon.codigo;
+  QRCode.toString(url, { type: "svg", margin: 1 }, (err, svg) => {
+    if (err) return res.status(500).end();
+    res.type("image/svg+xml").send(svg);
+  });
+});
 
 // ---- Escaneos del QR ----
 // Se guarda un resumen por día (no visitas sueltas): cuántas veces se abrió
@@ -1676,12 +1765,34 @@ app.post("/pedido", soloAdmin, async (req, res) => {
     pedido.creadoEn = Date.now();
   }
 
+  // El cobro ya se hizo con el descuento: si el cupón se acaba de usar en
+  // otro lado igual entra el pedido, solo queda anotado
+  let cuponNuevo = null;
+  if (esKiosko) {
+    try {
+      const usado = req.body.cuponKiosko ? String(req.body.cuponKiosko).toUpperCase() : "";
+      if (usado) {
+        pedido.cuponKiosko = usado;
+        if (!(await canjearCuponKiosko(usado, pedido.id))) {
+          console.error("Cupón del kiosko ya usado o inexistente al registrar el pedido:", usado, pedido.id);
+        }
+      } else {
+        cuponNuevo = await crearCuponKiosko(pedido.id);
+        pedido.cuponGenerado = cuponNuevo.codigo;
+      }
+    } catch (e) {
+      console.error("Error con el cupón del kiosko:", e.message);
+    }
+  }
+
   pedidos.push(pedido);
   await guardarPedido(pedido);
 
   io.emit("nuevoPedido", pedido);
 
-  res.json(pedido);
+  res.json(cuponNuevo
+    ? { ...pedido, cuponNuevo: { codigo: cuponNuevo.codigo, descuento: cuponNuevo.descuento, minimo: cuponNuevo.minimo, vence: cuponNuevo.vence } }
+    : pedido);
 });
 
 app.get("/pedidos", soloAdmin, (req, res) => {
