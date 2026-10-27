@@ -86,7 +86,7 @@ function generarCodigoReferido() {
 // Los referidos empezaron de cero en esta fecha: lo que alguien pidió o el
 // cupón de referido que usó antes no cuenta, así quien ya era cliente puede
 // estrenar el programa con el cupón que le pase un conocido.
-const INICIO_REFERIDOS = new Date("2026-10-28T00:00:00-06:00");
+const INICIO_REFERIDOS = new Date("2026-10-27T14:00:00-06:00");
 
 // Revisa si un teléfono puede usar un cupón de referido. La usan el aviso
 // de la página del cliente (en cuanto escribe su número) y el cobro, así
