@@ -84,12 +84,38 @@
       font-weight: 800;
     }
 
+    /* Producto a la izquierda e indicaciones en su propia columna a la
+       derecha: así no bajan a otro renglón y no le quitan espacio a los
+       demás pedidos */
+    .productos li {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .productos li:last-child {
+      padding-right: var(--meta-ancho, 0px);
+    }
+
+    /* El nombre no se parte; solo si es larguísimo usa dos renglones */
+    .prod-nombre {
+      flex: 0 0 auto;
+      max-width: 70%;
+    }
+
+    .notas-der {
+      flex: 0 1 auto;
+      min-width: 180px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      line-height: 1.15;
+    }
+
     .nota {
-      display: inline;
       font-size: 28px;
-      color: #f87171;
+      color: #fbbf24;
       font-weight: 600;
-      margin-left: 8px;
     }
 
     .pedido-lado {
@@ -102,11 +128,9 @@
     }
 
     .nota-general {
-      display: inline;
       font-size: 28px;
       color: #fbbf24;
       font-weight: 600;
-      margin-left: 8px;
     }
 
     .para-llevar {
@@ -494,9 +518,11 @@
           <ul class="productos">
             ${productosBarra.map((p, idx) =>
               `<li data-index="${p._index}">
-                <span class="punto">&#8226;</span> ${p.cantidad && p.cantidad > 1 ? `<span class="qty">${p.cantidad}</span> ` : ""}${p.nombre}
-                ${p.nota && !p._virtual ? `<span class="nota">${p.nota.replace(/\s*\+\$\d+/g, "")}</span>` : ""}
-                ${idx === productosBarra.length - 1 && notaPedido(pedido) ? `<span class="nota-general">${notaPedido(pedido)}</span>` : ""}
+                <span class="prod-nombre"><span class="punto">&#8226;</span> ${p.cantidad && p.cantidad > 1 ? `<span class="qty">${p.cantidad}</span> ` : ""}${p.nombre}</span>
+                ${(p.nota && !p._virtual) || (idx === productosBarra.length - 1 && notaPedido(pedido)) ? `<span class="notas-der">
+                  ${p.nota && !p._virtual ? `<span class="nota">${p.nota.replace(/\s*\+\$\d+/g, "")}</span>` : ""}
+                  ${idx === productosBarra.length - 1 && notaPedido(pedido) ? `<span class="nota-general">${notaPedido(pedido)}</span>` : ""}
+                </span>` : ""}
               </li>`
             ).join("")}
           </ul>
@@ -523,6 +549,11 @@
         }
       }
       if (!insertado) contenedor.appendChild(div);
+
+      // La hora va encimada abajo a la derecha: el último renglón deja ese
+      // espacio libre para que las indicaciones no queden debajo de ella
+      const meta = div.querySelector(".pedido-meta");
+      if (meta) div.style.setProperty("--meta-ancho", (meta.offsetWidth + 16) + "px");
     }
   </script>
 
