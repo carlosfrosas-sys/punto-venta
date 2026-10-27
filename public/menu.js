@@ -28,7 +28,8 @@
       "1 Litro": 35,
       "1.5 Litros": 55
     },
-    extra: 4
+    // Por cada sabor despues del primero
+    extra: 5
   },
 
   "Bagels": {
