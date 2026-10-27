@@ -2971,8 +2971,9 @@ function mostrarGracias(pedido) {
   const codigo = pedido && pedido.codigo ? pedido.codigo : "";
   mostrarEstado('<div style="font-size:21px;font-weight:800;color:#16a34a;">¡Listo! Tu pedido va en camino</div>' +
     (codigo
-      ? '<div style="font-size:13px;color:#64748b;margin-top:14px;">Tu código para recoger</div>' +
-        '<div style="font-size:44px;font-weight:800;letter-spacing:5px;color:#0f3d2c;">' + codigo + '</div>'
+      ? '<div style="font-size:13px;color:#64748b;margin-top:14px;">Tu código de pedido</div>' +
+        '<div style="font-size:44px;font-weight:800;letter-spacing:5px;color:#0f3d2c;">' + codigo + '</div>' +
+        '<div style="font-size:15px;font-weight:700;color:#0f3d2c;margin-top:8px;">No es necesario que guardes este código, te llamaremos por tu nombre.</div>'
       : '') +
     '<div style="font-size:14px;color:#64748b;margin-top:12px;">Espera a que te llamen. 5 a 10 minutos.</div>', false);
 
