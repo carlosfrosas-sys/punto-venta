@@ -822,6 +822,12 @@ async function canjearCuponKiosko(codigo, pedidoId) {
   return true;
 }
 
+// Lo que la pantalla final necesita para enseñar el cupón
+async function datosCuponKiosko(codigo) {
+  const c = await buscarCuponKiosko(codigo);
+  return c ? { codigo: c.codigo, descuento: c.descuento, minimo: c.minimo, vence: c.vence } : null;
+}
+
 app.get("/kiosko/cupon/:codigo", soloAdmin, async (req, res) => {
   try {
     res.json(await revisarCuponKiosko(req.params.codigo, req.query.total));
@@ -1087,8 +1093,33 @@ app.get("/horario-online", (req, res) => {
 });
 
 // Mercado Pago: crear preferencia de pago
+// Lo que manda la página pública se pinta después en cocina, barra, entrega
+// y caja como HTML. Se le quitan los caracteres con los que alguien podría
+// meter código en esas pantallas (que guardan la contraseña del sistema).
+function textoSeguro(valor) {
+  return typeof valor === "string" ? valor.replace(/[<>"'`]/g, "").slice(0, 300) : valor;
+}
+
+function limpiarProfundo(valor, nivel = 0) {
+  if (nivel > 5) return undefined;
+  if (typeof valor === "string") return textoSeguro(valor);
+  if (Array.isArray(valor)) return valor.slice(0, 100).map(v => limpiarProfundo(v, nivel + 1));
+  if (valor && typeof valor === "object") {
+    const limpio = {};
+    for (const k of Object.keys(valor)) limpio[textoSeguro(k)] = limpiarProfundo(valor[k], nivel + 1);
+    return limpio;
+  }
+  return valor;
+}
+
 app.post("/crear-preferencia", async (req, res) => {
-  const { cliente, telefono, productos: prods, total: monto, nota, cupon, paraLlevar } = req.body;
+  const { cupon } = req.body;
+  const paraLlevar = !!req.body.paraLlevar;
+  const cliente = textoSeguro(req.body.cliente);
+  const telefono = textoSeguro(req.body.telefono);
+  const nota = textoSeguro(req.body.nota);
+  const prods = limpiarProfundo(req.body.productos);
+  const monto = Number(req.body.total);
   const dispositivo = limpiarDispositivo(req.body.dispositivo);
 
   // El horario se revisa aquí, no solo en la página: así no entra un pedido
@@ -1098,7 +1129,7 @@ app.post("/crear-preferencia", async (req, res) => {
     return res.status(403).json({ error: horario.mensaje, cerrado: true, horario: horario.horario });
   }
 
-  if (!cliente || !telefono || !prods || prods.length === 0 || !monto) {
+  if (!cliente || !telefono || !Array.isArray(prods) || prods.length === 0 || !(monto > 0) || !isFinite(monto)) {
     return res.status(400).json({ error: "Datos incompletos" });
   }
 
@@ -1738,6 +1769,18 @@ function etiquetaHora(h, corta) {
 app.post("/pedido", soloAdmin, async (req, res) => {
   const esKiosko = req.body.origen === "kiosko";
 
+  // El kiosko reintenta si no le llega la respuesta. Si el pedido de ese
+  // cobro ya entró, se le devuelve el mismo en lugar de crear otro.
+  const idCobro = typeof req.body.idCobro === "string" ? req.body.idCobro.slice(0, 100) : "";
+  if (idCobro) {
+    const yaEntro = pedidos.find(p => p.idCobro === idCobro);
+    if (yaEntro) {
+      return res.json(yaEntro.cuponGenerado
+        ? { ...yaEntro, cuponNuevo: await datosCuponKiosko(yaEntro.cuponGenerado) }
+        : yaEntro);
+    }
+  }
+
   // Un cobro ya hecho sí se registra; lo que se frena es empezar uno nuevo
   // con el kiosko apagado
   if (esKiosko && !kioskoActivo && req.body.metodoPago !== "tarjeta") {
@@ -1763,6 +1806,7 @@ app.post("/pedido", soloAdmin, async (req, res) => {
     pedido.origen = "kiosko";
     pedido.codigo = generarCodigoPedido();
     pedido.creadoEn = Date.now();
+    if (idCobro) pedido.idCobro = idCobro;
   }
 
   // El cobro ya se hizo con el descuento: si el cupón se acaba de usar en
