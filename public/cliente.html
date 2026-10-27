@@ -2910,6 +2910,20 @@ document.addEventListener("click", (e) => {
   if (e.target && e.target.id === "pagoModal") cerrarPagoModal();
 });
 
+let __falloMostradoEnPago = false;
+
+// Manda el error del formulario de pago al servidor para que quede en el
+// registro de Render: así se sabe la causa cuando un cliente avisa
+function reportarErrorPago(err) {
+  try {
+    const datos = JSON.stringify({
+      tipo: err && err.type, causa: err && err.cause, mensaje: err && err.message,
+      navegador: navigator.userAgent
+    });
+    navigator.sendBeacon("/log-error-pago", new Blob([datos], { type: "application/json" }));
+  } catch (e) {}
+}
+
 function mostrarStatusBrick(html) {
   document.getElementById("pagoBrickContainer").style.display = "none";
   const s = document.getElementById("pagoBrickStatus");
@@ -3042,12 +3056,23 @@ async function abrirBrickPago(preferenceId, publicKey, externalReference, totalM
         }
 
         mostrarStatusBrick(fallo);
+        // Ya se le dijo por qué falló; que onError no lo tape con uno genérico
+        __falloMostradoEnPago = true;
         // Rechazar la promesa desbloquea el formulario del brick para reintentar
         throw new Error("pago_no_completado");
       },
       onError: (err) => {
         console.error("Brick error:", err);
-        mostrarStatusBrick("⚠️ Error procesando el pago. Intenta de nuevo.<br><br><button onclick='cerrarPagoModal()' style='padding:10px 20px;border:none;background:#0e3a5c;color:white;border-radius:8px;cursor:pointer;'>Cerrar</button>");
+        reportarErrorPago(err);
+
+        // Mercado Pago avisa aquí también errores menores (no pudo traer
+        // las mensualidades, un campo incompleto...) con los que el
+        // formulario sigue sirviendo. Solo el "critical" lo deja inservible.
+        if (err && err.type === "non_critical") return;
+        if (__falloMostradoEnPago) { __falloMostradoEnPago = false; return; }
+
+        const causa = err && err.cause ? "<div style='font-size:12px;color:#94a3b8;margin-top:6px;'>Código: " + String(err.cause).replace(/[^a-zA-Z0-9_ .-]/g, "") + "</div>" : "";
+        mostrarStatusBrick(botonesFalloPago("⚠️ No se pudo cargar el pago. Cierra esta ventana y vuelve a intentarlo." + causa));
       }
     }
   });
