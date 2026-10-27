@@ -533,6 +533,64 @@
       background: #d9d0c7;
     }
 
+    .btn-nota {
+      background: none;
+      border: none;
+      padding: 2px 3px;
+      font-size: 12px;
+      cursor: pointer;
+      min-height: auto;
+      opacity: 0.6;
+    }
+
+    .btn-nota:hover { opacity: 1; }
+
+    #lista li.editando-nota {
+      flex-wrap: wrap;
+      background: #fdf8f3;
+      padding: 8px;
+      border-radius: 8px;
+    }
+
+    .nota-titulo {
+      width: 100%;
+      font-weight: 700;
+      font-size: 13px;
+      color: #6b5b4f;
+    }
+
+    .nota-input {
+      width: 100%;
+      padding: 8px 10px;
+      font-size: 15px;
+      border: 1.5px solid #d4c8bc;
+      border-radius: 8px;
+      font-family: inherit;
+    }
+
+    .nota-botones {
+      display: flex;
+      gap: 6px;
+      width: 100%;
+    }
+
+    .nota-btn {
+      flex: 1;
+      background: #16a34a;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      min-height: auto;
+    }
+
+    .nota-btn-uno { background: #2563eb; }
+    .nota-btn-cancelar { background: #e8e4df; color: #6b5b4f; }
+
     .btn-eliminar {
       background: none;
       color: #c4bab0;
@@ -3321,6 +3379,7 @@ function renderizarLista() {
         ${prod.nota ? `<br><small>${prod.nota}</small>` : ""}
       </div>
       <div class="producto-controles">
+        <button class="btn-nota" onclick="editarNota(${index})" title="Indicación de este producto">✏️</button>
         <button class="btn-qty" onclick="cambiarCantidad(${index}, -1)">-</button>
         <span class="cantidad">${prod.cantidad}</span>
         <button class="btn-qty" onclick="cambiarCantidad(${index}, 1)">+</button>
@@ -3345,6 +3404,73 @@ function renderizarLista() {
   revisarPreciosPendientes();
 }
 
+
+// Indicación propia de un producto del pedido (ej. "pan dorado" solo en la
+// torta de milanesa). Si hay varios iguales se puede poner a uno solo: ese
+// se separa en su propio renglón para que cocina lo vea aparte.
+function editarNota(index) {
+  const prod = productos[index];
+  const li = document.getElementById("lista").children[index];
+  if (!prod || !li) return;
+
+  li.innerHTML = "";
+  li.classList.add("editando-nota");
+
+  const titulo = document.createElement("div");
+  titulo.className = "nota-titulo";
+  titulo.innerText = prod.nombre + (prod.cantidad > 1 ? " (" + prod.cantidad + ")" : "");
+
+  const input = document.createElement("input");
+  input.type = "text";
+  input.className = "nota-input";
+  input.placeholder = "Indicación. Ej: pan dorado, sin aceite";
+  input.value = prod.nota || "";
+
+  const botones = document.createElement("div");
+  botones.className = "nota-botones";
+
+  function boton(texto, clase, accion) {
+    const b = document.createElement("button");
+    b.innerText = texto;
+    b.className = clase;
+    b.onclick = accion;
+    botones.appendChild(b);
+  }
+
+  const guardarTodos = () => {
+    prod.nota = input.value.trim();
+    renderizarLista();
+  };
+
+  const guardarUno = () => {
+    const texto = input.value.trim();
+    prod.cantidad -= 1;
+    prod.precio = prod.precioBase * prod.cantidad;
+    const separado = Object.assign({}, prod, { cantidad: 1, precio: prod.precioBase, nota: texto });
+    productos.splice(index + 1, 0, separado);
+    // No es un producto nuevo: que no regrese a las categorías
+    _prevProductCount = productos.length;
+    renderizarLista();
+  };
+
+  if (prod.cantidad > 1) {
+    boton("Solo a 1", "nota-btn nota-btn-uno", guardarUno);
+    boton("A los " + prod.cantidad, "nota-btn", guardarTodos);
+  } else {
+    boton("Guardar", "nota-btn", guardarTodos);
+  }
+  boton("Cancelar", "nota-btn nota-btn-cancelar", () => renderizarLista());
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); (prod.cantidad > 1 ? guardarUno : guardarTodos)(); }
+    if (e.key === "Escape") renderizarLista();
+  });
+
+  li.appendChild(titulo);
+  li.appendChild(input);
+  li.appendChild(botones);
+  input.focus();
+}
 
 function cambiarCantidad(index, delta) {
   const prod = productos[index];
