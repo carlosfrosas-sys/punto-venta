@@ -49,7 +49,7 @@
   "Bebidas": {
     items: [
       { nombre: "Agua", precio: 0, agua: true },
-      { nombre: "Coca Cola", precio: 25, sabores: ["Original 600ml", "Sin Azucar 600ml", {nombre: "Panzoncita", precio: 18}, {nombre: "Panzoncita Sin Azucar", precio: 18}, "Coca de Lata", {nombre: "Coca 3L", precio: 60}, "Coca Light"] },
+      { nombre: "Coca Cola", precio: 25, sabores: ["Original 600ml", "Sin Azúcar 600ml", {nombre: "Panzoncita", precio: 18}, {nombre: "Panzoncita Sin Azucar", precio: 18}, "Coca de Lata", {nombre: "Coca 3L", precio: 60}, "Coca Light"] },
       { nombre: "Refresco de Sabor", precio: 24, sabores: ["Fanta", "Sprite", "Fresca", "Sidral", "Delaware", "Squirt", "Orange", "Senzao", "Prisco", "Yoli", "Deliciosa", "Naranjada", "Toronjada", "Limonada", "Piñada", "Manzanada", "Mangada", "Fresada", "Topo Chico", "Peñafiel Mineral", "Twist", "Dr. Pepper", "Cream Soda", "Dr. Berry", "Dr. Cherry"] },
       { nombre: "Yakult", precio: 10 },
       { nombre: "Peñafielita", precio: 18, sabores: ["Limon", "Naranja", "Fresa", "Piña"] },

@@ -772,10 +772,10 @@ let cuponAplicado = "";
         texto = "Tu pedido " + p.codigo + " fue entregado";
         barra.style.background = "#475569";
       } else if (p.estado === "Listo") {
-        texto = "Tu pedido " + p.codigo + " esta listo";
+        texto = "Tu pedido " + p.codigo + " está listo";
         barra.style.background = "#16a34a";
       } else {
-        texto = "Tu pedido " + p.codigo + " esta en preparacion";
+        texto = "Tu pedido " + p.codigo + " está en preparación";
       }
 
       document.getElementById("barraPedidoTexto").innerText = texto;
@@ -1083,7 +1083,7 @@ function mostrarOpciones(categoria) {
   const datos = menu[categoria];
 
   if (!datos) {
-    cont.innerHTML = "<p>No hay datos en esta categoria</p>";
+    cont.innerHTML = "<p>No hay datos en esta categoría</p>";
     return;
   }
 
@@ -1368,7 +1368,7 @@ function mostrarSubcategoria(categoria, sub) {
     return;
   }
 
-  cont.innerHTML = "<h3>Elige proteina:</h3>";
+  cont.innerHTML = "<h3>Elige proteína:</h3>";
 
   datos.proteinas.forEach(p => {
     const btn = document.createElement("button");
@@ -1439,9 +1439,9 @@ function mostrarSaboresAgua() {
     cont.appendChild(btn);
   });
 
-  // Boton Chia +$4
+  // Botón Chía +$4
   const btnChia = document.createElement("button");
-  btnChia.innerText = "Chia +$4";
+  btnChia.innerText = "Chía +$4";
   btnChia.style.background = "#e5e7eb";
   btnChia.style.color = "#111827";
   btnChia.onclick = () => {
@@ -1471,7 +1471,7 @@ function mostrarTamanosAgua(sabores, conChia) {
   const extrasCount = sabores.length > 1 ? sabores.length - 1 : 0;
   const nombreBase = "Agua de " + sabores[0];
   const conExtras = sabores.length > 1 ? " con " + sabores.slice(1).join(", ") : "";
-  const chiaTxt = conChia ? " con Chia" : "";
+  const chiaTxt = conChia ? " con Chía" : "";
 
   cont.innerHTML = "<h3>" + nombreBase + conExtras + chiaTxt + "</h3><p>Elige tamaño:</p>";
 
@@ -1488,7 +1488,7 @@ function mostrarTamanosAgua(sabores, conChia) {
     btn.innerText = tamano + embotellada + " - $" + precioTotal;
     btn.onclick = () => {
       const nombreFinal = nombreBase + conExtras + chiaTxt + " " + tamano + embotellada;
-      mostrarNotas(nombreFinal, precioTotal, ["Sin Azucar", "Poca Azucar"]);
+      mostrarNotas(nombreFinal, precioTotal, ["Sin Azúcar", "Poca Azúcar"]);
     };
     cont.appendChild(btn);
   }
@@ -1510,7 +1510,7 @@ function mostrarSaboresLicuado() {
     btn.style.fontWeight = "700";
     btn.style.marginBottom = "10px";
     btn.style.width = "100%";
-    btn.onclick = () => mostrarNotas(item.nombre, item.precio, ["Sin Azucar", "Poca Azucar"]);
+    btn.onclick = () => mostrarNotas(item.nombre, item.precio, ["Sin Azúcar", "Poca Azúcar"]);
     cont.appendChild(btn);
   });
 
@@ -1551,7 +1551,7 @@ function mostrarSaboresLicuado() {
     const nombreBase = "Licuado de " + seleccionados[0];
     const conExtras = seleccionados.length > 1 ? " con " + seleccionados.slice(1).join(", ") : "";
     const nombreFinal = nombreBase + conExtras;
-    mostrarNotas(nombreFinal, precioTotal, ["Sin Azucar", "Poca Azucar"]);
+    mostrarNotas(nombreFinal, precioTotal, ["Sin Azúcar", "Poca Azúcar"]);
   };
   cont.appendChild(btnSig);
 }
@@ -1586,12 +1586,12 @@ function mostrarPregunta(nombre, precio, pregunta, textoSi, textoNo) {
 
 function mostrarOpcionesHuevoSandwich(sub, precio) {
   const cont = document.getElementById("proteinas");
-  cont.innerHTML = "<h3>" + sub + " de Huevo</h3><p>Con que?</p>";
+  cont.innerHTML = "<h3>" + sub + " de Huevo</h3><p>¿Con qué?</p>";
 
   const opciones = [
     { nombre: "Solo", extra: 0 },
     { nombre: "con Salchicha", extra: 8 },
-    { nombre: "con Jamon", extra: 8 },
+    { nombre: "con Jamón", extra: 8 },
     { nombre: "con Nopales", extra: 8 },
     { nombre: "Huevo Extra", extra: 8 }
   ];
@@ -1611,7 +1611,7 @@ function mostrarOpcionesHuevoSandwich(sub, precio) {
 
 function mostrarPicoDegallo(nombre, precio) {
   const cont = document.getElementById("proteinas");
-  cont.innerHTML = "<h3>" + nombre + " - $" + precio + "</h3><p>Con pico de gallo?</p>";
+  cont.innerHTML = "<h3>" + nombre + " - $" + precio + "</h3><p>¿Con pico de gallo?</p>";
 
   const btnSi = document.createElement("button");
   btnSi.innerText = "Si";
@@ -1894,7 +1894,7 @@ function mostrarMultiProteina(categoria, datos, max, notas) {
     sep.style.fontSize = "13px";
     sep.style.color = "#6b9ab8";
     sep.style.marginTop = "8px";
-    sep.innerText = "Con proteina:";
+    sep.innerText = "Con proteína:";
     cont.appendChild(sep);
   }
 
@@ -1945,7 +1945,7 @@ function mostrarMultiProteina(categoria, datos, max, notas) {
   btnSig.style.marginTop = "10px";
   btnSig.style.width = "100%";
   btnSig.onclick = () => {
-    if (seleccionados.length === 0) { alert("Elige al menos una proteina"); return; }
+    if (seleccionados.length === 0) { alert("Elige al menos una proteína"); return; }
     let precioFinal = Math.max(...seleccionados.map(s => s.precio));
     let nombreFinal;
     if (seleccionados.length === 1) {
@@ -1967,7 +1967,7 @@ function mostrarIngredientesTortaMulti() {
   cont.innerHTML = "<h3>Elige ingredientes:</h3><p>El primero es precio base, cada extra +$" + extraPrecio + "</p>";
 
   const todosIngredientes = menu["Tortas"].proteinas;
-  const ingredientesConPina = [...todosIngredientes, { nombre: "Pina", precio: 0 }];
+  const ingredientesConPina = [...todosIngredientes, { nombre: "Piña", precio: 0 }];
 
   ingredientesConPina.forEach(p => {
     const nombre = p.nombre;
@@ -2111,7 +2111,7 @@ function mostrarNotas(nombre, precio, opciones, siguiente) {
 
 function mostrarHuevoPaquete(datos) {
   const cont = document.getElementById("proteinas");
-  cont.innerHTML = "<h3>" + datos.nombre + " - $" + datos.precio + "</h3><p>Como el huevo?</p>";
+  cont.innerHTML = "<h3>" + datos.nombre + " - $" + datos.precio + "</h3><p>¿Cómo el huevo?</p>";
 
   ["Estrellado", "Revuelto"].forEach(tipo => {
     const btn = document.createElement("button");
@@ -2134,7 +2134,7 @@ function mostrarHuevoPaquete(datos) {
 
 function mostrarAcompanamientoSolo(nombre, precio, opciones) {
   const cont = document.getElementById("proteinas");
-  cont.innerHTML = "<h3>" + nombre + " - $" + precio + "</h3><p>Elige acompanamiento:</p>";
+  cont.innerHTML = "<h3>" + nombre + " - $" + precio + "</h3><p>Elige acompañamiento:</p>";
 
   opciones.forEach(opcion => {
     const btn = document.createElement("button");
@@ -2149,7 +2149,7 @@ function mostrarAcompanamientoSolo(nombre, precio, opciones) {
 
 function mostrarAcompanamientoPaquete(nombre, precio, opciones) {
   const cont = document.getElementById("proteinas");
-  cont.innerHTML = "<h3>" + nombre + " - $" + precio + "</h3><p>Elige acompanamiento:</p>";
+  cont.innerHTML = "<h3>" + nombre + " - $" + precio + "</h3><p>Elige acompañamiento:</p>";
 
   opciones.forEach(opcion => {
     const btn = document.createElement("button");
@@ -2165,7 +2165,7 @@ function mostrarBebidaPaquete(nombre, precio, notaPrev) {
   const cont = document.getElementById("proteinas");
   cont.innerHTML = "<h3>" + nombre + " - $" + precio + "</h3><p>Elige tu bebida:</p>";
 
-  const bebidas = ["Te", "Cafe", "Jugo"];
+  const bebidas = ["Té", "Café", "Jugo"];
 
   bebidas.forEach(bebida => {
     const btn = document.createElement("button");
@@ -2218,7 +2218,7 @@ function mostrarEconomico(titulo, precio) {
   const nombre = titulo || "Economico";
   const costo = precio || 45;
 
-  cont.innerHTML = "<h3>" + nombre + " - $" + costo + "</h3><p>Elige proteina:</p>";
+  cont.innerHTML = "<h3>" + nombre + " - $" + costo + "</h3><p>Elige proteína:</p>";
 
   ["Milanesa", "Pechuga"].forEach(proteina => {
     const btn = document.createElement("button");
@@ -2260,7 +2260,7 @@ function mostrarSaboresBebida(nombre, precio, sabores) {
 
 function mostrarTamanosAguaNatural() {
   const cont = document.getElementById("proteinas");
-  cont.innerHTML = "<h3>Agua - Elige tamano:</h3>";
+  cont.innerHTML = "<h3>Agua - Elige tamaño:</h3>";
 
   const tamanos = [
     { nombre: "1/2 Litro", precio: 12 },
@@ -2282,7 +2282,7 @@ function mostrarTamanosAguaNatural() {
 
 function mostrarProteinasNachos(precio) {
   const cont = document.getElementById("proteinas");
-  cont.innerHTML = "<h3>Elige proteina:</h3>";
+  cont.innerHTML = "<h3>Elige proteína:</h3>";
 
   // Sencillos
   const btnS = document.createElement("button");
@@ -2430,7 +2430,7 @@ function mostrarSaboresBebida(nombre, precio, sabores) {
 
 function mostrarTamanosAguaNatural() {
   const cont = document.getElementById("proteinas");
-  cont.innerHTML = "<h3>Agua - Elige tamano:</h3>";
+  cont.innerHTML = "<h3>Agua - Elige tamaño:</h3>";
 
   const tamanos = [
     { nombre: "1/2 Litro", precio: 12 },
@@ -2452,7 +2452,7 @@ function mostrarTamanosAguaNatural() {
 
 function mostrarProteinasNachos(precio) {
   const cont = document.getElementById("proteinas");
-  cont.innerHTML = "<h3>Elige proteina:</h3>";
+  cont.innerHTML = "<h3>Elige proteína:</h3>";
 
   // Sencillos
   const btnS = document.createElement("button");
@@ -2626,7 +2626,7 @@ function mostrarSaboresMaruchan(precio) {
   const cont = document.getElementById("proteinas");
   cont.innerHTML = "<h3>Maruchan - $" + precio + "</h3><p>Elige sabor:</p>";
 
-  const sabores = ["Camaron", "Camaron Piquin", "Camaron Habanero", "Res", "Pollo"];
+  const sabores = ["Camarón", "Camarón Piquín", "Camarón Habanero", "Res", "Pollo"];
 
   sabores.forEach(sabor => {
     const btn = document.createElement("button");
@@ -2649,7 +2649,7 @@ function agregarProductoSinNota(nombre, precio) {
 // Reemplaza prompt() con input inline para notas
 function agregarProductoConNota(nombre, precio) {
   const cont = document.getElementById("proteinas");
-  cont.innerHTML = "<h3>" + nombre + " - $" + precio + "</h3><p>Alguna indicacion especial?</p>";
+  cont.innerHTML = "<h3>" + nombre + " - $" + precio + "</h3><p>¿Alguna indicación especial?</p>";
 
   const inputNota = document.createElement("input");
   inputNota.type = "text";
@@ -3074,7 +3074,7 @@ async function iniciarPago() {
   }
 
   if (!telefono || !/^\d{10}$/.test(telefono)) {
-    alert("Escribe tu telefono a 10 digitos");
+    alert("Escribe tu teléfono a 10 dígitos");
     document.getElementById("telefono").focus();
     return;
   }
@@ -3132,7 +3132,7 @@ async function iniciarPago() {
     btnPagar.disabled = false;
     btnPagar.innerText = "Pagar";
   } catch (err) {
-    alert("Error de conexion. Intenta de nuevo.");
+    alert("Error de conexión. Intenta de nuevo.");
     btnPagar.disabled = false;
     btnPagar.innerText = "Pagar";
   }
@@ -3159,7 +3159,7 @@ cargarCategorias();
           info.style.background = "#e8f5e9";
           info.style.borderColor = "#4caf50";
           info.style.color = "#2e7d32";
-          info.innerText = "Cupon de bienvenida aplicado: 10% de descuento";
+          info.innerText = "Cupón de bienvenida aplicado: 10% de descuento";
           actualizarTotalConDescuento();
         } else {
           info.style.display = "block";

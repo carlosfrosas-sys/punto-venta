@@ -232,7 +232,7 @@
 
     <!-- Codigo para recoger -->
     <div id="codigoBox" class="codigo-box" style="display:none;">
-      <p class="codigo-label">Muestra este codigo al recoger</p>
+      <p class="codigo-label">Muestra este código al recoger</p>
       <div id="codigoValor" class="codigo-valor"></div>
       <p id="pedidoNumero" class="codigo-sub"></p>
     </div>
@@ -240,7 +240,7 @@
     <div class="tiempo-box">
       <div class="reloj">&#9201;</div>
       <div class="tiempo-texto">Tiempo estimado: 5 - 10 min</div>
-      <p class="tiempo-sub">Tu pedido ya esta en preparacion. Te mandaremos un mensaje por WhatsApp cuando este listo para que pases a recogerlo.</p>
+      <p class="tiempo-sub">Tu pedido ya está en preparación. Te mandaremos un mensaje por WhatsApp cuando esté listo para que pases a recogerlo.</p>
       <div id="transcurrido" class="transcurrido" style="display:none;"></div>
     </div>
 
@@ -353,7 +353,7 @@
       const aviso = document.createElement("div");
       aviso.id = "avisoListo";
       aviso.className = "estado-listo";
-      aviso.innerHTML = "&#127881; Tu pedido esta listo, pasa a recogerlo";
+      aviso.innerHTML = "&#127881; Tu pedido está listo, pasa a recogerlo";
       const card = document.querySelector(".card");
       card.insertBefore(aviso, document.getElementById("codigoBox"));
     }
@@ -382,7 +382,7 @@
       const link = document.getElementById("refLink").innerText;
       navigator.clipboard.writeText(link).then(() => {
         const btn = document.querySelector(".btn-copiar");
-        btn.innerText = "Copiado!";
+        btn.innerText = "¡Copiado!";
         setTimeout(() => { btn.innerText = "Copiar link"; }, 2000);
       });
     }
