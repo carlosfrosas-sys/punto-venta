@@ -1458,6 +1458,15 @@ app.post("/procesar-pago-tarjeta", async (req, res) => {
   }
 });
 
+// El formulario de pago del cliente avisa aquí sus errores, para que queden
+// en el registro y se pueda saber por qué a alguien no le cargó el pago
+app.post("/log-error-pago", (req, res) => {
+  const b = req.body || {};
+  const corto = v => String(v == null ? "" : v).slice(0, 300);
+  console.error("Error en formulario de pago (cliente):", corto(b.tipo), corto(b.causa), corto(b.mensaje), "|", corto(b.navegador));
+  res.status(204).end();
+});
+
 // Bricks: confirma pago desde el frontend (POST con JSON)
 app.post("/confirmar-pago-online", async (req, res) => {
   const { external_reference, payment_id } = req.body;
