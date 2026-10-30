@@ -3358,6 +3358,7 @@ function revisarPreciosPendientes() {
 }
 
 function renderizarLista() {
+  productos.forEach(p => { p.nombre = MENU.nombreProducto(p.nombre); });
   if (productos.length > _prevProductCount) {
     if (navigator.vibrate) navigator.vibrate(50);
     volverACategorias();

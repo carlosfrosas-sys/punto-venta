@@ -1242,7 +1242,7 @@ app.post("/crear-preferencia", async (req, res) => {
   const cliente = textoSeguro(req.body.cliente);
   const telefono = textoSeguro(req.body.telefono);
   const nota = textoSeguro(req.body.nota);
-  const prods = limpiarProfundo(req.body.productos);
+  const prods = nombresDeProductos(limpiarProfundo(req.body.productos));
   // El total se saca de los productos y no del que manda el celular: así no
   // se puede pagar menos cambiando solo el total. Para llevar son $10.
   const montoCliente = Number(req.body.total);
@@ -1905,6 +1905,16 @@ function etiquetaHora(h, corta) {
   return h12 + (h >= 12 ? " pm" : " am");
 }
 
+// A todo lo campechano se le quita el "de" ("Mollequiles Campechanos"),
+// igual que en menu.js; aquí por si algún pedido llega con el nombre largo
+function nombreProducto(nombre) {
+  return typeof nombre === "string" ? nombre.replace(/\s+de\s+(campechan[oa]s?)\b/gi, " $1") : nombre;
+}
+
+function nombresDeProductos(productos) {
+  return Array.isArray(productos) ? productos.map(p => (p && typeof p === "object") ? { ...p, nombre: nombreProducto(p.nombre) } : p) : productos;
+}
+
 app.post("/pedido", soloAdmin, async (req, res) => {
   const esKiosko = req.body.origen === "kiosko";
 
@@ -1929,7 +1939,7 @@ app.post("/pedido", soloAdmin, async (req, res) => {
   const pedido = {
     id: idCounter++,
     cliente: req.body.cliente,
-    productos: req.body.productos,
+    productos: nombresDeProductos(req.body.productos),
     total: req.body.total,
     nota: req.body.nota || "",
     paraLlevar: req.body.paraLlevar || false,
