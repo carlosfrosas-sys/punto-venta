@@ -40,7 +40,7 @@
     #pedidos {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 5px;
       height: calc(100vh - 16px);
       overflow-y: auto;
     }
@@ -49,7 +49,7 @@
       background: #1a1a1a;
       border: 2px solid #4ade80;
       border-radius: 8px;
-      padding: 6px 12px;
+      padding: 3px 10px;
       width: 100%;
     }
 
@@ -63,14 +63,15 @@
       list-style: none;
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 0;
       flex: 1;
     }
 
     .productos li {
       font-size: 48px;
       font-weight: 600;
-      padding: 2px 0;
+      line-height: 1.15;
+      padding: 1px 0;
       text-transform: uppercase;
     }
 
@@ -479,6 +480,20 @@
     // Los nombres llegan con o sin acentos segun la pantalla que los genero
     // (caja escribe "Café", la pagina de clientes "Cafe"), asi que se comparan
     // sin acentos para que un producto siempre caiga en la pantalla correcta.
+    // En esta pantalla los nombres van como se dicen en cocina, para que
+    // quepan más pedidos: sin "de" ("Tacos Pastor") y "Sincros". El
+    // "1pza de" del inicio se queda igual. Solo cambia lo que se ve: el
+    // pedido guarda el nombre completo.
+    function nombreCorto(nombre) {
+      let n = String(nombre || "");
+      const pieza = (n.match(/^1pza de /i) || [""])[0];
+      n = n.slice(pieza.length)
+        .replace(/\bSincronizadas\b/gi, "Sincros")
+        .replace(/\bSincronizada\b/gi, "Sincro")
+        .replace(/\s+de\s+/gi, " ");
+      return pieza + n;
+    }
+
     function sinAcentos(s) {
       return (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     }
@@ -515,7 +530,7 @@
           <ul class="productos">
             ${productosCocina.map((p, idx) =>
               `<li data-index="${p._index}"${notaCocina(p) || (idx === productosCocina.length - 1 && notaPedido(pedido)) ? ' class="con-notas"' : ""}>
-                <span class="prod-nombre"><span class="punto">&#8226;</span> ${p.cantidad && p.cantidad > 1 ? `<span class="qty">${p.cantidad}</span> ` : ""}${p.nombre}</span>
+                <span class="prod-nombre"><span class="punto">&#8226;</span> ${p.cantidad && p.cantidad > 1 ? `<span class="qty">${p.cantidad}</span> ` : ""}${nombreCorto(p.nombre)}</span>
                 ${notaCocina(p) || (idx === productosCocina.length - 1 && notaPedido(pedido)) ? `<span class="notas-der">
                   ${notaCocina(p) ? `<span class="nota">${notaCocina(p)}</span>` : ""}
                   ${idx === productosCocina.length - 1 && notaPedido(pedido) ? `<span class="nota-general">${notaPedido(pedido)}</span>` : ""}
