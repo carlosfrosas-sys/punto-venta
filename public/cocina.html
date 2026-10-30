@@ -135,37 +135,45 @@
       font-weight: 600;
     }
 
+    /* Va a la izquierda de la hora, grande y en recuadro para que se note */
     .para-llevar {
-      font-size: 20px;
-      color: #f97316;
-      font-weight: 700;
+      font-size: 26px;
+      color: #111;
+      background: #f97316;
+      border-radius: 8px;
+      padding: 3px 10px;
+      font-weight: 800;
       text-transform: uppercase;
+      white-space: nowrap;
     }
 
-    /* Productos a la izquierda y la hora en su propia columna a la derecha,
-       abajo: así ninguna indicación queda debajo de la hora */
+    /* La hora (y "Para llevar") va en la esquina de abajo a la derecha. Solo
+       el último producto le deja ese espacio; los demás usan todo el ancho */
     .pedido {
       position: relative;
-      display: flex;
-      align-items: flex-end;
-      gap: 12px;
     }
 
-    .pedido > .pedido-body {
-      flex: 1;
-      min-width: 0;
+    .productos li:last-child {
+      padding-right: var(--meta-ancho, 0px);
     }
 
     .pedido-meta {
-      flex-shrink: 0;
+      position: absolute;
+      right: 12px;
+      bottom: 6px;
       display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 0;
+      align-items: center;
+      gap: 12px;
       line-height: 1.2;
       font-size: 18px;
       color: #666;
       margin: 0;
+    }
+
+    .meta-hora {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
     }
 
     .pedido-meta .hora-envio {
@@ -518,8 +526,10 @@
         </div>
         <div class="pedido-meta">
           ${pedido.paraLlevar ? `<span class="para-llevar">Para llevar</span>` : ""}
-          <span class="hora-envio">${hora}</span>
-          <span class="tiempo" data-hora="${hora}">${tiempoTranscurrido(hora)}</span>
+          <div class="meta-hora">
+            <span class="hora-envio">${hora}</span>
+            <span class="tiempo" data-hora="${hora}">${tiempoTranscurrido(hora)}</span>
+          </div>
         </div>
       `;
 
@@ -538,6 +548,11 @@
         }
       }
       if (!insertado) contenedor.appendChild(div);
+
+      // Lo que mide la esquina de la hora, más un margen porque el "hace X min"
+      // crece con el tiempo
+      const meta = div.querySelector(".pedido-meta");
+      if (meta) div.style.setProperty("--meta-ancho", (meta.offsetWidth + 24) + "px");
     }
   </script>
 
