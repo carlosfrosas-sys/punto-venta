@@ -766,7 +766,14 @@
     return ordenarKiosko(salida);
   }
 
+  // "Mollequiles de Campechanos" se pide y se grita "Mollequiles
+  // Campechanos": a todo lo campechano se le quita el "de"
+  function nombreProducto(nombre) {
+    return String(nombre || "").replace(/\s+de\s+(campechan[oa]s?)\b/gi, " $1");
+  }
+
   global.MENU = {
+    nombreProducto: nombreProducto,
     paraCaja: function (listas) { return filtrar(aplicarPrecios(construir(listas)), "caja"); },
 
     // Las dos pantallas de cliente se ven igual (nombres completos,
