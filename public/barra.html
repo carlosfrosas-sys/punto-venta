@@ -510,6 +510,14 @@
       return "";
     }
 
+    // De la nota del paquete, las partes que hablan de la bebida, menos la
+    // palabra sola ("Café"), que ya va en el nombre
+    function detalleBebidaPaquete(nota, bebida) {
+      return (nota || "").split(",").map(s => s.trim())
+        .filter(s => s && bebidasPaquete.some(x => sinAcentos(s).includes(sinAcentos(x))) && !esIgual(s, bebida))
+        .join(", ");
+    }
+
     // La nota del pedido llega marcada con [PAGO ONLINE] o [CUPON ...]: eso
     // es para la caja, en barra solo estorba. Queda la indicación del cliente.
     function notaPedido(pedido) {
@@ -535,7 +543,9 @@
         if (esPaqueteConBebida(p)) {
           const bebida = extraerBebidaPaquete(p.nota);
           if (bebida) {
-            productosBarra.push({ nombre: bebida + " de Paquete", _index: i, _virtual: true });
+            // Lo que escribieron sobre la bebida ("Café con leche chico") se
+            // ve junto a ella; las indicaciones de la comida son de cocina
+            productosBarra.push({ nombre: bebida + " de Paquete", nota: detalleBebidaPaquete(p.nota, bebida), _index: i, _virtual: true });
           }
         }
       });
@@ -553,10 +563,10 @@
         <div class="pedido-body">
           <ul class="productos">
             ${productosBarra.map((p, idx) =>
-              `<li data-index="${p._index}"${(p.nota && !p._virtual) || (idx === productosBarra.length - 1 && notaPedido(pedido)) ? ' class="con-notas"' : ""}>
+              `<li data-index="${p._index}"${p.nota || (idx === productosBarra.length - 1 && notaPedido(pedido)) ? ' class="con-notas"' : ""}>
                 <span class="prod-nombre"><span class="punto">&#8226;</span> ${p.cantidad && p.cantidad > 1 ? `<span class="qty">${p.cantidad}</span> ` : ""}${nombreCorto(p.nombre)}</span>
-                ${(p.nota && !p._virtual) || (idx === productosBarra.length - 1 && notaPedido(pedido)) ? `<span class="notas-der">
-                  ${p.nota && !p._virtual ? `<span class="nota">${p.nota.replace(/\s*\+\$\d+/g, "")}</span>` : ""}
+                ${p.nota || (idx === productosBarra.length - 1 && notaPedido(pedido)) ? `<span class="notas-der">
+                  ${p.nota ? `<span class="nota">${p.nota.replace(/\s*\+\$\d+/g, "")}</span>` : ""}
                   ${idx === productosBarra.length - 1 && notaPedido(pedido) ? `<span class="nota-general">${notaPedido(pedido)}</span>` : ""}
                 </span>` : ""}
               </li>`
