@@ -2889,7 +2889,7 @@ function detectarCategoria(nombre) {
   if (n.includes("nortena")) return "Norteñas";
   if (n.includes("sincronizada")) return "Sincronizadas";
   // El paquete del día se vende como "Economico con ...": es de ensaladas
-  if (n.includes("ensalada") || n.includes("economico")) return "Ensaladas";
+  if (n.includes("ensalada") || n.includes("economico") || n.includes("coctel")) return "Ensaladas";
   if (n.includes("hot dog")) return "Snacks";
   if (n.includes("banderilla")) return "Snacks";
   if (n.includes("papas")) return "Snacks";

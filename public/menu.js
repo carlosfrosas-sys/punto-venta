@@ -184,7 +184,9 @@
       { nombre: "Jamón con Queso", precio: 50 },
       { nombre: "Codito", precio: 35 },
       { nombre: "Verduras", precio: 35 },
-      { nombre: "Económico", precio: 45, economico: true }
+      { nombre: "Económico", precio: 45, economico: true },
+      // Se vende con su nombre tal cual, no como "Ensalada de ..."
+      { nombre: "Cóctel de Frutas", precio: 35, soloCaja: true, nombreCompleto: true }
     ]
   },
 
