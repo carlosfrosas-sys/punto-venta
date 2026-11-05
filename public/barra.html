@@ -482,7 +482,7 @@
 
     function esDeBarra(nombre) {
       if (prefBebidas.some(x => empiezaCon(nombre, x))) return true;
-      if (empiezaCon(nombre, "Ensalada")) return true;
+      if (empiezaCon(nombre, "Ensalada") || empiezaCon(nombre, "Cóctel")) return true;
       if (snacks.some(s => empiezaCon(nombre, s))) return true;
       if (empiezaCon(nombre, "Paleta")) return true;
       if (empiezaCon(nombre, "Economico")) return true;
