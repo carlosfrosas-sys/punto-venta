@@ -3104,13 +3104,29 @@ app.get("/ventas/semanal", soloAdmin, async (req, res) => {
   res.json({ pedidos: entregados, total, porDia, totalEfectivo, totalTarjeta, totalAnterior });
 });
 
-app.get("/ventas/mensual", soloAdmin, async (req, res) => {
+// El mes que se pide (?mes=10&anio=2026) o el actual. Un mes ya pasado va
+// completo; el actual, hasta hoy. No se aceptan meses futuros.
+function mesPedido(query) {
   const ahora = fechaMXAhora();
-  const mesActual = (ahora.getMonth() + 1).toString().padStart(2, "0");
-  const anioActual = ahora.getFullYear().toString();
+  let mes = parseInt(query.mes, 10);
+  let anio = parseInt(query.anio, 10);
+  const valido = mes >= 1 && mes <= 12 && anio >= 2020 &&
+    (anio < ahora.getFullYear() || (anio === ahora.getFullYear() && mes <= ahora.getMonth() + 1));
+  if (!valido) { mes = ahora.getMonth() + 1; anio = ahora.getFullYear(); }
+  const esActual = anio === ahora.getFullYear() && mes === ahora.getMonth() + 1;
+  return {
+    mes, anio, esActual,
+    inicio: new Date(anio, mes - 1, 1),
+    fin: esActual ? ahora : new Date(anio, mes, 0)
+  };
+}
 
-  const primeroDelMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
-  const entregados = await entregadosEnFechas(fechasEntre(primeroDelMes, ahora));
+app.get("/ventas/mensual", soloAdmin, async (req, res) => {
+  const elegido = mesPedido(req.query);
+  const mesActual = String(elegido.mes).padStart(2, "0");
+  const anioActual = String(elegido.anio);
+
+  const entregados = await entregadosEnFechas(fechasEntre(elegido.inicio, elegido.fin));
   const total = entregados.reduce((acc, p) => acc + p.total, 0);
 
   const porDia = {};
@@ -3134,7 +3150,7 @@ app.get("/ventas/mensual", soloAdmin, async (req, res) => {
   const entregadosAnt = await entregadosEnFechas(fechasEntre(primeroAnterior, ultimoAnterior));
   const totalAnterior = entregadosAnt.reduce((acc, p) => acc + p.total, 0);
 
-  res.json({ pedidos: entregados, total, porDia, totalEfectivo, totalTarjeta, totalAnterior });
+  res.json({ pedidos: entregados, total, porDia, totalEfectivo, totalTarjeta, totalAnterior, mes: elegido.mes, anio: elegido.anio, esActual: elegido.esActual });
 });
 
 // Historial de eliminados
@@ -3359,8 +3375,8 @@ app.get("/ventas/exportar/:tipo", soloAdminOExport, async (req, res) => {
     hace7dias.setDate(hace7dias.getDate() - 6);
     entregados = await entregadosEnFechas(fechasEntre(hace7dias, ahora));
   } else if (tipo === "mes") {
-    const primero = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
-    entregados = await entregadosEnFechas(fechasEntre(primero, ahora));
+    const elegido = mesPedido(req.query);
+    entregados = await entregadosEnFechas(fechasEntre(elegido.inicio, elegido.fin));
   } else {
     return res.status(400).send("Tipo inválido");
   }
