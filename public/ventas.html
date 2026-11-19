@@ -864,7 +864,26 @@ function hacerLogin() {
   function navMes(btn) {
     setActiveNav(btn);
     tabActual = "mes";
+    mesVista = null;
     cargarMensual();
+  }
+
+  // Mes que se está viendo en "Este Mes": null es el actual. Las flechas
+  // del título se mueven a los meses anteriores.
+  let mesVista = null;
+
+  function cambiarMes(paso) {
+    const ahora = new Date();
+    const base = mesVista || { mes: ahora.getMonth() + 1, anio: ahora.getFullYear() };
+    const d = new Date(base.anio, base.mes - 1 + paso, 1);
+    const esActual = d.getFullYear() === ahora.getFullYear() && d.getMonth() === ahora.getMonth();
+    if (d > ahora && !esActual) return;
+    mesVista = esActual ? null : { mes: d.getMonth() + 1, anio: d.getFullYear() };
+    cargarMensual();
+  }
+
+  function parametrosMes() {
+    return mesVista ? "?mes=" + mesVista.mes + "&anio=" + mesVista.anio : "";
   }
 
   function navProductos(btn) {
@@ -1247,9 +1266,16 @@ function hacerLogin() {
     mostrarAcciones(true);
 
     const ahora = new Date();
-    setTitulo(MESES[ahora.getMonth()] + " " + ahora.getFullYear(), "Mes actual");
+    const mes = mesVista ? mesVista.mes : ahora.getMonth() + 1;
+    const anio = mesVista ? mesVista.anio : ahora.getFullYear();
+    setTitulo(MESES[mes - 1] + " " + anio, mesVista ? "Mes completo" : "Mes actual");
+    const estiloFlecha = "border:1px solid #e5e5e5;background:#fff;border-radius:8px;padding:2px 10px;font-size:14px;cursor:pointer;font-family:inherit;vertical-align:middle;";
+    document.getElementById("contentTitle").innerHTML =
+      '<button onclick="cambiarMes(-1)" title="Mes anterior" style="' + estiloFlecha + '">◀</button> ' +
+      MESES[mes - 1] + " " + anio +
+      ' <button onclick="cambiarMes(1)" title="Mes siguiente" style="' + estiloFlecha + (mesVista ? '' : 'opacity:0.3;cursor:default;') + '"' + (mesVista ? '' : ' disabled') + '>▶</button>';
 
-    fetch("/ventas/mensual")
+    fetch("/ventas/mensual" + parametrosMes())
       .then(res => res.json())
       .then(data => {
         actualizarMetricas(data.total, data.totalEfectivo, data.totalTarjeta, data.pedidos.length, data.totalAnterior);
@@ -1260,11 +1286,11 @@ function hacerLogin() {
           '<div class="chart-title">Resumen</div>' +
           '<div style="text-align:center;padding:20px;">' +
           '<div style="font-size:28px;font-weight:700;color:#f59e0b;">' + data.pedidos.length + '</div>' +
-          '<div style="font-size:12px;color:#ccc;">pedidos este mes</div>' +
+          '<div style="font-size:12px;color:#ccc;">pedidos en el mes</div>' +
           '</div>';
 
         if (data.pedidos.length === 0) {
-          contenedor.innerHTML = '<div class="sin-datos">No hay ventas este mes</div>';
+          contenedor.innerHTML = '<div class="sin-datos">No hay ventas en este mes</div>';
         } else {
           data.pedidos.forEach(mostrarPedido);
           renderFiltroPago(data.pedidos);
@@ -1438,7 +1464,7 @@ function hacerLogin() {
     } else if (tabActual === "semana") {
       url = "/ventas/exportar/semana";
     } else {
-      url = "/ventas/exportar/mes";
+      url = "/ventas/exportar/mes" + parametrosMes();
     }
     window.open(llaveReportes(url), "_blank");
   }
@@ -1451,7 +1477,7 @@ function hacerLogin() {
     } else if (tabActual === "semana") {
       url = llaveReportes(window.location.origin + "/ventas/exportar/semana");
     } else {
-      url = llaveReportes(window.location.origin + "/ventas/exportar/mes");
+      url = llaveReportes(window.location.origin + "/ventas/exportar/mes" + parametrosMes());
     }
 
     const totalTxt = document.getElementById("metricTotal").innerText;
